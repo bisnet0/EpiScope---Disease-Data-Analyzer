@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:13
+    container_name: episcope_db
+    environment:
+      POSTGRES_USER: bisnet0
+      POSTGRES_PASSWORD: RG4J8^%*TWjA*977Y40T81B2
+      POSTGRES_DB: episcope_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
