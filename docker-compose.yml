@@ -8,6 +8,9 @@ services:
       GEMINI_API_KEY: ${GEMINI_API_KEY}
     depends_on:
       - db
+    networks:
+      - episcope-net
+
   db:
     image: postgres:13
     container_name: episcope_db
@@ -19,6 +22,30 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - episcope-net
+
+  # --- SERVIÇO NOVO ADICIONADO ABAIXO ---
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin_gui
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "admin@admin.com" # Email para logar no PgAdmin
+      PGADMIN_DEFAULT_PASSWORD: "admin" # Senha para logar no PgAdmin
+    ports:
+      - "5050:80" # Mapeia a porta 5050 da sua máquina para a porta 80 do contêiner
+    depends_on:
+      - db
+    networks:
+      - episcope-net
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin # Salva as configurações do PgAdmin
 
 volumes:
   postgres_data:
+  pgadmin_data:
+
+
+networks:
+  episcope-net:
+    driver: bridge
