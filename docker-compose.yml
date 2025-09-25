@@ -4,8 +4,10 @@ services:
     container_name: demas_api
     ports:
       - "5000:5000"
-    environment:
-      GEMINI_API_KEY: ${GEMINI_API_KEY}
+    # --- MUDANÇA AQUI ---
+    # Injeta todas as variáveis do arquivo .env para dentro deste contêiner
+    env_file:
+      - .env
     depends_on:
       - db
     networks:
@@ -14,10 +16,12 @@ services:
   db:
     image: postgres:13
     container_name: episcope_db
+    # --- MUDANÇA AQUI ---
+    # Lê as variáveis do .env e as usa para configurar o serviço
     environment:
-      POSTGRES_USER: bisnet0
-      POSTGRES_PASSWORD: RG4J8^%*TWjA*977Y40T81B2
-      POSTGRES_DB: episcope_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - "5432:5432"
     volumes:
@@ -25,26 +29,24 @@ services:
     networks:
       - episcope-net
 
-  # --- SERVIÇO NOVO ADICIONADO ABAIXO ---
   pgadmin:
     image: dpage/pgadmin4
     container_name: pgadmin_gui
     environment:
-      PGADMIN_DEFAULT_EMAIL: "admin@admin.com" # Email para logar no PgAdmin
-      PGADMIN_DEFAULT_PASSWORD: "admin" # Senha para logar no PgAdmin
+      PGADMIN_DEFAULT_EMAIL: "admin@admin.com"
+      PGADMIN_DEFAULT_PASSWORD: "admin"
     ports:
-      - "5050:80" # Mapeia a porta 5050 da sua máquina para a porta 80 do contêiner
+      - "5050:80"
     depends_on:
       - db
     networks:
       - episcope-net
     volumes:
-      - pgadmin_data:/var/lib/pgadmin # Salva as configurações do PgAdmin
+      - pgadmin_data:/var/lib/pgadmin
 
 volumes:
   postgres_data:
   pgadmin_data:
-
 
 networks:
   episcope-net:
