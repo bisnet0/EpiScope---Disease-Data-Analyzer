@@ -4,8 +4,6 @@ services:
     container_name: demas_api
     ports:
       - "5000:5000"
-    # --- MUDANÇA AQUI ---
-    # Injeta todas as variáveis do arquivo .env para dentro deste contêiner
     env_file:
       - .env
     depends_on:
@@ -16,8 +14,7 @@ services:
   db:
     image: postgres:13
     container_name: episcope_db
-    # --- MUDANÇA AQUI ---
-    # Lê as variáveis do .env e as usa para configurar o serviço
+    
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
