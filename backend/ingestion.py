@@ -68,7 +68,7 @@ if __name__ == "__main__":
     todos_os_dados = []
 
     for nome, url in doencas_endpoints.items():
-        dados_doenca = buscar_dados_paginados(nome, url, limit_por_pagina=20, num_paginas=50)
+        dados_doenca = buscar_dados_paginados(nome, url, limit_por_pagina=20, num_paginas=500)
         if not dados_doenca.empty:
             dados_doenca['doenca_alvo'] = nome
             todos_os_dados.append(dados_doenca)
