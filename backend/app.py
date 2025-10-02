@@ -10,7 +10,33 @@ import re
 
 load_dotenv()
 
-# --- Funções Auxiliares (sem alteração) ---
+app = Flask(__name__)
+
+# --- CONFIGURAÇÃO E CARREGAMENTO DOS MODELOS ---
+
+# Configura a API do Gemini
+try:
+    genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+    model_gemini = genai.GenerativeModel('gemini-pro')
+    print("Modelo Gemini configurado com sucesso.")
+except Exception as e:
+    print(f"ERRO: Falha ao configurar o Gemini. Verifique a GEMINI_API_KEY. Erro: {e}")
+    model_gemini = None
+
+# Carrega o modelo de ML e os artefatos (colunas, mapa de alvo)
+try:
+    ml_model = joblib.load('decision_tree_model.joblib')
+    with open('model_columns.json', 'r') as f:
+        model_columns = json.load(f)
+    with open('target_map.json', 'r') as f:
+        target_map = {int(k): v for k, v in json.load(f).items()}
+    print("Modelo de ML e artefatos carregados com sucesso.")
+except Exception as e:
+    print(f"ERRO: Artefatos do modelo de ML não encontrados. Execute o train_model.py. Erro: {e}")
+    ml_model, model_columns, target_map = None, None, None
+
+
+# --- FUNÇÃO AUXILIAR ---
 def parse_json_from_gemini_response(text):
     match = re.search(r'```json\s*(\{.*?\})\s*```', text, re.DOTALL)
     if match:
@@ -20,83 +46,88 @@ def parse_json_from_gemini_response(text):
     try:
         return json.loads(json_str)
     except json.JSONDecodeError:
-        print("Erro ao decodificar JSON da resposta do Gemini.")
+        print(f"Erro ao decodificar JSON da resposta do Gemini: {text}")
         return None
 
-def preprocess_for_model(symptoms_json, model_columns):
-    input_df = pd.DataFrame(columns=model_columns, index=[0]).fillna(0)
-    for symptom, present in symptoms_json.items():
-        if symptom in input_df.columns and present:
-            input_df[symptom] = 1
-    return input_df
 
-# --- Configuração do App ---
-app = Flask(__name__)
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-model_gemini = genai.GenerativeModel('gemini-pro')
-
-# --- Carregamento dos Artefatos do Modelo (Atualizado) ---
-try:
-    ml_model = joblib.load('decision_tree_model.joblib')
-    with open('model_columns.json', 'r') as f:
-        model_columns = json.load(f)
-    with open('target_map.json', 'r') as f:
-        # As chaves do JSON são strings, convertemos para inteiros
-        target_map = {int(k): v for k, v in json.load(f).items()}
-    print("Modelo de ML e artefatos carregados com sucesso.")
-except FileNotFoundError:
-    print("ERRO: Artefatos do modelo não encontrados. Execute o script de treinamento primeiro.")
-    ml_model = None
-
+# --- ROTA PRINCIPAL DA API ---
 @app.route('/diagnose', methods=['POST'])
 def diagnose():
-    if not ml_model:
-        return jsonify({"error": "Modelo de ML não está carregado."}), 500
+    if not all([ml_model, model_columns, target_map, model_gemini]):
+        return jsonify({"error": "Um ou mais modelos não estão carregados. Verifique os logs."}), 500
 
-    data = request.json
-    symptoms_text = data.get('symptoms')
-    if not symptoms_text:
-        return jsonify({"error": "Texto de sintomas não fornecido"}), 400
+    # 1. Obter os dados de entrada completos
+    input_data = request.get_json()
+    if not input_data:
+        return jsonify({"error": "Corpo da requisição JSON não fornecido."}), 400
 
-    # --- Controller 2: Estruturar dados com IA (Prompt Atualizado) ---
+    text_description = input_data.get('text_description')
+    age = input_data.get('age')
+    sex = input_data.get('sex')
+    criteria_code = input_data.get('criteria_code')
+
+    if not all([text_description, age, sex, criteria_code is not None]):
+        return jsonify({"error": "Dados de entrada incompletos. 'text_description', 'age', 'sex' e 'criteria_code' são obrigatórios."}), 400
+
+    # --- CONTROLLER 1: Estruturar sintomas com IA ---
     prompt_structured = f"""
-    Analise o seguinte texto de um paciente e extraia os sintomas em formato JSON.
-    Os possíveis sintomas são: 'febre', 'mialgia', 'cefaleia', 'exantema', 'vomito', 'nausea', 'dor_costas', 'conjuntvit', 'artrite', 'artralgia', 'petequia_n', 'leucopenia', 'dor_retro'.
-    O JSON de saída deve ter chaves para cada sintoma e o valor deve ser true se o sintoma for mencionado, e false caso contrário.
-    Texto do paciente: "{symptoms_text}"
+    Analise o texto e extraia os sintomas em JSON. Sintomas possíveis: {str([c for c in model_columns if '_' not in c and c not in ['idade']])}.
+    O valor deve ser true se o sintoma for mencionado, e false caso contrário.
+    Texto: "{text_description}"
     JSON de saída:
     """
     response_structured = model_gemini.generate_content(prompt_structured)
     structured_symptoms = parse_json_from_gemini_response(response_structured.text)
     if not structured_symptoms:
-        return jsonify({"error": "Não foi possível estruturar os sintomas a partir do texto."}), 500
-
-    # --- Controller 3: Executar modelo de ML (Lógica Atualizada) ---
-    input_data_for_ml = preprocess_for_model(structured_symptoms, model_columns)
-    prediction_probabilities = ml_model.predict_proba(input_data_for_ml)[0]
+        return jsonify({"error": "IA não conseguiu estruturar os sintomas a partir do texto."}), 500
     
-    # NOVO: Mapeando probabilidades para os nomes das doenças
+    # --- CONTROLLER 2: Preparar o DataFrame para o modelo de ML ---
+    try:
+        # Cria um DataFrame vazio com todas as colunas que o modelo espera, preenchido com 0
+        input_df = pd.DataFrame(columns=model_columns, index=[0]).fillna(0)
+
+        # Preenche os sintomas binarizados
+        for symptom, present in structured_symptoms.items():
+            if symptom in input_df.columns and present:
+                input_df.loc[0, symptom] = 1
+
+        # Preenche os dados demográficos
+        input_df.loc[0, 'idade'] = age
+        input_df.loc[0, 'sexo_encoded'] = 1 if sex.upper() == 'F' else 0
+
+        # Preenche as features de critério (One-Hot Encoded)
+        criterio_col = f'criterio_{criteria_code}'
+        if criterio_col in input_df.columns:
+            input_df.loc[0, criterio_col] = 1
+        
+        # Garante que a ordem das colunas está correta
+        input_df = input_df[model_columns]
+
+    except Exception as e:
+        return jsonify({"error": f"Erro ao preparar dados para o modelo: {str(e)}"}), 500
+
+    # --- CONTROLLER 3: Executar modelo de ML ---
+    prediction_probabilities = ml_model.predict_proba(input_df)[0]
     results = {target_map[i]: prob for i, prob in enumerate(prediction_probabilities)}
     
-    # --- Controller 4: Gerar resposta amigável com IA (Prompt Atualizado) ---
+    # --- CONTROLLER 4: Gerar resposta amigável com IA ---
     prob_text = "\n".join([f"- {disease.capitalize()}: {prob:.0%}" for disease, prob in results.items()])
     prompt_friendly = f"""
-    Você é um assistente de saúde virtual. Com base na análise de sintomas de um paciente, as probabilidades de diagnóstico para as seguintes arboviroses são:
+    Você é um assistente de saúde virtual. Com base na análise de um paciente de {age} anos, sexo {sex}, e sintomas relatados como "{text_description}", as probabilidades de diagnóstico são:
     {prob_text}
     
-    Sintomas relatados: "{symptoms_text}"
-
-    Escreva uma resposta profissional, amigável e coesa. **Importante: Enfatize que isso não é um diagnóstico médico definitivo e que a pessoa deve procurar um médico para confirmação.**
+    Escreva uma resposta profissional e amigável. **Enfatize que este é um resultado de um modelo de IA, não um diagnóstico médico, e que a pessoa DEVE procurar um médico para confirmação.**
     """
     response_friendly = model_gemini.generate_content(prompt_friendly)
     
     return jsonify({
-        "analysis": {
+        "friendly_response": response_friendly.text,
+        "analysis_details": {
             "probabilities": results,
-            "friendly_response": response_friendly.text
-        },
-        "structured_symptoms": structured_symptoms
+            "structured_symptoms": structured_symptoms,
+            "input_features": input_df.to_dict(orient='records')[0]
+        }
     })
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=5000, debug=True)
