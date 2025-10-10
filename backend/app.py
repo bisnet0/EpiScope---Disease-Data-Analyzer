@@ -17,7 +17,7 @@ app = Flask(__name__)
 # Configura a API do Gemini
 try:
     genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-    model_gemini = genai.GenerativeModel('gemini-pro')
+    model_gemini = genai.GenerativeModel('gemini-2.5-flash')  
     print("Modelo Gemini configurado com sucesso.")
 except Exception as e:
     print(f"ERRO: Falha ao configurar o Gemini. Verifique a GEMINI_API_KEY. Erro: {e}")
