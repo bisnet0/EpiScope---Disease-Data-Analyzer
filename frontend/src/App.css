@@ -60,3 +60,33 @@ button:disabled {
 .error {
     color: #ff6b6b;
 }
+.mode-selector {
+  margin-top: 1.5rem;
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  border-bottom: 1px solid #333;
+  padding-bottom: 1.5rem;
+}
+.mode-selector button {
+  background-color: transparent;
+  border: 1px solid #555;
+}
+.mode-selector button.active {
+  border-color: #646cff;
+}
+.dapp-container {
+  margin-top: 1rem;
+}
+.wallet-connected {
+  margin-bottom: 1rem;
+  color: #8aff8a;
+}
+.status {
+  color: #ffdd8a;
+}
+.footer-note {
+  margin-top: 2rem;
+  font-size: 0.8em;
+  color: #888;
+}
