@@ -14,6 +14,7 @@ const INPUTBOX_ADDRESS = "0x59b22D57D4f067708AB0c00552767405926dc768";
 const DAPP_ADDRESS = "0x70ac08179605AF2D9e75782b8DEcDD3c22aA4D0C";
 const INPUTBOX_ABI = ["function addInput(address _dapp, bytes memory _input) returns (bytes32)"];
 const GRAPHQL_URL = "http://localhost:8080/graphql";
+const FLASK_API_URL = "http://localhost:5000";
 
 // Função para buscar o resultado (notice) da blockchain
 const fetchNotices = async (inputIndex: number) => {
@@ -48,9 +49,10 @@ const fetchNotices = async (inputIndex: number) => {
 export const DiagnosisDAppForm: React.FC = () => {
     const [signer, setSigner] = useState<ethers.Signer | null>(null);
     const [account, setAccount] = useState<string | null>(null);
-    const [formData, setFormData] = useState({
-        febre: 1, cefaleia: 1, idade: 40, sexo_encoded: 0, criterio_2: 1
-    });
+    const [textDescription, setTextDescription] = useState('');
+    const [age, setAge] = useState<number | ''>(30);
+    const [sex, setSex] = useState('M');
+    const [criteriaCode, setCriteriaCode] = useState(2)
     
     const [status, setStatus] = useState('');
     const [result, setResult] = useState<any>(null);
@@ -76,16 +78,40 @@ export const DiagnosisDAppForm: React.FC = () => {
         setResult(null);
 
         try {
+            // --- PASSO NOVO: Chamar a API Flask para estruturar os dados ---
+            const structureResponse = await fetch(`${FLASK_API_URL}/structure-symptoms`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text_description: textDescription }),
+            });
+            if (!structureResponse.ok) throw new Error("Falha ao se comunicar com o serviço de IA.");
+            
+            const structuredSymptoms = await structureResponse.json();
+
+            // --- FIM DO PASSO NOVO ---
+
+            // Combina os dados estruturados pela IA com os outros dados do formulário
+            const payloadForDApp = {
+                ...structuredSymptoms, // Sintomas vêm da IA
+                idade: Number(age),
+                sexo_encoded: sex === 'F' ? 1 : 0,
+                // Adiciona as colunas de critério, assumindo 0 para as não selecionadas
+                criterio_0: 0,
+                criterio_1: criteriaCode === 1 ? 1 : 0,
+                criterio_2: criteriaCode === 2 ? 1 : 0,
+                criterio_3: 0
+            };
+            
+            setStatus('Passo 2/4: Enviando transação para a blockchain...');
             const inputBox = new ethers.Contract(INPUTBOX_ADDRESS, INPUTBOX_ABI, signer);
-            const inputBytes = ethers.toUtf8Bytes(JSON.stringify(formData));
+            const inputBytes = ethers.toUtf8Bytes(JSON.stringify(payloadForDApp));
             
             const tx = await inputBox.addInput(DAPP_ADDRESS, inputBytes);
-            setStatus('Transação enviada. Aguardando confirmação...');
-            
+            setStatus('Passo 3/4: Aguardando confirmação da transação...');
             const receipt = await tx.wait();
-            // Pegar o index do input a partir dos logs da transação
+            
             const inputIndex = parseInt(receipt.logs[0].topics[2], 16);
-            setStatus(`Transação confirmada! Buscando resultado para o Input #${inputIndex}...`);
+            setStatus(`Passo 4/4: Buscando diagnóstico verificável (Input #${inputIndex})...`);
 
             // Polling para buscar o resultado
             const interval = setInterval(async () => {
@@ -95,19 +121,13 @@ export const DiagnosisDAppForm: React.FC = () => {
                     setResult(notice);
                     setStatus('Diagnóstico recebido!');
                 }
-            }, 2000); // Tenta a cada 2 segundos
+            }, 3000); // Tenta a cada 3 segundos
 
         } catch (e: any) {
             console.error(e);
             setError(e.message);
             setStatus('');
         }
-    };
-
-    // (O resto do JSX é similar ao formulário anterior)
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: Number(value) }));
     };
 
     return (
@@ -119,20 +139,29 @@ export const DiagnosisDAppForm: React.FC = () => {
             )}
              <form onSubmit={handleSubmit} style={{ opacity: !signer ? 0.5 : 1 }}>
                 <div className="form-group">
-                    <label>Febre?</label>
-                    <select name="febre" value={formData.febre} onChange={handleInputChange} disabled={!signer}><option value={1}>Sim</option><option value={0}>Não</option></select>
-                </div>
-                <div className="form-group">
-                    <label>Dor de Cabeça?</label>
-                    <select name="cefaleia" value={formData.cefaleia} onChange={handleInputChange} disabled={!signer}><option value={1}>Sim</option><option value={0}>Não</option></select>
+                    <label>Descreva seus sintomas:</label>
+                    <textarea value={textDescription} onChange={(e) => setTextDescription(e.target.value)} required />
                 </div>
                 <div className="form-group">
                     <label>Idade:</label>
-                    <input type="number" name="idade" value={formData.idade} onChange={handleInputChange} disabled={!signer}/>
+                    <input type="number" value={age} onChange={(e) => setAge(Number(e.target.value))} required />
                 </div>
-                {/* Adicione outros inputs conforme necessário */}
-                 <button type="submit" disabled={!signer || status.includes('Enviando')}>
-                    {status.includes('Enviando') ? 'Processando na Blockchain...' : 'Analisar (Web3)'}
+                 <div className="form-group">
+                    <label htmlFor="sex">Sexo:</label>
+                    <select id="sex" value={sex} onChange={(e) => setSex(e.target.value)}>
+                        <option value="M">Masculino</option>
+                        <option value="F">Feminino</option>
+                    </select>
+                </div>
+                <div className="form-group">
+                    <label htmlFor="criteria_code">Critério de Suspeita:</label>
+                    <select id="criteria_code" value={criteriaCode} onChange={(e) => setCriteriaCode(Number(e.target.value))}>
+                        <option value={1}>Laboratorial</option>
+                        <option value={2}>Clínico-Epidemiológico</option>
+                    </select>
+                </div>
+                <button type="submit" disabled={!signer || status.includes('Passo')}>
+                    {status ? 'Processando...' : 'Analisar (Web3 com IA)'}
                 </button>
             </form>
             

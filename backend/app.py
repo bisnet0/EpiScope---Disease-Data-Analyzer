@@ -129,6 +129,35 @@ def diagnose():
             "input_features": input_df.to_dict(orient='records')[0]
         }
     })
+    
+@app.route('/structure-symptoms', methods=['POST'])
+def structure_symptoms():
+    if not model_gemini:
+        return jsonify({"error": "Modelo Gemini não está carregado."}), 500
+
+    input_data = request.get_json()
+    text_description = input_data.get('text_description')
+    if not text_description:
+        return jsonify({"error": "'text_description' não fornecido."}), 400
+
+    try:
+        # Reutilizamos a mesma lógica de prompt do endpoint /diagnose
+        prompt_structured = f"""
+        Analise o texto e extraia os sintomas em JSON. Sintomas possíveis: {str([c for c in model_columns if '_' not in c and c not in ['idade']])}.
+        O valor deve ser true se o sintoma for mencionado, e false caso contrário.
+        Texto: "{text_description}"
+        JSON de saída:
+        """
+        response_structured = model_gemini.generate_content(prompt_structured)
+        structured_symptoms = parse_json_from_gemini_response(response_structured.text)
+
+        if not structured_symptoms:
+            return jsonify({"error": "IA não conseguiu estruturar os sintomas."}), 500
+
+        return jsonify(structured_symptoms)
+
+    except Exception as e:
+        return jsonify({"error": f"Erro ao chamar a IA: {str(e)}"}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
