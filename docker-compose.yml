@@ -10,11 +10,13 @@ services:
       - db
     networks:
       - episcope-net
+    volumes:
+      - ./backend/new_data:/app/new_data
 
   db:
     image: postgres:13
     container_name: episcope_db
-    
+
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -44,6 +46,7 @@ services:
 volumes:
   postgres_data:
   pgadmin_data:
+
 
 networks:
   episcope-net:
