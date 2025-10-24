@@ -12,6 +12,7 @@ services:
       - episcope-net
     volumes:
       - ./backend/new_data:/app/new_data
+      - backend_model_artifacts:/app/model_artifacts
 
   db:
     image: postgres:13
@@ -46,6 +47,7 @@ services:
 volumes:
   postgres_data:
   pgadmin_data:
+  backend_model_artifacts:
 
 
 networks:

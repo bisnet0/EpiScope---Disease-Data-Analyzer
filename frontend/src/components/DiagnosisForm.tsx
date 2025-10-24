@@ -1,4 +1,4 @@
-// frontend/src/components/DiagnosisForm.tsx
+// frontend/src/components/DiagnosisForm.tsx (Atualizado - Sem criteria_code)
 import React, { useState } from 'react';
 
 // Definindo a estrutura da resposta da API para o TypeScript
@@ -16,7 +16,8 @@ export const DiagnosisForm: React.FC = () => {
     const [textDescription, setTextDescription] = useState('');
     const [age, setAge] = useState<number | ''>('');
     const [sex, setSex] = useState('M');
-    const [criteriaCode, setCriteriaCode] = useState(2);
+    // --- MUDANÇA 1: Removemos o estado 'criteriaCode' ---
+    // const [criteriaCode, setCriteriaCode] = useState(2);
 
     // Estados para controlar o resultado da API
     const [result, setResult] = useState<ApiResponse | null>(null);
@@ -37,12 +38,15 @@ export const DiagnosisForm: React.FC = () => {
                     text_description: textDescription,
                     age: Number(age),
                     sex: sex,
-                    criteria_code: criteriaCode,
+                    // --- MUDANÇA 2: Removemos 'criteria_code' do payload ---
+                    // criteria_code: criteriaCode,
                 }),
             });
 
             if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
+                // Tenta ler a mensagem de erro do backend, se houver
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || `HTTP error! Status: ${response.status}`);
             }
 
             const data: ApiResponse = await response.json();
@@ -75,6 +79,7 @@ export const DiagnosisForm: React.FC = () => {
                         id="age"
                         value={age}
                         onChange={(e) => setAge(e.target.value === '' ? '' : Number(e.target.value))}
+                        min="0" // Adiciona validação mínima
                         required
                     />
                 </div>
@@ -85,29 +90,33 @@ export const DiagnosisForm: React.FC = () => {
                         <option value="F">Feminino</option>
                     </select>
                 </div>
-                <div className="form-group">
+                {/* --- MUDANÇA 3: Removemos o input select de 'criteria_code' --- */}
+                {/* <div className="form-group">
                     <label htmlFor="criteria_code">Critério de Suspeita:</label>
                     <select id="criteria_code" value={criteriaCode} onChange={(e) => setCriteriaCode(Number(e.target.value))}>
                         <option value={1}>Laboratorial</option>
                         <option value={2}>Clínico-Epidemiológico</option>
                     </select>
-                </div>
+                </div> */}
                 <button type="submit" disabled={isLoading}>
                     {isLoading ? 'Analisando...' : 'Analisar Sintomas'}
                 </button>
             </form>
 
-            {error && <div className="result-box error"><p>{error}</p></div>}
+            {error && <div className="result-box error"><p><strong>Erro:</strong> {error}</p></div>}
 
             {result && (
                 <div className="result-box">
                     <h3>Análise do Assistente Virtual</h3>
-                    <p style={{ whiteSpace: 'pre-wrap' }}>{result.friendly_response}</p>
-                    <h4>Probabilidades:</h4>
+                    {/* Usamos dangerouslySetInnerHTML para renderizar quebras de linha e negrito do backend */}
+                    <div dangerouslySetInnerHTML={{ __html: result.friendly_response.replace(/\n/g, '<br />') }} />
+                    <h4>Probabilidades Estimadas:</h4>
                     <ul>
-                        {Object.entries(result.analysis_details.probabilities).map(([disease, prob]) => (
-                            <li key={disease}>{`${disease.charAt(0).toUpperCase() + disease.slice(1)}: ${(prob * 100).toFixed(0)}%`}</li>
-                        ))}
+                        {Object.entries(result.analysis_details.probabilities)
+                            .sort(([, probA], [, probB]) => probB - probA) // Ordena por probabilidade
+                            .map(([disease, prob]) => (
+                                <li key={disease}>{`${disease.charAt(0).toUpperCase() + disease.slice(1)}: ${(prob * 100).toFixed(1)}%`}</li> // Exibe 1 casa decimal
+                            ))}
                     </ul>
                 </div>
             )}
