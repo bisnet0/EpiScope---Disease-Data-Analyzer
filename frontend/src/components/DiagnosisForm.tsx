@@ -1,7 +1,8 @@
-// frontend/src/components/DiagnosisForm.tsx (Atualizado - Sem criteria_code)
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import {
+    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell
+} from 'recharts';
 
-// Definindo a estrutura da resposta da API para o TypeScript
 interface ApiResponse {
     friendly_response: string;
     analysis_details: {
@@ -11,15 +12,17 @@ interface ApiResponse {
     };
 }
 
+const COLORS: { [key: string]: string } = {
+    dengue: '#8884d8',
+    chikungunya: '#82ca9d',
+    zika: '#ffc658',
+};
+
 export const DiagnosisForm: React.FC = () => {
-    // Estados para controlar os campos do formulário
     const [textDescription, setTextDescription] = useState('');
     const [age, setAge] = useState<number | ''>('');
     const [sex, setSex] = useState('M');
-    // --- MUDANÇA 1: Removemos o estado 'criteriaCode' ---
-    // const [criteriaCode, setCriteriaCode] = useState(2);
 
-    // Estados para controlar o resultado da API
     const [result, setResult] = useState<ApiResponse | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -38,13 +41,10 @@ export const DiagnosisForm: React.FC = () => {
                     text_description: textDescription,
                     age: Number(age),
                     sex: sex,
-                    // --- MUDANÇA 2: Removemos 'criteria_code' do payload ---
-                    // criteria_code: criteriaCode,
                 }),
             });
 
             if (!response.ok) {
-                // Tenta ler a mensagem de erro do backend, se houver
                 const errorData = await response.json().catch(() => ({}));
                 throw new Error(errorData.error || `HTTP error! Status: ${response.status}`);
             }
@@ -57,6 +57,24 @@ export const DiagnosisForm: React.FC = () => {
             setIsLoading(false);
         }
     };
+
+    const formatResponse = (text: string): string => {
+        let html = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        html = html.replace(/\n/g, '<br />');
+        return html;
+    };
+
+    const chartData = useMemo(() => {
+        if (!result) return [];
+
+        return Object.entries(result.analysis_details.probabilities)
+            .map(([disease, prob]) => ({
+                name: disease.charAt(0).toUpperCase() + disease.slice(1),
+                probability: parseFloat((prob * 100).toFixed(1)),
+                color: COLORS[disease] || '#cccccc'
+            }))
+            .sort((a, b) => b.probability - a.probability);
+    }, [result]);
 
     return (
         <div className="container">
@@ -79,7 +97,7 @@ export const DiagnosisForm: React.FC = () => {
                         id="age"
                         value={age}
                         onChange={(e) => setAge(e.target.value === '' ? '' : Number(e.target.value))}
-                        min="0" // Adiciona validação mínima
+                        min="0"
                         required
                     />
                 </div>
@@ -90,14 +108,6 @@ export const DiagnosisForm: React.FC = () => {
                         <option value="F">Feminino</option>
                     </select>
                 </div>
-                {/* --- MUDANÇA 3: Removemos o input select de 'criteria_code' --- */}
-                {/* <div className="form-group">
-                    <label htmlFor="criteria_code">Critério de Suspeita:</label>
-                    <select id="criteria_code" value={criteriaCode} onChange={(e) => setCriteriaCode(Number(e.target.value))}>
-                        <option value={1}>Laboratorial</option>
-                        <option value={2}>Clínico-Epidemiológico</option>
-                    </select>
-                </div> */}
                 <button type="submit" disabled={isLoading}>
                     {isLoading ? 'Analisando...' : 'Analisar Sintomas'}
                 </button>
@@ -108,15 +118,33 @@ export const DiagnosisForm: React.FC = () => {
             {result && (
                 <div className="result-box">
                     <h3>Análise do Assistente Virtual</h3>
-                    {/* Usamos dangerouslySetInnerHTML para renderizar quebras de linha e negrito do backend */}
-                    <div dangerouslySetInnerHTML={{ __html: result.friendly_response.replace(/\n/g, '<br />') }} />
-                    <h4>Probabilidades Estimadas:</h4>
+                    <div dangerouslySetInnerHTML={{ __html: formatResponse(result.friendly_response) }} />
+
+                    <h4>Probabilidades Estimadas (Gráfico)</h4>
+                    <div style={{ width: '100%', height: 300 }}>
+                        <ResponsiveContainer>
+                            <BarChart
+                                data={chartData}
+                                margin={{ top: 5, right: 30, left: 0, bottom: 5 }}
+                            >
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="name" />
+                                <YAxis unit="%" domain={[0, 100]} />
+                                <Tooltip formatter={(value: number) => [`${value}%`, "Probabilidade"]} />
+                                <Legend />
+                                <Bar dataKey="probability" name="Probabilidade (%)">
+                                    {chartData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.color} />
+                                    ))}
+                                </Bar>
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                    <h4>Probabilidades Estimadas (Lista)</h4>
                     <ul>
-                        {Object.entries(result.analysis_details.probabilities)
-                            .sort(([, probA], [, probB]) => probB - probA) // Ordena por probabilidade
-                            .map(([disease, prob]) => (
-                                <li key={disease}>{`${disease.charAt(0).toUpperCase() + disease.slice(1)}: ${(prob * 100).toFixed(1)}%`}</li> // Exibe 1 casa decimal
-                            ))}
+                        {chartData.map((item) => (
+                            <li key={item.name}>{`${item.name}: ${item.probability}%`}</li>
+                        ))}
                     </ul>
                 </div>
             )}
