@@ -9,3 +9,5 @@ SQLAlchemy
 psycopg2-binary
 ijson
 xgboost
+tensorflow
+Pillow opencv-python-headless

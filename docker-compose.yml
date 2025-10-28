@@ -13,6 +13,7 @@ services:
     volumes:
       - ./backend/new_data:/app/new_data
       - backend_model_artifacts:/app/model_artifacts
+      - ./backend/data:/app/data
 
   db:
     image: postgres:13
