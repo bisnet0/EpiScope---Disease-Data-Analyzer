@@ -20,7 +20,7 @@ start_time = time.time()
 
 # --- Configurações ---
 DATASET_DIR = "/app/data/drishti_gs" # Path inside the container
-METADATA_FILE = os.path.join(DATASET_DIR, "Drishti-GS1_files_info.xlsx") # Path to the Excel label file
+METADATA_FILE = os.path.join(DATASET_DIR, "Drishti-GS1_diagnosis.xlsx") # Path to the Excel label file
 IMAGE_DIR = os.path.join(DATASET_DIR, "Training", "Images") # Path to training images
 
 ARTIFACTS_DIR = "/app/model_artifacts"
