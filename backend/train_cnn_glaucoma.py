@@ -1,4 +1,4 @@
-# backend/train_cnn_glaucoma.py (Adapted for Drishti-GS)
+# backend/train_cnn_glaucoma.py (V2 - Com Fine-Tuning)
 
 import os
 import numpy as np
@@ -11,93 +11,75 @@ from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Dropout
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder # Use LabelEncoder for binary
+from sklearn.preprocessing import LabelEncoder
 import json
 import time
 
-print("Iniciando script de treinamento da CNN para Glaucoma (Drishti-GS)...")
+print("Iniciando script de treinamento da CNN (V2 - Fine-Tuning)...")
 start_time = time.time()
 
 # --- Configurações ---
-DATASET_DIR = "/app/data/drishti_gs" # Path inside the container
-METADATA_FILE = os.path.join(DATASET_DIR, "Drishti-GS1_diagnosis.xlsx") # Path to the Excel label file
-IMAGE_DIR = os.path.join(DATASET_DIR, "Training", "Images") # Path to training images
+DATASET_DIR = "/app/data/drishti_gs"
+METADATA_FILE = os.path.join(DATASET_DIR, "Drishti-GS1_diagnosis.xlsx")
+IMAGE_DIR = os.path.join(DATASET_DIR, "Training", "Images")
 
 ARTIFACTS_DIR = "/app/model_artifacts"
 MODEL_SAVE_PATH = os.path.join(ARTIFACTS_DIR, 'glaucoma_cnn_model.h5')
 INFO_SAVE_PATH = os.path.join(ARTIFACTS_DIR, 'glaucoma_info.json')
 
 IMG_SIZE = 224
-BATCH_SIZE = 16 # Smaller batch size might be better for smaller datasets
-EPOCHS = 30 # Increased epochs slightly
+BATCH_SIZE = 16 
+INITIAL_EPOCHS = 20 # Épocas para treinar SÓ o topo
+FINE_TUNE_EPOCHS = 20 # Épocas para treinar o modelo todo (total 40)
 LEARNING_RATE = 0.001
-TEST_SPLIT_SIZE = 0.2 # 20% for validation
+FINE_TUNE_LR = 0.00001 # Taxa de aprendizado 100x menor
+TEST_SPLIT_SIZE = 0.2
 
-# --- Funções Auxiliares ---
-
+# --- Funções Auxiliares (Idênticas) ---
 def preprocess_image(image_path, target_size=(IMG_SIZE, IMG_SIZE)):
-    """Carrega, redimensiona e normaliza uma imagem."""
     try:
         img = cv2.imread(image_path)
-        if img is None:
-            print(f"Aviso: Não foi possível ler a imagem: {image_path}")
-            return None
+        if img is None: return None
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img_resized = cv2.resize(img, target_size)
         img_normalized = img_resized / 255.0
         return img_normalized
     except Exception as e:
-        print(f"Erro ao processar imagem {image_path}: {e}")
+        print(f"Erro processando {image_path}: {e}")
         return None
 
 def load_data_from_excel(metadata_path, image_dir):
-    """Carrega imagens e labels usando o arquivo Excel Drishti-GS."""
     print(f"Carregando metadados de: {metadata_path}")
     try:
-        # Try reading as Excel first, then CSV as fallback
-        try:
-            df = pd.read_excel(metadata_path)
-        except ValueError: # If it's actually a CSV saved as .xlsx
-             df = pd.read_csv(metadata_path)
+        try: df = pd.read_excel(metadata_path)
+        except ValueError: df = pd.read_csv(metadata_path)
     except FileNotFoundError:
-        raise FileNotFoundError(f"Arquivo de metadados não encontrado em {metadata_path}. Verifique o caminho.")
-
-    print(f"Metadados carregados. Colunas: {df.columns.tolist()}")
-
-    # --- Ajuste as colunas com base no seu arquivo Excel real ---
-    filename_col = 'Drishti-GS File' # Coluna com nomes como 'drishtiGS_001''
-    label_col = 'Total'             # Coluna com 'Normal' ou 'Glaucomatous'
-    # -------------------------------------------------------------------
-
+        raise FileNotFoundError(f"Arquivo de metadados não encontrado em {metadata_path}.")
+    
+    filename_col = 'Drishti-GS File'; label_col = 'Total'
     if filename_col not in df.columns or label_col not in df.columns:
-        raise ValueError(f"Colunas '{filename_col}' ou '{label_col}' não encontradas no arquivo de metadados.")
+        raise ValueError(f"Colunas '{filename_col}' ou '{label_col}' não encontradas.")
 
-    images = []
-    labels = []
-    class_names = sorted(df[label_col].unique().tolist())
-    print(f"Classes encontradas nos metadados: {class_names}")
+    images = []; labels = []; class_names = sorted(df[label_col].unique().tolist())
+    print(f"Classes encontradas: {class_names}")
 
-    missing_files = 0
     for index, row in df.iterrows():
-        # Limpa o nome do arquivo (ex: remove ' se houver) e adiciona extensão
         base_filename = str(row[filename_col]).strip().replace("'", "")
-        img_filename = f"{base_filename}.png" # Assume extensão .png
+        img_filename = f"{base_filename}.png" 
         img_path = os.path.join(image_dir, img_filename)
 
         if not os.path.exists(img_path):
-            print(f"Aviso: Arquivo de imagem não encontrado: {img_path}")
-            missing_files += 1
-            continue # Pula esta imagem se não existir
+            # Tenta .jpg como fallback
+            img_filename = f"{base_filename}.jpg"
+            img_path = os.path.join(image_dir, img_filename)
+            if not os.path.exists(img_path):
+                print(f"Aviso: Arquivo de imagem não encontrado (tentou .png e .jpg): {base_filename}")
+                continue
 
         processed_img = preprocess_image(img_path)
         if processed_img is not None:
             images.append(processed_img)
-            labels.append(row[label_col]) # Guarda o label 'Normal' ou 'Glaucomatous'
-
-    if missing_files > 0:
-        print(f"AVISO: {missing_files} arquivos de imagem listados nos metadados não foram encontrados.")
-    if not images:
-         raise ValueError("Nenhuma imagem válida foi carregada. Verifique os caminhos e formatos.")
+            labels.append(row[label_col])
 
     print(f"Total de imagens carregadas: {len(images)}")
     return np.array(images), np.array(labels), class_names
@@ -107,21 +89,18 @@ try:
     # 1. Carregar Dados
     images, labels, class_names = load_data_from_excel(METADATA_FILE, IMAGE_DIR)
 
-    # 2. Codificar Labels (Binary: 0 or 1)
-    print("Codificando labels (Normal=0, Glaucomatous=1)...")
+    # 2. Codificar Labels (Binary: Glaucomatous=0, Normal=1)
+    print("Codificando labels (Glaucomatous=0, Normal=1)...")
     label_encoder = LabelEncoder()
-    # Garante que 'Normal' seja 0 e 'Glaucomatous' seja 1 (ou a outra classe)
-    label_encoder.fit(['Normal', 'Glaucomatous']) # Fit com as classes esperadas
+    # LabelEncoder.fit() ordena alfabeticamente. 
+    # 'Glaucomatous' vem antes de 'Normal'.
+    label_encoder.fit(labels) 
+    # ['Glaucomatous', 'Normal'] -> [0, 1]
     encoded_labels = label_encoder.transform(labels)
+    
+    print(f"Labels codificados. Mapeamento: {list(label_encoder.classes_)}") # Deve mostrar ['Glaucomatous', 'Normal']
 
-    num_classes = len(class_names)
-    if num_classes != 2:
-        print(f"Aviso: Esperado 2 classes (Normal, Glaucomatous), mas {num_classes} foram encontradas: {class_names}. Usando classificação binária.")
-
-    print(f"Labels codificados.")
-
-    # 3. Dividir em Treino e Validação
-    print("Dividindo dados em treino e validação...")
+    # 3. Dividir Dados
     X_train, X_val, y_train, y_val = train_test_split(
         images, encoded_labels, test_size=TEST_SPLIT_SIZE, random_state=42, stratify=encoded_labels
     )
@@ -129,66 +108,84 @@ try:
 
     # 4. Data Augmentation
     train_datagen = ImageDataGenerator(
-        rotation_range=15, width_shift_range=0.1, height_shift_range=0.1,
-        shear_range=0.1, zoom_range=0.1, horizontal_flip=True, fill_mode='nearest'
+        rotation_range=30, width_shift_range=0.15, height_shift_range=0.15,
+        shear_range=0.15, zoom_range=0.15, horizontal_flip=True, fill_mode='nearest'
     )
-    val_datagen = ImageDataGenerator() # No augmentation for validation
-
+    val_datagen = ImageDataGenerator()
     train_generator = train_datagen.flow(X_train, y_train, batch_size=BATCH_SIZE)
     val_generator = val_datagen.flow(X_val, y_val, batch_size=BATCH_SIZE)
 
-    # 5. Construir o Modelo (Transfer Learning - Binary Classification)
-    print("Construindo o modelo CNN (Transfer Learning - Binário)...")
+    # 5. Construir o Modelo
+    print("Construindo o modelo CNN...")
     base_model = MobileNetV2(weights='imagenet', include_top=False, input_shape=(IMG_SIZE, IMG_SIZE, 3))
-    base_model.trainable = False
+    base_model.trainable = False # Congela a base por enquanto
 
     x = base_model.output
     x = GlobalAveragePooling2D()(x)
     x = Dropout(0.5)(x)
-    # --- MUDANÇA: Camada final para classificação binária ---
-    predictions = Dense(1, activation='sigmoid')(x)
-    # --- FIM DA MUDANÇA ---
-
+    predictions = Dense(1, activation='sigmoid')(x) # Sigmoid para binário (prob de classe 1, ou seja, 'Normal')
     model = Model(inputs=base_model.input, outputs=predictions)
 
-    # 6. Compilar o Modelo (Binary Classification)
-    print("Compilando o modelo...")
+    # 6. Compilar o Modelo (Fase 1)
+    print("Compilando o modelo (Fase 1)...")
     optimizer = Adam(learning_rate=LEARNING_RATE)
-    # --- MUDANÇA: Loss para classificação binária ---
     model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=['accuracy'])
-    # --- FIM DA MUDANÇA ---
-
     model.summary()
 
-    # 7. Treinar o Modelo
-    print(f"Iniciando treinamento por {EPOCHS} épocas...")
-    # Add EarlyStopping callback
-    early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
+    # 7. Treinar o Modelo (Fase 1 - Só o Topo)
+    print(f"Iniciando treinamento (Fase 1 - Topo) por {INITIAL_EPOCHS} épocas...")
+    early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
 
     history = model.fit(
         train_generator,
-        steps_per_epoch=max(1, len(X_train) // BATCH_SIZE), # Garante pelo menos 1 step
-        epochs=EPOCHS,
+        steps_per_epoch=max(1, len(X_train) // BATCH_SIZE),
+        epochs=INITIAL_EPOCHS,
         validation_data=val_generator,
-        validation_steps=max(1, len(X_val) // BATCH_SIZE), # Garante pelo menos 1 step
-        callbacks=[early_stopping] # Adiciona early stopping
+        validation_steps=max(1, len(X_val) // BATCH_SIZE),
+        callbacks=[early_stopping]
+    )
+    
+    print("Fase 1 concluída. Descongelando camadas para Fine-Tuning...")
+
+    # 8. Fine-Tuning (Fase 2 - Descongelar e Treinar)
+    base_model.trainable = True # Descongela o modelo base
+    
+    # Vamos congelar as primeiras camadas e treinar só o final
+    fine_tune_at = 100 # Congela as primeiras 100 camadas
+    for layer in base_model.layers[:fine_tune_at]:
+        layer.trainable = False
+
+    # Re-compilar com uma taxa de aprendizado muito baixa
+    print("Re-compilando modelo para Fine-Tuning...")
+    optimizer_fine_tune = Adam(learning_rate=FINE_TUNE_LR)
+    model.compile(optimizer=optimizer_fine_tune, loss='binary_crossentropy', metrics=['accuracy'])
+    
+    model.summary() # Mostra os novos parâmetros treináveis
+
+    print(f"Iniciando treinamento (Fase 2 - Fine-Tuning) por mais {FINE_TUNE_EPOCHS} épocas...")
+    history_fine_tune = model.fit(
+        train_generator,
+        steps_per_epoch=max(1, len(X_train) // BATCH_SIZE),
+        epochs=INITIAL_EPOCHS + FINE_TUNE_EPOCHS, # Continua de onde parou
+        initial_epoch=history.epoch[-1], # Começa da última época da Fase 1
+        validation_data=val_generator,
+        validation_steps=max(1, len(X_val) // BATCH_SIZE),
+        callbacks=[early_stopping] # Reutiliza o early stopping
     )
 
-    # 8. Avaliar
-    print("Avaliando o modelo final no conjunto de validação...")
+    # 9. Avaliar
+    print("Avaliando o modelo final (pós Fine-Tuning)...")
     loss, accuracy = model.evaluate(val_generator, steps=max(1, len(X_val) // BATCH_SIZE))
     print(f"Acurácia final na validação: {accuracy:.4f}")
 
-    # 9. Salvar Modelo e Informações
+    # 10. Salvar
     print(f"Salvando modelo treinado em: {MODEL_SAVE_PATH}")
-    if not os.path.exists(ARTIFACTS_DIR):
-        os.makedirs(ARTIFACTS_DIR)
+    if not os.path.exists(ARTIFACTS_DIR): os.makedirs(ARTIFACTS_DIR)
     model.save(MODEL_SAVE_PATH)
-
+    
     model_info = {
         "image_size": IMG_SIZE,
-        "class_names": class_names, # Deve ser ['Normal', 'Glaucomatous']
-        "label_encoding": label_encoder.classes_.tolist() # Ex: ['Normal', 'Glaucomatous']
+        "class_names": label_encoder.classes_.tolist() # Salva o mapeamento ['Glaucomatous', 'Normal']
     }
     print(f"Salvando informações do modelo em: {INFO_SAVE_PATH}")
     with open(INFO_SAVE_PATH, 'w') as f:
@@ -200,4 +197,4 @@ try:
 except Exception as e:
     print(f"Ocorreu um erro durante o treinamento da CNN: {e}")
     import traceback
-    traceback.print_exc() # Imprime o traceback completo para debug
+    traceback.print_exc()

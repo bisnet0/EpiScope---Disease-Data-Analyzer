@@ -197,63 +197,56 @@ def structure_symptoms():
 # --- MUDANÇA: NOVA ROTA PARA GLAUCOMA ---
 @app.route('/diagnose-glaucoma', methods=['POST'])
 def diagnose_glaucoma():
-    # Check if models are loaded
     if not glaucoma_cnn_model or not model_gemini:
         return jsonify({"error": "Modelo Glaucoma CNN ou Gemini não carregado."}), 500
 
-    # 1. Obter Imagem
-    if 'image' not in request.files:
-        return jsonify({"error": "Nenhum arquivo de imagem enviado."}), 400
-
+    if 'image' not in request.files: return jsonify({"error": "Nenhum arquivo de imagem enviado."}), 400
     file = request.files['image']
-    if file.filename == '':
-        return jsonify({"error": "Nome de arquivo vazio."}), 400
+    if file.filename == '': return jsonify({"error": "Nome de arquivo vazio."}), 400
+    try: image_bytes = file.read()
+    except Exception as e: return jsonify({"error": f"Erro ao ler arquivo: {str(e)}"}), 500
 
-    try:
-        image_bytes = file.read()
-    except Exception as e:
-        return jsonify({"error": f"Erro ao ler arquivo de imagem: {str(e)}"}), 500
-
-    # 2. Pré-processar Imagem
     processed_image = preprocess_glaucoma_image(image_bytes)
-    if processed_image is None:
-        return jsonify({"error": "Falha ao pré-processar a imagem."}), 500
+    if processed_image is None: return jsonify({"error": "Falha ao pré-processar a imagem."}), 500
 
-    # 3. Fazer Previsão com CNN
     try:
-        prediction = glaucoma_cnn_model.predict(processed_image)[0] # Get prediction for the single image in the batch
-        # Prediction is likely a single value between 0 and 1 for binary sigmoid output
-        # Index 0 = Normal, Index 1 = Glaucomatous (based on LabelEncoder fit order)
-        probability_glaucomatous = float(prediction[0]) # Convert numpy float
-        probability_normal = 1.0 - probability_glaucomatous
-
-        predicted_class_index = 1 if probability_glaucomatous >= 0.5 else 0
-        predicted_class_name = GLAUCOMA_CLASS_NAMES[predicted_class_index]
-        confidence = probability_glaucomatous if predicted_class_index == 1 else probability_normal
-
-        # Store results clearly
+        # --- LÓGICA DE PREDIÇÃO CORRIGIDA ---
+        # No treino: ['Glaucomatous', 'Normal'] -> [0, 1]
+        # O modelo (sigmoid) prevê a probabilidade da classe 1 (Normal)
+        prediction_raw = glaucoma_cnn_model.predict(processed_image)[0]
+        prob_normal = float(prediction_raw[0])
+        prob_glaucomatous = 1.0 - prob_normal
+        
+        # Mapeia de volta para os nomes das classes
         results = {
-            'Normal': probability_normal,
-            'Glaucomatous': probability_glaucomatous
+            GLAUCOMA_CLASS_NAMES[0]: prob_glaucomatous, # 'Glaucomatous'
+            GLAUCOMA_CLASS_NAMES[1]: prob_normal      # 'Normal'
         }
 
+        # Determina a classe e confiança
+        if prob_normal >= 0.5:
+            predicted_class_name = "Normal"
+            confidence = prob_normal
+        else:
+            predicted_class_name = "Glaucomatous"
+            confidence = prob_glaucomatous
+        # --- FIM DA CORREÇÃO ---
+
     except Exception as e:
-        print(f"Erro durante predição da CNN: {e}")
-        import traceback
-        traceback.print_exc()
+        print(f"Erro durante predição da CNN: {e}"); import traceback; traceback.print_exc()
         return jsonify({"error": f"Erro ao executar modelo CNN: {str(e)}"}), 500
 
     # 4. Gerar Resposta Amigável (Gemini)
     prob_text = "\n".join([f"* **{name}:** {prob:.1%}" for name, prob in sorted(results.items(), key=lambda item: item[1], reverse=True)])
 
     prompt_friendly = f"""
-    Você é um assistente de saúde virtual para o "EpiScope", um projeto acadêmico de pós-graduação.
-    Sua função é interpretar os resultados de um modelo de Machine Learning (CNN - MobileNetV2) treinado para detectar sinais de Glaucoma em imagens de fundo de olho e comunicá-los de forma clara, empática e segura.
+    Você é um assistente de saúde virtual para o "EpiScope", um projeto acadêmico.
+    Sua função é interpretar os resultados de um modelo CNN (MobileNetV2 Fine-Tuned) treinado para detectar Glaucoma em imagens de fundo de olho e comunicá-los de forma clara e segura.
 
     **Contexto da Análise:**
     * **Exame:** Imagem de fundo de olho (retinografia).
     * **Objetivo:** Análise preliminar para Glaucoma.
-    * **Modelo de ML:** CNN (MobileNetV2 Transfer Learning) treinado com o dataset Drishti-GS.
+    * **Modelo de ML:** CNN (MobileNetV2 Fine-Tuned) treinado com o dataset Drishti-GS.
 
     **Resultado Preliminar do Modelo de ML:**
     {prob_text}
@@ -262,30 +255,26 @@ def diagnose_glaucoma():
     Escreva uma resposta profissional e amigável em português brasileiro.
 
     1.  Comece com uma saudação (Ex: "Olá! Recebemos sua imagem para análise.").
-    2.  Explique que o modelo de IA do EpiScope analisou a imagem buscando por padrões associados ao Glaucoma.
-    3.  Apresente as probabilidades calculadas pelo modelo (usando o `{prob_text}`).
+    2.  Explique que o modelo de IA do EpiScope analisou a imagem.
+    3.  Apresente as probabilidades calculadas (usando o `{prob_text}`).
     4.  **Interprete o resultado:**
         * Destaque a condição mais provável ({predicted_class_name}) e sua confiança ({confidence:.1%}).
         * **NÃO afirme que a pessoa TEM ou NÃO TEM Glaucoma.** Use frases como "o modelo indica uma probabilidade de X%" ou "os achados são mais compatíveis com Y".
-    5.  **Explique o Próximo Passo:** Independentemente do resultado, explique que esta análise é **PRELIMINAR** e que o diagnóstico de Glaucoma só pode ser feito por um **médico oftalmologista** após exames completos (exame de fundo de olho, medida da pressão intraocular, campo visual).
+    5.  **Próximo Passo:** Independentemente do resultado, explique que esta análise é **PRELIMINAR** e que o diagnóstico de Glaucoma só pode ser feito por um **médico oftalmologista** após exames completos.
     6.  **DISCLAIMER (OBRIGATÓRIO):** Reforce que é um modelo **acadêmico**, **NÃO um diagnóstico**, e a necessidade **ABSOLUTA** de consultar um oftalmologista.
 
     Gere apenas a resposta para o paciente.
     """
     response_friendly = model_gemini.generate_content(prompt_friendly)
-
-    # Convert before jsonify (results already uses Python floats here)
-    results_serializable = results # Already serializable
-
+    
     return jsonify({
         "friendly_response": response_friendly.text,
         "analysis_details": {
-            "probabilities": results_serializable,
+            "probabilities": results, # Já é serializável
             "predicted_class": predicted_class_name,
-            "confidence": confidence
+            "confidence": confidence # Já é float
         }
     })
-# --- FIM DA MUDANÇA ---
 
 
 if __name__ == '__main__':
