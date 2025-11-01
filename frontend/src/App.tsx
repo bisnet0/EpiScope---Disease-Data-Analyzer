@@ -13,6 +13,7 @@ function App() {
   return (
     <>
       <header>
+        <img src="/EpiScope.png" alt="EpiScope Logo" className="logo" style={{width:"15%"}}/>
         <h1>EpiScope - Analisador de Doenças</h1>
         <div className="mode-selector">
           <button onClick={() => setMode('web2')} className={mode === 'web2' ? 'active' : ''}>
