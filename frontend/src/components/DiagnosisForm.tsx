@@ -92,7 +92,7 @@ export const DiagnosisForm: React.FC = () => {
                 setPreviewUrl(reader.result as string);
             };
             reader.readAsDataURL(file);
-             // Limpa resultados anteriores ao selecionar nova imagem
+            // Limpa resultados anteriores ao selecionar nova imagem
             setGlaucomaResult(null);
             setGlaucomaError(null);
         } else {
@@ -125,7 +125,7 @@ export const DiagnosisForm: React.FC = () => {
             });
 
             if (!response.ok) {
-                 const errorData = await response.json().catch(() => ({}));
+                const errorData = await response.json().catch(() => ({}));
                 throw new Error(errorData.error || `HTTP error! Status: ${response.status}`);
             }
 
@@ -162,14 +162,14 @@ export const DiagnosisForm: React.FC = () => {
     // --- MUDANÇA: Memoização para dados do gráfico de Glaucoma ---
     const glaucomaChartData = useMemo(() => {
         if (!glaucomaResult) return [];
-         // Adapta para o formato esperado pelo recharts
+        // Adapta para o formato esperado pelo recharts
         return Object.entries(glaucomaResult.analysis_details.probabilities)
             .map(([className, prob]) => ({
                 name: className, // Já vem como 'Normal' ou 'Glaucomatous'
                 probability: parseFloat((prob * 100).toFixed(1)),
                 color: COLORS[className] || '#cccccc'
             }))
-             .sort((a, b) => b.probability - a.probability); // Ordena
+            .sort((a, b) => b.probability - a.probability); // Ordena
     }, [glaucomaResult]);
     // --- FIM DA MUDANÇA ---
 
@@ -193,24 +193,25 @@ export const DiagnosisForm: React.FC = () => {
                 </div>
                 <button type="submit" disabled={isArboLoading}> {isArboLoading ? 'Analisando Sintomas...' : 'Analisar Sintomas'} </button>
             </form>
-
-            {arboError && <div className="result-box error"><p><strong>Erro (Arbovírus):</strong> {arboError}</p></div>}
-            {arboResult && (
-                <div className="result-box">
-                    <h3>Análise Arbovírus (Assistente Virtual)</h3>
-                    <div dangerouslySetInnerHTML={{ __html: formatResponse(arboResult.friendly_response) }} />
-                    <h4>Probabilidades Estimadas (Gráfico)</h4>
-                    <div style={{ width: '100%', height: 300 }}>
-                        <ResponsiveContainer>
-                            <BarChart data={arboChartData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
-                                <CartesianGrid strokeDasharray="3 3" /> <XAxis dataKey="name" /> <YAxis unit="%" domain={[0, 100]} />
-                                <Tooltip formatter={(value: number) => [`${value}%`, "Prob."]} /> <Legend />
-                                <Bar dataKey="probability" name="Probabilidade (%)"> {arboChartData.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.color} />))} </Bar>
-                            </BarChart>
-                        </ResponsiveContainer>
+            <div className="results-wrapper">
+                {arboError && <div className="result-box error"><p><strong>Erro (Arbovírus):</strong> {arboError}</p></div>}
+                {arboResult && (
+                    <div className="result-box">
+                        <h3>Análise Arbovírus (Assistente Virtual)</h3>
+                        <div dangerouslySetInnerHTML={{ __html: formatResponse(arboResult.friendly_response) }} />
+                        <h4>Probabilidades Estimadas (Gráfico)</h4>
+                        <div style={{ width: '100%', height: 300 }}>
+                            <ResponsiveContainer>
+                                <BarChart data={arboChartData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
+                                    <CartesianGrid strokeDasharray="3 3" /> <XAxis dataKey="name" /> <YAxis unit="%" domain={[0, 100]} />
+                                    <Tooltip formatter={(value: number) => [`${value}%`, "Prob."]} /> <Legend />
+                                    <Bar dataKey="probability" name="Probabilidade (%)"> {arboChartData.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.color} />))} </Bar>
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
+            </div>
         </div>
     );
 };

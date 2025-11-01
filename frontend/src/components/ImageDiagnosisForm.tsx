@@ -134,6 +134,8 @@ export const ImageDiagnosisForm: React.FC = () => {
           {isLoading ? "Analisando imagem..." : "Enviar para análise"}
         </button>
       </form>
+      {/* Coluna 2: Wrapper para os resultados */}
+      <div className="results-wrapper">
 
       {error && (
         <div className="result-box error">
@@ -178,6 +180,7 @@ export const ImageDiagnosisForm: React.FC = () => {
           </p>
         </div>
       )}
+      </div>
     </div>
   );
 };

@@ -53,7 +53,7 @@ export const DiagnosisDAppForm: React.FC = () => {
     const [age, setAge] = useState<number | ''>(30);
     const [sex, setSex] = useState('M');
     const [criteriaCode, setCriteriaCode] = useState(2)
-    
+
     const [status, setStatus] = useState('');
     const [result, setResult] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
@@ -85,7 +85,7 @@ export const DiagnosisDAppForm: React.FC = () => {
                 body: JSON.stringify({ text_description: textDescription }),
             });
             if (!structureResponse.ok) throw new Error("Falha ao se comunicar com o serviço de IA.");
-            
+
             const structuredSymptoms = await structureResponse.json();
 
             // --- FIM DO PASSO NOVO ---
@@ -101,15 +101,15 @@ export const DiagnosisDAppForm: React.FC = () => {
                 criterio_2: criteriaCode === 2 ? 1 : 0,
                 criterio_3: 0
             };
-            
+
             setStatus('Passo 2/4: Enviando transação para a blockchain...');
             const inputBox = new ethers.Contract(INPUTBOX_ADDRESS, INPUTBOX_ABI, signer);
             const inputBytes = ethers.toUtf8Bytes(JSON.stringify(payloadForDApp));
-            
+
             const tx = await inputBox.addInput(DAPP_ADDRESS, inputBytes);
             setStatus('Passo 3/4: Aguardando confirmação da transação...');
             const receipt = await tx.wait();
-            
+
             const inputIndex = parseInt(receipt.logs[0].topics[2], 16);
             setStatus(`Passo 4/4: Buscando diagnóstico verificável (Input #${inputIndex})...`);
 
@@ -131,49 +131,55 @@ export const DiagnosisDAppForm: React.FC = () => {
     };
 
     return (
-         <div className="dapp-container">
-            {!account ? (
-                <button onClick={connectWallet}>Conectar MetaMask</button>
-            ) : (
-                <div className="wallet-connected">Conectado com: {account.substring(0, 6)}...{account.substring(account.length - 4)}</div>
-            )}
-             <form onSubmit={handleSubmit} style={{ opacity: !signer ? 0.5 : 1 }}>
-                <div className="form-group">
-                    <label>Descreva seus sintomas:</label>
-                    <textarea value={textDescription} onChange={(e) => setTextDescription(e.target.value)} required />
-                </div>
-                <div className="form-group">
-                    <label>Idade:</label>
-                    <input type="number" value={age} onChange={(e) => setAge(Number(e.target.value))} required />
-                </div>
-                 <div className="form-group">
-                    <label htmlFor="sex">Sexo:</label>
-                    <select id="sex" value={sex} onChange={(e) => setSex(e.target.value)}>
-                        <option value="M">Masculino</option>
-                        <option value="F">Feminino</option>
-                    </select>
-                </div>
-                <div className="form-group">
-                    <label htmlFor="criteria_code">Critério de Suspeita:</label>
-                    <select id="criteria_code" value={criteriaCode} onChange={(e) => setCriteriaCode(Number(e.target.value))}>
-                        <option value={1}>Laboratorial</option>
-                        <option value={2}>Clínico-Epidemiológico</option>
-                    </select>
-                </div>
-                <button type="submit" disabled={!signer || status.includes('Passo')}>
-                    {status ? 'Processando...' : 'Analisar (Web3 com IA)'}
-                </button>
-            </form>
-            
-            {status && <div className="result-box status"><p><strong>Status:</strong> {status}</p></div>}
-            {error && <div className="result-box error"><p>{error}</p></div>}
-            {result && (
-                <div className="result-box">
-                    <h3>Diagnóstico Verificado na Blockchain</h3>
-                    <p><strong>Resultado Provável:</strong> {result.diagnostico_provavel.toUpperCase()}</p>
-                </div>
-            )}
-            <p className="footer-note">Para esta função, certifique-se que sua MetaMask está conectada à rede 'Localhost 8545'.</p>
-         </div>
+        <div className="dapp-container">
+            {/* Coluna 1: Formulário e Conexão */}
+            <div className="form-wrapper">
+                {!account ? (
+                    <button onClick={connectWallet}>Conectar MetaMask</button>
+                ) : (
+                    <div className="wallet-connected">Conectado com: {account.substring(0, 6)}...{account.substring(account.length - 4)}</div>
+                )}
+                <form onSubmit={handleSubmit} style={{ opacity: !signer ? 0.5 : 1 }}>
+                    <div className="form-group">
+                        <label>Descreva seus sintomas:</label>
+                        <textarea value={textDescription} onChange={(e) => setTextDescription(e.target.value)} required />
+                    </div>
+                    <div className="form-group">
+                        <label>Idade:</label>
+                        <input type="number" value={age} onChange={(e) => setAge(Number(e.target.value))} required />
+                    </div>
+                    <div className="form-group">
+                        <label htmlFor="sex">Sexo:</label>
+                        <select id="sex" value={sex} onChange={(e) => setSex(e.target.value)}>
+                            <option value="M">Masculino</option>
+                            <option value="F">Feminino</option>
+                        </select>
+                    </div>
+                    <div className="form-group">
+                        <label htmlFor="criteria_code">Critério de Suspeita:</label>
+                        <select id="criteria_code" value={criteriaCode} onChange={(e) => setCriteriaCode(Number(e.target.value))}>
+                            <option value={1}>Laboratorial</option>
+                            <option value={2}>Clínico-Epidemiológico</option>
+                        </select>
+                    </div>
+                    <button type="submit" disabled={!signer || status.includes('Passo')}>
+                        {status ? 'Processando...' : 'Analisar (Web3 com IA)'}
+                    </button>
+                </form>
+                <p className="footer-note">Para esta função, certifique-se que sua MetaMask está conectada à rede 'Localhost 8545'.</p>
+            </div>
+            <div className="results-wrapper">
+                {status && <div className="result-box status"><p><strong>Status:</strong> {status}</p></div>}
+                {error && <div className="result-box error"><p>{error}</p></div>}
+                {result && (
+                    <div className="result-box">
+                        <h3>Diagnóstico Verificado na Blockchain</h3>
+                        <p><strong>Resultado Provável:</strong> {result.diagnostico_provavel.toUpperCase()}</p>
+                    </div>
+                )}
+            </div>
+
+
+        </div>
     );
 };

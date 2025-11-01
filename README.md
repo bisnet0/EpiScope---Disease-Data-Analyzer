@@ -102,7 +102,7 @@ graph LR
 ## 🚀 Começando
 
 ### Pré-requisitos
-- Node.js e npm  
+- Node.js e npm  ou yarn
 - Docker e Docker Compose  
 - Cartesi CLI  
 - Extensão MetaMask  
@@ -205,7 +205,17 @@ cartesi run
 **Terminal 3 (Frontend):**
 ```bash
 cd frontend/
-npm run dev -- --host --port 3003
+
+# Para NPM
+npm install
+npm run dev -- --host --port 3003 
+
+# OU
+
+# Para Yarn
+yarn
+yarn dev --host --port 3003
+
 ```
 
 Acesse: [http://localhost:3003](http://localhost:3003)  
