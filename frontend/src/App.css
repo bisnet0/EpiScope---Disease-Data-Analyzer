@@ -1,27 +1,36 @@
-/* frontend/src/App.css */
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   background-color: #242424;
   color: rgba(255, 255, 255, 0.87);
 }
+
+/* Container principal */
 #root {
   max-width: 800px;
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
 }
+
+/* Seções e formulários */
 .container {
   margin-top: 2rem;
 }
+
 .form-group {
   margin-bottom: 1rem;
   text-align: left;
 }
+
 label {
   display: block;
   margin-bottom: 0.5rem;
+  font-weight: 500;
 }
-input, select, textarea {
+
+input,
+select,
+textarea {
   width: 100%;
   padding: 0.8rem;
   border-radius: 8px;
@@ -29,10 +38,21 @@ input, select, textarea {
   font-size: 1em;
   background-color: #1a1a1a;
   color: rgba(255, 255, 255, 0.87);
+  transition: border-color 0.2s;
 }
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: #646cff;
+  outline: none;
+}
+
 textarea {
   min-height: 100px;
 }
+
+/* Botões */
 button {
   border-radius: 8px;
   border: 1px solid transparent;
@@ -41,15 +61,20 @@ button {
   font-weight: 500;
   cursor: pointer;
   background-color: #1a1a1a;
-  transition: border-color 0.25s;
+  transition: border-color 0.25s, background-color 0.25s;
 }
+
 button:hover {
   border-color: #646cff;
+  background-color: #2a2a2a;
 }
+
 button:disabled {
   cursor: not-allowed;
   opacity: 0.5;
 }
+
+/* Caixa de resultados */
 .result-box {
   margin-top: 2rem;
   padding: 1.5rem;
@@ -57,9 +82,22 @@ button:disabled {
   border-radius: 8px;
   text-align: left;
 }
+
+/* Estados visuais */
 .error {
-    color: #ff6b6b;
+  color: #ff6b6b;
 }
+
+.wallet-connected {
+  margin-bottom: 1rem;
+  color: #8aff8a;
+}
+
+.status {
+  color: #ffdd8a;
+}
+
+/* Seleção de modo (web2 / web3) */
 .mode-selector {
   margin-top: 1.5rem;
   display: flex;
@@ -68,25 +106,70 @@ button:disabled {
   border-bottom: 1px solid #333;
   padding-bottom: 1.5rem;
 }
+
 .mode-selector button {
   background-color: transparent;
   border: 1px solid #555;
 }
+
 .mode-selector button.active {
   border-color: #646cff;
 }
+
+/* DApp container */
 .dapp-container {
   margin-top: 1rem;
 }
-.wallet-connected {
-  margin-bottom: 1rem;
-  color: #8aff8a;
+
+/* ------------------------- */
+/*        FOOTER AREA        */
+/* ------------------------- */
+footer {
+  margin-top: 3rem;
+  padding: 1.5rem 0;
+  background-color: #242424; /* azul escuro */
+  color: #cbd5e1;
+  text-align: center;
+  border-radius: 12px;
 }
-.status {
-  color: #ffdd8a;
-}
+
 .footer-note {
-  margin-top: 2rem;
-  font-size: 0.8em;
-  color: #888;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+  color: #94a3b8;
+}
+
+.footer-note .author {
+  color: #fff;
+  font-weight: 600;
+}
+
+.social-links {
+  display: flex;
+  justify-content: center;
+  gap: 1.2rem;
+  margin: 0.6rem 0;
+}
+
+.social-links a {
+  color: #cbd5e1;
+  transition: color 0.3s, transform 0.2s;
+}
+
+.social-links a:hover {
+  color: #38bdf8; /* azul claro */
+  transform: translateY(-2px);
+}
+
+.footer-handle {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+/* Opcional: footer fixo */
+footer.fixed {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
 }

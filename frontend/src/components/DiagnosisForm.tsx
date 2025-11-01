@@ -211,65 +211,6 @@ export const DiagnosisForm: React.FC = () => {
                     </div>
                 </div>
             )}
-
-            <hr style={{ margin: '40px 0' }} /> {/* Separador visual */}
-
-            {/* --- MUDANÇA: Seção Formulário Glaucoma --- */}
-            <form onSubmit={handleGlaucomaSubmit} className="form-section">
-                 <h2>2. Análise de Imagem (Glaucoma)</h2>
-                 <div className="form-group">
-                     <label htmlFor="imageFile">Selecione a imagem do fundo do olho:</label>
-                     <input
-                         type="file"
-                         id="imageFile"
-                         accept="image/png, image/jpeg, image/jpg, image/bmp, image/tiff" // Aceita formatos comuns
-                         onChange={handleImageChange}
-                         required // Torna a seleção de imagem obrigatória para este form
-                     />
-                 </div>
-
-                 {/* Preview da Imagem Selecionada */}
-                 {previewUrl && (
-                    <div className="image-preview">
-                        <p>Imagem selecionada:</p>
-                        <img src={previewUrl} alt="Preview do exame de fundo de olho" style={{ maxWidth: '200px', maxHeight: '200px', marginTop: '10px' }} />
-                    </div>
-                 )}
-
-                 <button type="submit" disabled={isGlaucomaLoading || !imageFile}>
-                     {isGlaucomaLoading ? 'Analisando Imagem...' : 'Analisar Imagem (Glaucoma)'}
-                 </button>
-            </form>
-
-            {glaucomaError && <div className="result-box error"><p><strong>Erro (Glaucoma):</strong> {glaucomaError}</p></div>}
-            {glaucomaResult && (
-                <div className="result-box">
-                    <h3>Análise Glaucoma (Assistente Virtual)</h3>
-                    <div dangerouslySetInnerHTML={{ __html: formatResponse(glaucomaResult.friendly_response) }} />
-                    {/* Gráfico para Glaucoma */}
-                    <h4>Probabilidades Estimadas (Gráfico)</h4>
-                     <div style={{ width: '100%', height: 250 }}> {/* Altura menor talvez? */}
-                        <ResponsiveContainer>
-                            <BarChart data={glaucomaChartData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}> {/* Gráfico Vertical */}
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis type="number" unit="%" domain={[0, 100]} /> {/* Eixo X é a probabilidade */}
-                                <YAxis type="category" dataKey="name" width={100} /> {/* Eixo Y são as classes */}
-                                <Tooltip formatter={(value: number) => [`${value}%`, "Probabilidade"]} />
-                                <Legend />
-                                <Bar dataKey="probability" name="Probabilidade (%)" >
-                                     {glaucomaChartData.map((entry, index) => (
-                                         <Cell key={`cell-${index}`} fill={entry.color} />
-                                     ))}
-                                </Bar>
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                     {/* Detalhes adicionais se desejar */}
-                    <p style={{marginTop: '15px'}}><strong>Predição do Modelo:</strong> {glaucomaResult.analysis_details.predicted_class} (Confiança: {(glaucomaResult.analysis_details.confidence * 100).toFixed(1)}%)</p>
-                </div>
-            )}
-             {/* --- FIM DA MUDANÇA --- */}
-
         </div>
     );
 };
