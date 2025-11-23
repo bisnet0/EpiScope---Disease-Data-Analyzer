@@ -36,14 +36,14 @@ try:
     for i, df_raw in enumerate(reader):
         print(f"Processando chunk {i+1} ({len(df_raw)} registros)...")
         
-        # --- MUDANÇA: 'criterio' e 'resul_ns1' REMOVIDOS daqui ---
+
         symptom_columns = [
             'febre', 'mialgia', 'cefaleia', 'exantema', 'vomito', 'nausea',
             'dor_costas', 'conjuntvit', 'artrite', 'artralgia', 'petequia_n',
             'leucopenia', 'dor_retro'
         ]
         relevant_cols = symptom_columns + ['cs_sexo', 'nu_idade_n', 'doenca_alvo']
-        # --- FIM DA MUDANÇA ---
+
         
         cols_to_select = [col for col in relevant_cols if col in df_raw.columns]
         df = df_raw[cols_to_select].copy()
@@ -59,9 +59,6 @@ try:
         df['idade'] = pd.to_numeric(df['nu_idade_n'], errors='coerce')
         df['idade'] = df['idade'].fillna(global_idade_median) 
 
-        # --- MUDANÇA: Codificação de diagnóstico REMOVIDA ---
-        # A seção 'ns1_encoded' e 'criterio_num' foi deletada.
-        # --- FIM DA MUDANÇA ---
         
         target_map = {'zika': 0, 'dengue': 1, 'chikungunya': 2}
         target_column = 'doenca_alvo'
@@ -69,9 +66,9 @@ try:
         df.dropna(subset=['target_encoded'], inplace=True)
         df['target_encoded'] = df['target_encoded'].astype(int)
         
-        # --- MUDANÇA: 'ns1_encoded' e 'criterio_' REMOVIDOS daqui ---
+      
         final_feature_columns = symptom_columns + ['sexo_encoded', 'idade']
-        # --- FIM DA MUDANÇA ---
+
 
         for col in final_feature_columns:
             if col not in df.columns:
