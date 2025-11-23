@@ -18,11 +18,10 @@ ARTIFACTS_DIR = "/app/model_artifacts"
 if not os.path.exists(ARTIFACTS_DIR):
     os.makedirs(ARTIFACTS_DIR)
 
-# --- MUDANÇA: Nome do arquivo do modelo (opcional, mas bom) ---
 MODEL_PATH = os.path.join(ARTIFACTS_DIR, 'xgboost_model.joblib')
-# --- FIM DA MUDANÇA ---
 COLUMNS_PATH = os.path.join(ARTIFACTS_DIR, 'model_columns.json')
 TARGET_MAP_PATH = os.path.join(ARTIFACTS_DIR, 'target_map.json')
+BEST_PARAMS_PATH = os.path.join(ARTIFACTS_DIR, 'best_hyperparameters.json')
 
 # 1. Conectar e carregar dados
 DB_URL = f"postgresql://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}@db:5432/{os.getenv('POSTGRES_DB')}"
@@ -39,7 +38,7 @@ try:
     except FileNotFoundError:
         print("Arquivo de colunas não encontrado, lendo todas as colunas...")
         df_clean = pd.read_sql('SELECT * FROM cleaned_arboviroses_cases', engine)
-    # Garante que não lemos colunas extras se o arquivo JSON não existia
+
     expected_features = [
         'febre', 'mialgia', 'cefaleia', 'exantema', 'vomito', 'nausea', 
         'dor_costas', 'conjuntvit', 'artrite', 'artralgia', 'petequia_n', 
@@ -61,25 +60,46 @@ try:
     print(f"Mapa de classes alvo: {target_map}")
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42, stratify=y)
+    
+    xgboost_params = {
+    'objective': 'multi:softmax',
+    'num_class': len(target_map),
+    'n_jobs': -1,
+    'random_state': 42,
+    'n_estimators': 200,
+    'learning_rate': 0.05,
+    'max_depth': 10
+}
+    
+    
 
     # 3. Treinar o modelo
     print('\nTreinando o modelo XGBoost...')
-    # --- MUDANÇA: Usar XGBClassifier ---
-    # Parâmetros básicos. `enable_categorical=True` pode ajudar se tivermos features categóricas no futuro.
-    # `objective='multi:softmax'` para classificação multiclasse. `num_class=3` para nossas 3 doenças.
-    modelo = XGBClassifier(objective='multi:softmax', num_class=len(target_map),
-                           n_estimators=200,      # Mais árvores
-                           learning_rate=0.05,    # Aprendizado mais lento
-                           max_depth=10,          # Árvores mais profundas
+    modelo = XGBClassifier(objective='multi:softmax', 
+                           num_class=len(target_map),
+                           n_estimators=200,     
+                           learning_rate=0.05,   
+                           max_depth=10,          
                            random_state=42,
                            n_jobs=-1,
                            early_stopping_rounds=10
                           )
+    if os.path.exists(BEST_PARAMS_PATH):
+        print("Encontrados parâmetros otimizados via AG! Carregando...")
+        with open(BEST_PARAMS_PATH, 'r') as f:
+            best_params = json.load(f)
+            # Atualiza o dicionário padrão com os otimizados
+            xgboost_params.update(best_params)
+    else:
+        print("Aviso: Parâmetros do AG não encontrados. Usando padrões manuais.")
+
+    print(f"Treinando modelo com parâmetros: {xgboost_params}")
+
+    modelo = XGBClassifier(**xgboost_params)
     
     # XGBoost usa o conjunto de teste para early stopping
     eval_set = [(X_test, y_test)]
     modelo.fit(X_train, y_train, eval_set=eval_set, verbose=False) # verbose=False para não poluir o log
-    # --- FIM DA MUDANÇA ---
 
     # 4. Avaliar o modelo
     print('Avaliando o modelo...')
