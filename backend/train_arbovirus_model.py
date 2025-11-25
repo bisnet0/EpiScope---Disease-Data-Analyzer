@@ -71,7 +71,6 @@ try:
     'max_depth': 10
 }
     
-    
 
     # 3. Treinar o modelo
     print('\nTreinando o modelo XGBoost...')
