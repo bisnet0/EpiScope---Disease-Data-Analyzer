@@ -13,3 +13,6 @@ tensorflow
 Pillow
 opencv-python-headless
 openpyxl
+flask-jwt-extended
+flask-sqlalchemy
+werkzeug
