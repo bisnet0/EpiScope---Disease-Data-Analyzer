@@ -1,24 +1,28 @@
 services:
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: demas_api
+    restart: always
     ports:
       - "5000:5000"
     env_file:
       - .env
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     networks:
       - episcope-net
     volumes:
-      - ./backend/new_data:/app/new_data
+      - ./backend/new_data:/app/backend/new_data
       - backend_model_artifacts:/app/model_artifacts
-      - ./backend/data:/app/data
+      - ./backend/data:/app/backend/data
 
   db:
     image: postgres:13
     container_name: episcope_db
-
+    restart: always
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -29,10 +33,16 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - episcope-net
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   pgadmin:
     image: dpage/pgadmin4
     container_name: pgadmin_gui
+    restart: always
     environment:
       PGADMIN_DEFAULT_EMAIL: "admin@admin.com"
       PGADMIN_DEFAULT_PASSWORD: "admin"
