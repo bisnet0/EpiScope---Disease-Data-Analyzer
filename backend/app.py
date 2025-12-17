@@ -5,6 +5,7 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from dotenv import load_dotenv
 from backend.models.user_model import db
+from backend.models.diagnosis_model import ArbovirusDiagnosis, GlaucomaDiagnosis
 from backend.routes import api_bp # Importa o arquivo único de rotas
 
 load_dotenv()
