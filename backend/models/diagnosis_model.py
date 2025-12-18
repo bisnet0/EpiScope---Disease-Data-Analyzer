@@ -5,8 +5,10 @@ class ArbovirusDiagnosis(db.Model):
     __tablename__ = 'arbovirus_history'
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    user_email = db.Column(db.String(120), nullable=False)
+    username = db.Column(db.String(80), nullable=False)
     
     # Dados de Entrada (Log do que o usuário enviou)
     age = db.Column(db.Integer, nullable=False)
@@ -34,8 +36,11 @@ class GlaucomaDiagnosis(db.Model):
     __tablename__ = 'glaucoma_history'
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    user_email = db.Column(db.String(120), nullable=False)
+    username = db.Column(db.String(80), nullable=False)
+    
     
     # Metadados da Imagem
     image_filename = db.Column(db.String(255), nullable=True) # Caso salvemos o arquivo no futuro

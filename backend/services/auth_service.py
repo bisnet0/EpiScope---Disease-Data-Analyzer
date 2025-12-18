@@ -29,7 +29,7 @@ def login_user_service(email, password):
     return {"error": "Credenciais inválidas"}, 401
 
 def get_user_by_id(user_id):
-    user = User.query.get(int(user_id))
+    user = User.query.get(user_id)
     if not user:
         return {"error": "Usuário não encontrado"}, 404
     return user.to_dict(), 200

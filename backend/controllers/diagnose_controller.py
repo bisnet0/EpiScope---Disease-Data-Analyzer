@@ -20,7 +20,7 @@ def analyze_arbovirus():
     if not all([desc, age, sex]):
         return jsonify({"error": "Faltando dados (text_description, age, sex)"}), 400
     
-    result, status = run_arbovirus_pipeline(desc, age, sex, int(current_user_id))
+    result, status = run_arbovirus_pipeline(desc, age, sex, current_user_id)
     return jsonify(result), status
 
 def structure_symptoms_only():
@@ -42,5 +42,5 @@ def analyze_glaucoma():
     if file.filename == "":
         return jsonify({"error": "Arquivo vazio"}), 400
 
-    result, status = run_glaucoma_pipeline(file.read(), int(current_user_id))
+    result, status = run_glaucoma_pipeline(file.read(), current_user_id)
     return jsonify(result), status

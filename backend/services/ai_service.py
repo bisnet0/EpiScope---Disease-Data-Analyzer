@@ -4,7 +4,7 @@ import json
 import pandas as pd
 import tensorflow as tf
 import google.generativeai as genai
-from backend.models.user_model import db
+from backend.models.user_model import db, User
 from backend.models.diagnosis_model import ArbovirusDiagnosis, GlaucomaDiagnosis
 import uuid
 from backend.utils.data_helpers import (
@@ -78,9 +78,15 @@ def run_arbovirus_pipeline(text_description, age, sex, user_id):
         results_serializable = convert_numpy_floats(results)
 
         top_d = max(results, key=results.get)
+        
+        user = User.query.get(user_id)
+        if not user:
+            return {"error": "Usuário não encontrado para log"}, 404
 
         new_diag = ArbovirusDiagnosis(
             user_id=user_id,
+            user_email=user.email, 
+            username=user.username,
             age=age,
             sex=sex,
             text_description=text_description,
@@ -150,9 +156,15 @@ def run_glaucoma_pipeline(image_bytes, user_id):
         else:
             predicted_class = "Glaucomatous"
             confidence = prob_glaucoma
+            
+        user = User.query.get(user_id)
+        if not user:
+            return {"error": "Usuário não encontrado para log"}, 404
 
         new_diag = GlaucomaDiagnosis(
             user_id=user_id,
+            user_email=user.email, 
+            username=user.username,
             prediction_result=convert_numpy_floats(results),
             predicted_class=predicted_class,
             confidence=float(confidence),
