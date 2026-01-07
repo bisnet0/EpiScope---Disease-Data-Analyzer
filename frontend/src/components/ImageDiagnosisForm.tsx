@@ -10,6 +10,7 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
+import { useAuth } from "../context/AuthContext";
 
 interface GlaucomaApiResponse {
   friendly_response: string;
@@ -31,6 +32,8 @@ export const ImageDiagnosisForm: React.FC = () => {
   const [glaucomaResult, setGlaucomaResult] = useState<GlaucomaApiResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const { token } = useAuth();
 
   // Formatação do texto
   const formatResponse = (text: string): string => {
@@ -70,6 +73,9 @@ export const ImageDiagnosisForm: React.FC = () => {
     try {
       const response = await fetch("http://localhost:5000/diagnose-glaucoma", {
         method: "POST",
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
         body: formData,
       });
 

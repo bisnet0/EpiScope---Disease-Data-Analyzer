@@ -3,6 +3,7 @@ import React, { useState, useMemo, type ChangeEvent } from 'react'; // Adiciona 
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell
 } from 'recharts';
+import { useAuth } from '../context/AuthContext';
 
 // --- Interfaces para as Respostas das APIs ---
 interface ArbovirusApiResponse {
@@ -42,6 +43,7 @@ export const DiagnosisForm: React.FC = () => {
     const [arboResult, setArboResult] = useState<ArbovirusApiResponse | null>(null);
     const [isArboLoading, setIsArboLoading] = useState(false);
     const [arboError, setArboError] = useState<string | null>(null);
+    const { token } = useAuth();
 
     // --- MUDANÇA: Estados para Glaucoma ---
     const [imageFile, setImageFile] = useState<File | null>(null);
@@ -61,7 +63,10 @@ export const DiagnosisForm: React.FC = () => {
         try {
             const response = await fetch('http://localhost:5000/diagnose', { // Rota /diagnose
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
                 body: JSON.stringify({
                     text_description: textDescription,
                     age: Number(age),

@@ -8,6 +8,7 @@ declare global {
     }
 }
 import { ethers } from 'ethers';
+import { useAuth } from '../context/AuthContext';
 
 // CONSTANTES DA REDE LOCAL CARTESI
 const INPUTBOX_ADDRESS = "0x59b22D57D4f067708AB0c00552767405926dc768";
@@ -58,6 +59,8 @@ export const DiagnosisDAppForm: React.FC = () => {
     const [result, setResult] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
 
+    const { token } = useAuth();
+
     const connectWallet = async () => {
         if (!window.ethereum) return setError("MetaMask não detectada.");
         try {
@@ -81,7 +84,10 @@ export const DiagnosisDAppForm: React.FC = () => {
             // --- PASSO NOVO: Chamar a API Flask para estruturar os dados ---
             const structureResponse = await fetch(`${FLASK_API_URL}/structure-symptoms`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
                 body: JSON.stringify({ text_description: textDescription }),
             });
             if (!structureResponse.ok) throw new Error("Falha ao se comunicar com o serviço de IA.");
