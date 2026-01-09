@@ -1,5 +1,3 @@
-# backend/ingest_new_data.py (VERSÃO 4 - Correção OOM Killer / Salva por Chunk)
-
 import pandas as pd
 from sqlalchemy import create_engine, inspect
 import os
@@ -14,7 +12,20 @@ print("Iniciando script de ingestão de novos dados (v4 - Correção OOM Killer)
 DB_URL = f"postgresql://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}@db:5432/{os.getenv('POSTGRES_DB')}"
 engine = create_engine(DB_URL)
 
-NEW_DATA_DIR = "new_data"
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+ML_WORKFLOW_DIR = os.path.dirname(SCRIPT_DIR)
+BACKEND_ROOT = os.path.dirname(ML_WORKFLOW_DIR)
+NEW_DATA_DIR = os.path.join(BACKEND_ROOT, "new_data")
+
+print(f"DEBUG: Script rodando em: {SCRIPT_DIR}")
+print(f"DEBUG: Procurando dados em: {NEW_DATA_DIR}")
+
+if os.path.exists(NEW_DATA_DIR):
+    arquivos = os.listdir(NEW_DATA_DIR)
+    print(f"DEBUG: Arquivos encontrados na pasta: {len(arquivos)}")
+else:
+    print(f"ERRO CRÍTICO: A pasta {NEW_DATA_DIR} não existe!")
+
 COMPOSITE_KEY_COLS = ['dt_notific', 'id_municip', 'nu_idade_n', 'cs_sexo', 'dt_sin_pri', 'doenca_alvo']
 CHUNK_SIZE = 50000 
 
