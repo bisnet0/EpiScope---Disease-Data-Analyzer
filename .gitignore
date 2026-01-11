@@ -1,5 +1,14 @@
+# virtualenv
 venv/
 **/venv/
+
+# env
 .env
+
+# dados / backups
+docker-backups/
+
+# lixo
+*.psd
 new_data/
-.psd
+__pycache__/

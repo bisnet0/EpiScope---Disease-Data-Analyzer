@@ -15,9 +15,8 @@ services:
     networks:
       - episcope-net
     volumes:
-      - ./backend/new_data:/app/backend/new_data
+      - ./backend:/app/backend
       - backend_model_artifacts:/app/model_artifacts
-      - ./backend/data:/app/backend/data
 
   db:
     image: postgres:13
