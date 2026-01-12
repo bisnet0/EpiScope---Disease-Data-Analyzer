@@ -1,6 +1,6 @@
 from flask import request, jsonify
 from flask_jwt_extended import get_jwt_identity
-from backend.services.ai_service import run_arbovirus_pipeline, run_glaucoma_pipeline, run_symptom_structure, run_experiment_pipeline
+from backend.services.ai_service import run_arbovirus_pipeline, run_glaucoma_pipeline, run_symptom_structure, run_experiment_pipeline, get_best_optimization_suggestion
 
 def analyze_arbovirus():
     current_user_id = get_jwt_identity()  
@@ -52,4 +52,8 @@ def run_experiment():
         return jsonify({"error": "Parâmetros ou tipo de modelo faltando"}), 400
         
     result, status = run_experiment_pipeline(current_user_id, model_type, params)
+    return jsonify(result), status
+
+def get_ai_suggestion():
+    result, status = get_best_optimization_suggestion()
     return jsonify(result), status

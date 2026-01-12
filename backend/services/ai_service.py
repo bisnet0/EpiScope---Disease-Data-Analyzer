@@ -12,12 +12,12 @@ from backend.utils.data_helpers import (
     convert_numpy_floats,
     preprocess_glaucoma_image,
 )
-from sklearn.model_selection import train_test_split # <--- NOVO
-from sklearn.metrics import accuracy_score, classification_report # <--- NOVO
-from sklearn.ensemble import RandomForestClassifier # <--- NOVO
-from sklearn.tree import DecisionTreeClassifier # <--- NOVO
-from xgboost import XGBClassifier # <--- NOVO
-from sqlalchemy import create_engine, text # <--- NOV
+from sklearn.model_selection import train_test_split  # <--- NOVO
+from sklearn.metrics import accuracy_score, classification_report  # <--- NOVO
+from sklearn.ensemble import RandomForestClassifier  # <--- NOVO
+from sklearn.tree import DecisionTreeClassifier  # <--- NOVO
+from xgboost import XGBClassifier  # <--- NOVO
+from sqlalchemy import create_engine, text  # <--- NOV
 
 ARTIFACTS_DIR = "/app/model_artifacts"
 CACHED_TRAIN_DATA = None
@@ -46,9 +46,9 @@ try:
     # Lista de modelos esperados
     model_files = {
         "xgboost_standard": "xgboost_standard.joblib",
-        "xgboost_genetic": "xgboost_genetic.joblib", # Só vai existir se rodou o AG
+        "xgboost_genetic": "xgboost_genetic.joblib",  # Só vai existir se rodou o AG
         "random_forest": "randomforest.joblib",
-        "decision_tree": "decisiontree.joblib"
+        "decision_tree": "decisiontree.joblib",
     }
 
     print("Carregando modelos de Arbovírus...")
@@ -87,13 +87,17 @@ except Exception:
     GLAUCOMA_CLASS_NAMES = ["Normal", "Glaucomatous"]
     GLAUCOMA_IMG_SIZE = 224
 
+
 def run_experiment_pipeline(user_id, model_type, params):
     # 1. Carrega dados (Amostra)
     X, y = get_training_data_sample()
-    if X is None: return {"error": "Falha ao carregar dados de treino"}, 500
+    if X is None:
+        return {"error": "Falha ao carregar dados de treino"}, 500
 
     # 2. Split (Treino/Teste na hora)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42, stratify=y)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.3, random_state=42, stratify=y
+    )
 
     # 3. Instancia o Modelo baseado nos parâmetros do Front
     try:
@@ -101,13 +105,17 @@ def run_experiment_pipeline(user_id, model_type, params):
             # Converte params que vêm como string/float
             n_est = int(params.get("n_estimators", 100))
             depth = int(params.get("max_depth", 10))
-            model = RandomForestClassifier(n_estimators=n_est, max_depth=depth, random_state=42, n_jobs=-1)
-            
+            model = RandomForestClassifier(
+                n_estimators=n_est, max_depth=depth, random_state=42, n_jobs=-1
+            )
+
         elif model_type == "decision_tree":
             depth = int(params.get("max_depth", 10))
             crit = params.get("criterion", "gini")
-            model = DecisionTreeClassifier(max_depth=depth, criterion=crit, random_state=42)
-            
+            model = DecisionTreeClassifier(
+                max_depth=depth, criterion=crit, random_state=42
+            )
+
         elif model_type == "xgboost":
             n_est = int(params.get("n_estimators", 100))
             lr = float(params.get("learning_rate", 0.1))
@@ -115,9 +123,13 @@ def run_experiment_pipeline(user_id, model_type, params):
             # XGB precisa saber quantas classes
             num_classes = y.nunique()
             model = XGBClassifier(
-                n_estimators=n_est, learning_rate=lr, max_depth=depth, 
-                objective="multi:softmax", num_class=num_classes, 
-                random_state=42, n_jobs=-1
+                n_estimators=n_est,
+                learning_rate=lr,
+                max_depth=depth,
+                objective="multi:softmax",
+                num_class=num_classes,
+                random_state=42,
+                n_jobs=-1,
             )
         else:
             return {"error": "Tipo de modelo desconhecido"}, 400
@@ -136,26 +148,26 @@ def run_experiment_pipeline(user_id, model_type, params):
         username = user.username if user else "unknown"
 
         log_entry_orm = {
-            "model_name": f"EXP_{model_type.upper()}_{username}", # Tag diferente para experimentos
+            "model_name": f"EXP_{model_type.upper()}_{username}",  # Tag diferente para experimentos
             "version": "playground",
             "parameters": json.dumps(params),
-            "feature_importance": None, 
+            "feature_importance": None,
             "metrics": json.dumps(report),
             "accuracy": float(acc),
             "dataset_size": len(X),
-            "created_at": pd.Timestamp.utcnow()
+            "created_at": pd.Timestamp.utcnow(),
         }
-        
+
         # Inserção SQL (Copiada do ml_train_model.py e ajustada)
         db_url = f"postgresql://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}@db:5432/{os.getenv('POSTGRES_DB')}"
         engine_log = create_engine(db_url)
-        
+
         insert_query = text("""
             INSERT INTO model_training_logs 
             (model_name, version, parameters, feature_importance, metrics, accuracy, dataset_size, created_at)
             VALUES (:model_name, :version, :parameters, :feature_importance, :metrics, :accuracy, :dataset_size, :created_at)
         """)
-        
+
         with engine_log.connect() as conn:
             conn.execute(insert_query, log_entry_orm)
             conn.commit()
@@ -165,12 +177,68 @@ def run_experiment_pipeline(user_id, model_type, params):
             "success": True,
             "accuracy": acc,
             "metrics": report,
-            "model_config": params
+            "model_config": params,
         }, 200
 
     except Exception as e:
         print(f"Erro no experimento: {e}")
         return {"error": str(e)}, 500
+
+
+def get_best_optimization_suggestion():
+    try:
+        db_url = f"postgresql://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}@db:5432/{os.getenv('POSTGRES_DB')}"
+        engine_log = create_engine(db_url)
+
+        # Busca o registro com a MAIOR acurácia da história (seja experimento ou treino oficial)
+        # Ignora DecisionTree se quiser focar nos modelos complexos, mas vamos deixar geral.
+        query = text("""
+            SELECT model_name, parameters, accuracy 
+            FROM model_training_logs 
+            WHERE model_name NOT LIKE 'Glaucoma%' 
+            ORDER BY accuracy DESC 
+            LIMIT 1
+        """)
+
+        with engine_log.connect() as conn:
+            result = conn.execute(query).fetchone()
+
+        if not result:
+            return {"error": "Nenhum dado histórico encontrado."}, 404
+
+        model_name, params_json, acc = result
+
+        # Normaliza o nome do modelo para o Frontend
+        model_type = "xgboost"  # default
+        if "forest" in model_name.lower():
+            model_type = "random_forest"
+        elif "decision" in model_name.lower():
+            model_type = "decision_tree"
+        elif "xgboost" in model_name.lower():
+            model_type = "xgboost"
+
+        # Trata o JSON (as vezes vem string do banco)
+        if isinstance(params_json, str):
+            import json
+
+            params = json.loads(params_json)
+        else:
+            params = params_json
+
+        return {
+            "success": True,
+            "suggestion": {
+                "model_type": model_type,
+                "accuracy": float(acc),
+                "params": params,
+                "origin": model_name,  # Pra saber se veio do AG ou de um teste manual
+            },
+        }, 200
+
+    except Exception as e:
+        print(f"Erro no Advisor: {e}")
+        return {"error": str(e)}, 500
+
 
 # --- ARBOVIRUS PIPELINE (ATUALIZADO PARA MULTI-MODELO) ---
 def run_arbovirus_pipeline(text_description, age, sex, user_id, model_choice="all"):
@@ -183,7 +251,8 @@ def run_arbovirus_pipeline(text_description, age, sex, user_id, model_choice="al
     try:
         gemini_resp = model_gemini.generate_content(prompt)
         structured = parse_json_from_gemini_response(gemini_resp.text)
-        if not structured: raise ValueError("Falha ao estruturar JSON")
+        if not structured:
+            raise ValueError("Falha ao estruturar JSON")
     except Exception as e:
         return {"error": f"Erro na IA Generativa: {str(e)}"}, 500
 
@@ -195,7 +264,7 @@ def run_arbovirus_pipeline(text_description, age, sex, user_id, model_choice="al
                 df.loc[0, s] = 1
         df.loc[0, "idade"] = age
         df.loc[0, "sexo_encoded"] = 1 if sex.upper() == "F" else 0
-        
+
         input_features_log = convert_numpy_floats(df.to_dict(orient="records")[0])
     except Exception as e:
         return {"error": f"Erro no pré-processamento de dados: {e}"}, 500
@@ -207,45 +276,53 @@ def run_arbovirus_pipeline(text_description, age, sex, user_id, model_choice="al
     final_probs = {}
 
     # Define quais modelos rodar
-    models_to_run = ARBO_MODELS if model_choice == "all" else {model_choice: ARBO_MODELS.get(model_choice)}
-    
+    models_to_run = (
+        ARBO_MODELS
+        if model_choice == "all"
+        else {model_choice: ARBO_MODELS.get(model_choice)}
+    )
+
     try:
         for name, model in models_to_run.items():
-            if not model: continue
-            
+            if not model:
+                continue
+
             # Predição
             probs = model.predict_proba(df[arbo_model_columns])[0]
             model_result = {arbo_target_map[i]: float(p) for i, p in enumerate(probs)}
-            
+
             # Quem é o vencedor deste modelo?
             top_disease = max(model_result, key=model_result.get)
             confidence = model_result[top_disease]
-            
+
             # Guarda para o comparativo
             comparative_results[name] = {
                 "diagnosis": top_disease,
                 "confidence": confidence,
-                "full_probs": model_result
+                "full_probs": model_result,
             }
 
             # Lógica do "Campeão Geral" (Maior confiança vence)
             if confidence > highest_confidence:
                 highest_confidence = confidence
                 best_model_name = name
-                final_probs = model_result # Usa as probs do campeão para a resposta final
-    
+                final_probs = (
+                    model_result  # Usa as probs do campeão para a resposta final
+                )
+
     except Exception as e:
         return {"error": f"Erro durante inferência dos modelos: {e}"}, 500
 
     if not final_probs:
-         return {"error": "Nenhum modelo conseguiu processar a solicitação"}, 500
+        return {"error": "Nenhum modelo conseguiu processar a solicitação"}, 500
 
     top_diagnosis_winner = max(final_probs, key=final_probs.get)
 
     # 4. Persistência e Log
     try:
         user = User.query.get(user_id)
-        if not user: return {"error": "Usuário não encontrado"}, 404
+        if not user:
+            return {"error": "Usuário não encontrado"}, 404
 
         new_diag = ArbovirusDiagnosis(
             user_id=user_id,
@@ -256,9 +333,11 @@ def run_arbovirus_pipeline(text_description, age, sex, user_id, model_choice="al
             text_description=text_description,
             structured_symptoms=structured,
             input_features=input_features_log,
-            prediction_result=convert_numpy_floats(final_probs), # Salva probs do vencedor
+            prediction_result=convert_numpy_floats(
+                final_probs
+            ),  # Salva probs do vencedor
             top_diagnosis=top_diagnosis_winner,
-            model_version=f"Winner_{best_model_name}", # Registra quem ganhou
+            model_version=f"Winner_{best_model_name}",  # Registra quem ganhou
         )
         db.session.add(new_diag)
         db.session.commit()
@@ -277,16 +356,19 @@ def run_arbovirus_pipeline(text_description, age, sex, user_id, model_choice="al
         friendly = "Erro ao gerar explicação amigável."
 
     # 6. Retorno Completo
-    return {
-        "friendly_response": friendly,
-        "analysis_details": {
-            "probabilities": convert_numpy_floats(final_probs),
-            "structured_symptoms": structured,
-            "diagnosis_id": new_diag.id,
-            "winner_model": best_model_name,
-            "comparative_stats": comparative_results # Frontend vai usar isso para gráficos!
+    return (
+        {
+            "friendly_response": friendly,
+            "analysis_details": {
+                "probabilities": convert_numpy_floats(final_probs),
+                "structured_symptoms": structured,
+                "diagnosis_id": new_diag.id,
+                "winner_model": best_model_name,
+                "comparative_stats": comparative_results,  # Frontend vai usar isso para gráficos!
+            },
         },
-    }, 200
+        200,
+    )
 
 
 def run_symptom_structure(text_description):
@@ -327,7 +409,7 @@ def run_glaucoma_pipeline(image_bytes, user_id):
         else:
             predicted_class = "Glaucomatous"
             confidence = prob_glaucoma
-            
+
         user = User.query.get(user_id)
         if not user:
             return {"error": "Usuário não encontrado para log"}, 404
@@ -355,37 +437,36 @@ def run_glaucoma_pipeline(image_bytes, user_id):
         "friendly_response": friendly,
         "analysis_details": {"probabilities": results, "diagnosis_id": new_diag.id},
     }, 200
-    
+
+
 def get_training_data_sample(limit=50000):
     global CACHED_TRAIN_DATA
     if CACHED_TRAIN_DATA is not None:
         return CACHED_TRAIN_DATA
-    
+
     print("⏳ Carregando amostra de dados para o Playground...")
     try:
         db_url = f"postgresql://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}@db:5432/{os.getenv('POSTGRES_DB')}"
         engine = create_engine(db_url)
-        
+
         # Lê colunas do JSON para ser consistente
         cols_path = os.path.join(ARTIFACTS_DIR, "model_columns.json")
         if os.path.exists(cols_path):
             with open(cols_path, "r") as f:
                 feature_cols = json.load(f)
-            cols_query = feature_cols + ['target_encoded']
-            cols_str = ', '.join([f'"{c}"' for c in cols_query])
-            
+            cols_query = feature_cols + ["target_encoded"]
+            cols_str = ", ".join([f'"{c}"' for c in cols_query])
+
             # Pega uma amostra aleatória do banco (rápido)
-            query = f'SELECT {cols_str} FROM cleaned_arboviroses_cases ORDER BY RANDOM() LIMIT {limit}'
+            query = f"SELECT {cols_str} FROM cleaned_arboviroses_cases ORDER BY RANDOM() LIMIT {limit}"
             df = pd.read_sql(query, engine)
-            
+
             X = df[feature_cols]
-            y = df['target_encoded']
-            
+            y = df["target_encoded"]
+
             CACHED_TRAIN_DATA = (X, y)
             print(f"✅ Dados carregados: {len(df)} linhas.")
             return X, y
     except Exception as e:
         print(f"Erro carregando dados: {e}")
         return None, None
-    
-    

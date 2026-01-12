@@ -58,6 +58,39 @@ export const ExperimentsPanel: React.FC = () => {
         }
     };
 
+    const handleSuggestParams = async () => {
+        setLoading(true);
+        try {
+            const response = await fetch('http://localhost:5000/diagnose/advisor', {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success && data.suggestion) {
+                const { model_type, params, accuracy, origin } = data.suggestion;
+                
+                // 1. Aplica o Tipo de Modelo
+                setModelType(model_type);
+                
+                // 2. Aplica os Parâmetros (com fallbacks)
+                if (params.n_estimators) setNEstimators(Number(params.n_estimators));
+                if (params.max_depth) setMaxDepth(Number(params.max_depth));
+                if (params.learning_rate) setLearningRate(Number(params.learning_rate));
+                
+                alert(`✨ Configuração Otimizada Encontrada!\n\nOrigem: ${origin}\nAcurácia Histórica: ${(accuracy * 100).toFixed(2)}%\n\nOs sliders foram ajustados.`);
+            } else {
+                alert("Ainda não temos dados suficientes para sugerir.");
+            }
+        } catch (error) {
+            console.error(error);
+            alert("Erro ao consultar AI Advisor.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div style={{ marginTop: '30px', borderTop: '1px solid #444', paddingTop: '20px' }}>
             <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -70,6 +103,17 @@ export const ExperimentsPanel: React.FC = () => {
             <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
                 {/* Coluna 1: Controles */}
                 <div style={{ flex: '1 1 300px', background: '#1e1e1e', padding: '20px', borderRadius: '8px' }}>
+                    <button 
+                        onClick={handleSuggestParams}
+                        style={{ 
+                            width: '100%', marginBottom: '20px', 
+                            background: 'linear-gradient(45deg, #646cff, #9b59b6)', 
+                            color: 'white', border: 'none', padding: '10px',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+                        }}
+                    >
+                         ✨ Sugerir Melhor Ajuste
+                    </button>
                     <div className="form-group">
                         <label>Algoritmo:</label>
                         <select value={modelType} onChange={e => setModelType(e.target.value)}>
