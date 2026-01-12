@@ -2,7 +2,7 @@
 from flask import Blueprint
 from flask_jwt_extended import jwt_required
 from backend.controllers.auth_controller import register_user, login_user, get_current_user_info
-from backend.controllers.diagnose_controller import analyze_arbovirus, structure_symptoms_only, analyze_glaucoma
+from backend.controllers.diagnose_controller import analyze_arbovirus, structure_symptoms_only, analyze_glaucoma, run_experiment
 
 api_bp = Blueprint('api', __name__)
 
@@ -15,3 +15,5 @@ api_bp.route("/diagnose", methods=["POST"])(jwt_required()(analyze_arbovirus))
 api_bp.route("/structure-symptoms", methods=["POST"])(jwt_required()(structure_symptoms_only))
 
 api_bp.route("/diagnose-glaucoma", methods=["POST"])(jwt_required()(analyze_glaucoma))
+
+api_bp.route("/diagnose/experiment", methods=["POST"])(jwt_required()(run_experiment))

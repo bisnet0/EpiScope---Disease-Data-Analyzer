@@ -1,10 +1,6 @@
 from flask import request, jsonify
 from flask_jwt_extended import get_jwt_identity
-from backend.services.ai_service import (
-    run_arbovirus_pipeline,
-    run_glaucoma_pipeline,
-    run_symptom_structure,
-)
+from backend.services.ai_service import run_arbovirus_pipeline, run_glaucoma_pipeline, run_symptom_structure, run_experiment_pipeline
 
 def analyze_arbovirus():
     current_user_id = get_jwt_identity()  
@@ -43,4 +39,17 @@ def analyze_glaucoma():
         return jsonify({"error": "Arquivo vazio"}), 400
 
     result, status = run_glaucoma_pipeline(file.read(), current_user_id)
+    return jsonify(result), status
+
+def run_experiment():
+    current_user_id = get_jwt_identity()
+    data = request.get_json()
+    
+    model_type = data.get("model_type") # ex: "xgboost"
+    params = data.get("params")         # ex: {"n_estimators": 50, "max_depth": 3}
+    
+    if not model_type or not params:
+        return jsonify({"error": "Parâmetros ou tipo de modelo faltando"}), 400
+        
+    result, status = run_experiment_pipeline(current_user_id, model_type, params)
     return jsonify(result), status

@@ -12,8 +12,15 @@ from backend.utils.data_helpers import (
     convert_numpy_floats,
     preprocess_glaucoma_image,
 )
+from sklearn.model_selection import train_test_split # <--- NOVO
+from sklearn.metrics import accuracy_score, classification_report # <--- NOVO
+from sklearn.ensemble import RandomForestClassifier # <--- NOVO
+from sklearn.tree import DecisionTreeClassifier # <--- NOVO
+from xgboost import XGBClassifier # <--- NOVO
+from sqlalchemy import create_engine, text # <--- NOV
 
 ARTIFACTS_DIR = "/app/model_artifacts"
+CACHED_TRAIN_DATA = None
 print("--- Inicializando AI Service (Multi-Model) ---")
 
 # 1. Configuração do Gemini
@@ -80,6 +87,90 @@ except Exception:
     GLAUCOMA_CLASS_NAMES = ["Normal", "Glaucomatous"]
     GLAUCOMA_IMG_SIZE = 224
 
+def run_experiment_pipeline(user_id, model_type, params):
+    # 1. Carrega dados (Amostra)
+    X, y = get_training_data_sample()
+    if X is None: return {"error": "Falha ao carregar dados de treino"}, 500
+
+    # 2. Split (Treino/Teste na hora)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42, stratify=y)
+
+    # 3. Instancia o Modelo baseado nos parâmetros do Front
+    try:
+        if model_type == "random_forest":
+            # Converte params que vêm como string/float
+            n_est = int(params.get("n_estimators", 100))
+            depth = int(params.get("max_depth", 10))
+            model = RandomForestClassifier(n_estimators=n_est, max_depth=depth, random_state=42, n_jobs=-1)
+            
+        elif model_type == "decision_tree":
+            depth = int(params.get("max_depth", 10))
+            crit = params.get("criterion", "gini")
+            model = DecisionTreeClassifier(max_depth=depth, criterion=crit, random_state=42)
+            
+        elif model_type == "xgboost":
+            n_est = int(params.get("n_estimators", 100))
+            lr = float(params.get("learning_rate", 0.1))
+            depth = int(params.get("max_depth", 6))
+            # XGB precisa saber quantas classes
+            num_classes = y.nunique()
+            model = XGBClassifier(
+                n_estimators=n_est, learning_rate=lr, max_depth=depth, 
+                objective="multi:softmax", num_class=num_classes, 
+                random_state=42, n_jobs=-1
+            )
+        else:
+            return {"error": "Tipo de modelo desconhecido"}, 400
+
+        # 4. Treina (Fit)
+        model.fit(X_train, y_train)
+
+        # 5. Avalia
+        y_pred = model.predict(X_test)
+        acc = accuracy_score(y_test, y_pred)
+        report = classification_report(y_test, y_pred, output_dict=True)
+
+        # 6. Salva Log do Experimento no Banco (Importante para o Admin ver depois)
+        # Tenta pegar metadados do usuario
+        user = User.query.get(user_id)
+        username = user.username if user else "unknown"
+
+        log_entry_orm = {
+            "model_name": f"EXP_{model_type.upper()}_{username}", # Tag diferente para experimentos
+            "version": "playground",
+            "parameters": json.dumps(params),
+            "feature_importance": None, 
+            "metrics": json.dumps(report),
+            "accuracy": float(acc),
+            "dataset_size": len(X),
+            "created_at": pd.Timestamp.utcnow()
+        }
+        
+        # Inserção SQL (Copiada do ml_train_model.py e ajustada)
+        db_url = f"postgresql://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}@db:5432/{os.getenv('POSTGRES_DB')}"
+        engine_log = create_engine(db_url)
+        
+        insert_query = text("""
+            INSERT INTO model_training_logs 
+            (model_name, version, parameters, feature_importance, metrics, accuracy, dataset_size, created_at)
+            VALUES (:model_name, :version, :parameters, :feature_importance, :metrics, :accuracy, :dataset_size, :created_at)
+        """)
+        
+        with engine_log.connect() as conn:
+            conn.execute(insert_query, log_entry_orm)
+            conn.commit()
+
+        # 7. Retorna resultados para o Front plotar
+        return {
+            "success": True,
+            "accuracy": acc,
+            "metrics": report,
+            "model_config": params
+        }, 200
+
+    except Exception as e:
+        print(f"Erro no experimento: {e}")
+        return {"error": str(e)}, 500
 
 # --- ARBOVIRUS PIPELINE (ATUALIZADO PARA MULTI-MODELO) ---
 def run_arbovirus_pipeline(text_description, age, sex, user_id, model_choice="all"):
@@ -264,3 +355,37 @@ def run_glaucoma_pipeline(image_bytes, user_id):
         "friendly_response": friendly,
         "analysis_details": {"probabilities": results, "diagnosis_id": new_diag.id},
     }, 200
+    
+def get_training_data_sample(limit=50000):
+    global CACHED_TRAIN_DATA
+    if CACHED_TRAIN_DATA is not None:
+        return CACHED_TRAIN_DATA
+    
+    print("⏳ Carregando amostra de dados para o Playground...")
+    try:
+        db_url = f"postgresql://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}@db:5432/{os.getenv('POSTGRES_DB')}"
+        engine = create_engine(db_url)
+        
+        # Lê colunas do JSON para ser consistente
+        cols_path = os.path.join(ARTIFACTS_DIR, "model_columns.json")
+        if os.path.exists(cols_path):
+            with open(cols_path, "r") as f:
+                feature_cols = json.load(f)
+            cols_query = feature_cols + ['target_encoded']
+            cols_str = ', '.join([f'"{c}"' for c in cols_query])
+            
+            # Pega uma amostra aleatória do banco (rápido)
+            query = f'SELECT {cols_str} FROM cleaned_arboviroses_cases ORDER BY RANDOM() LIMIT {limit}'
+            df = pd.read_sql(query, engine)
+            
+            X = df[feature_cols]
+            y = df['target_encoded']
+            
+            CACHED_TRAIN_DATA = (X, y)
+            print(f"✅ Dados carregados: {len(df)} linhas.")
+            return X, y
+    except Exception as e:
+        print(f"Erro carregando dados: {e}")
+        return None, None
+    
+    

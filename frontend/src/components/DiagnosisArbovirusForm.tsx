@@ -1,3 +1,4 @@
+import { ExperimentsPanel } from './ExperimentsPanel';
 import React, { useState, useMemo } from 'react';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, ReferenceLine
@@ -17,8 +18,8 @@ interface ArbovirusApiResponse {
         probabilities: { [key: string]: number };
         structured_symptoms: { [key: string]: boolean };
         diagnosis_id?: number;
-        winner_model?: string; 
-        comparative_stats?: { [key: string]: ComparativeStat }; 
+        winner_model?: string;
+        comparative_stats?: { [key: string]: ComparativeStat };
     };
 }
 
@@ -30,11 +31,11 @@ const COLORS: { [key: string]: string } = {
 };
 
 const MODEL_COLORS: { [key: string]: string } = {
-    xgboost_standard: '#3498db', 
-    xgboost_genetic: '#9b59b6',  
-    random_forest: '#2ecc71',    
-    decision_tree: '#e67e22',    
-    legacy_xgboost: '#95a5a6'    
+    xgboost_standard: '#3498db',
+    xgboost_genetic: '#9b59b6',
+    random_forest: '#2ecc71',
+    decision_tree: '#e67e22',
+    legacy_xgboost: '#95a5a6'
 };
 
 export const DiagnosisArbovirusForm: React.FC = () => {
@@ -45,6 +46,7 @@ export const DiagnosisArbovirusForm: React.FC = () => {
     const [result, setResult] = useState<ArbovirusApiResponse | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [showLab, setShowLab] = useState(false);
 
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
@@ -55,9 +57,9 @@ export const DiagnosisArbovirusForm: React.FC = () => {
         try {
             const response = await fetch('http://localhost:5000/diagnose', {
                 method: 'POST',
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}` 
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
                     text_description: textDescription,
@@ -131,23 +133,23 @@ export const DiagnosisArbovirusForm: React.FC = () => {
 
             <div className="results-wrapper">
                 {error && <div className="result-box error"><p>{error}</p></div>}
-                
+
                 {result && (
                     <div className="result-box">
                         <h3>🤖 Resultado da Análise</h3>
-                        <div dangerouslySetInnerHTML={{ __html: formatResponse(result.friendly_response) }} style={{marginBottom: '2rem'}} />
+                        <div dangerouslySetInnerHTML={{ __html: formatResponse(result.friendly_response) }} style={{ marginBottom: '2rem' }} />
 
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px' }}>
                             {/* Gráfico Doenças */}
                             <div style={{ flex: '1 1 400px', background: '#252525', padding: '15px', borderRadius: '8px' }}>
-                                <h4 style={{textAlign: 'center'}}>Probabilidades (Consenso)</h4>
+                                <h4 style={{ textAlign: 'center' }}>Probabilidades (Consenso)</h4>
                                 <div style={{ height: 250 }}>
                                     <ResponsiveContainer>
-                                        <BarChart data={diseaseChartData} layout="vertical" margin={{left: 10, right: 30}}>
+                                        <BarChart data={diseaseChartData} layout="vertical" margin={{ left: 10, right: 30 }}>
                                             <CartesianGrid strokeDasharray="3 3" stroke="#444" />
                                             <XAxis type="number" unit="%" domain={[0, 100]} stroke="#aaa" />
                                             <YAxis type="category" dataKey="name" width={100} stroke="#aaa" />
-                                            <Tooltip contentStyle={{backgroundColor: '#333'}} />
+                                            <Tooltip contentStyle={{ backgroundColor: '#333' }} />
                                             <Bar dataKey="probability" name="Confiança">
                                                 {diseaseChartData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
                                             </Bar>
@@ -159,14 +161,14 @@ export const DiagnosisArbovirusForm: React.FC = () => {
                             {/* Gráfico Modelos */}
                             {modelsChartData.length > 0 && (
                                 <div style={{ flex: '1 1 400px', background: '#252525', padding: '15px', borderRadius: '8px', border: '1px solid #444' }}>
-                                    <h4 style={{textAlign: 'center'}}>Comparativo de Algoritmos</h4>
+                                    <h4 style={{ textAlign: 'center' }}>Comparativo de Algoritmos</h4>
                                     <div style={{ height: 250 }}>
                                         <ResponsiveContainer>
                                             <BarChart data={modelsChartData}>
                                                 <CartesianGrid strokeDasharray="3 3" stroke="#444" />
                                                 <XAxis dataKey="name" stroke="#aaa" fontSize={10} tickFormatter={(v) => v.split(' ')[0]} />
                                                 <YAxis unit="%" domain={[0, 100]} stroke="#aaa" />
-                                                <Tooltip contentStyle={{backgroundColor: '#333'}} />
+                                                <Tooltip contentStyle={{ backgroundColor: '#333' }} />
                                                 <ReferenceLine y={50} stroke="#666" strokeDasharray="3 3" />
                                                 <Bar dataKey="confidence" name="Certeza">
                                                     {modelsChartData.map((entry, index) => (
@@ -176,15 +178,27 @@ export const DiagnosisArbovirusForm: React.FC = () => {
                                             </BarChart>
                                         </ResponsiveContainer>
                                     </div>
-                                    <p style={{textAlign: 'center', fontSize: '0.8rem', color: '#888', marginTop: '10px'}}>
-                                        Vencedor: <strong style={{color: '#fff'}}>{result.analysis_details.winner_model?.toUpperCase().replace('_', ' ')}</strong>
+                                    <p style={{ textAlign: 'center', fontSize: '0.8rem', color: '#888', marginTop: '10px' }}>
+                                        Vencedor: <strong style={{ color: '#fff' }}>{result.analysis_details.winner_model?.toUpperCase().replace('_', ' ')}</strong>
                                     </p>
                                 </div>
                             )}
                         </div>
                     </div>
                 )}
+                <div style={{ marginTop: '40px', textAlign: 'center' }}>
+                    <button
+                        type="button"
+                        onClick={() => setShowLab(!showLab)}
+                        style={{ background: 'transparent', border: '1px solid #555', color: '#aaa' }}
+                    >
+                        {showLab ? 'Fechar Laboratório' : '🔬 Abrir Laboratório de IA (Modo Avançado)'}
+                    </button>
+                </div>
+
+                {showLab && <ExperimentsPanel />}
             </div>
         </div>
+
     );
 };
