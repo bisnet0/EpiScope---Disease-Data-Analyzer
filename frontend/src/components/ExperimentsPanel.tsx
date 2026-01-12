@@ -1,3 +1,4 @@
+import Toast from './Toast';
 import React, { useState } from 'react';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine
@@ -10,10 +11,16 @@ interface ExperimentResult {
     model_config: any;
 }
 
+interface ToastState {
+    type: 'success' | 'error' | 'info';
+    title?: string;
+    message: string;
+}
+
 export const ExperimentsPanel: React.FC = () => {
     const { token } = useAuth();
     const [modelType, setModelType] = useState('xgboost');
-    
+
     // Parâmetros (Estado flexível)
     const [nEstimators, setNEstimators] = useState(100);
     const [maxDepth, setMaxDepth] = useState(6);
@@ -22,6 +29,8 @@ export const ExperimentsPanel: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState<ExperimentResult | null>(null);
     const [history, setHistory] = useState<any[]>([]); // Histórico da sessão atual
+    const [toast, setToast] = useState<ToastState | null>(null);
+    const closeToast = () => setToast(null);
 
     const handleRunExperiment = async () => {
         setLoading(true);
@@ -33,9 +42,9 @@ export const ExperimentsPanel: React.FC = () => {
 
             const response = await fetch('http://localhost:5000/diagnose/experiment', {
                 method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json', 
-                    'Authorization': `Bearer ${token}` 
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({ model_type: modelType, params })
             });
@@ -65,27 +74,41 @@ export const ExperimentsPanel: React.FC = () => {
                 method: 'GET',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            
+
             const data = await response.json();
-            
+
             if (data.success && data.suggestion) {
                 const { model_type, params, accuracy, origin } = data.suggestion;
-                
-                // 1. Aplica o Tipo de Modelo
+
+                // Aplica lógica do modelo
                 setModelType(model_type);
-                
-                // 2. Aplica os Parâmetros (com fallbacks)
                 if (params.n_estimators) setNEstimators(Number(params.n_estimators));
                 if (params.max_depth) setMaxDepth(Number(params.max_depth));
                 if (params.learning_rate) setLearningRate(Number(params.learning_rate));
-                
-                alert(`✨ Configuração Otimizada Encontrada!\n\nOrigem: ${origin}\nAcurácia Histórica: ${(accuracy * 100).toFixed(2)}%\n\nOs sliders foram ajustados.`);
+
+                // 2. SUCESSO: Chama o Toast Bonito
+                setToast({
+                    type: 'success',
+                    title: 'Configuração Otimizada!',
+                    message: `Origem: ${origin}\nAcurácia Histórica: ${(accuracy * 100).toFixed(2)}%\nOs parâmetros foram ajustados automaticamente.`
+                });
+
             } else {
-                alert("Ainda não temos dados suficientes para sugerir.");
+                // 3. AVISO: Chama o Toast de Info
+                setToast({
+                    type: 'info',
+                    title: 'Sem sugestões no momento',
+                    message: 'Ainda não temos dados históricos suficientes para gerar uma sugestão confiável.'
+                });
             }
         } catch (error) {
             console.error(error);
-            alert("Erro ao consultar AI Advisor.");
+            // 4. ERRO: Chama o Toast de Erro
+            setToast({
+                type: 'error',
+                title: 'Erro de Conexão',
+                message: 'Não foi possível consultar o AI Advisor. Verifique sua conexão ou tente novamente.'
+            });
         } finally {
             setLoading(false);
         }
@@ -94,7 +117,7 @@ export const ExperimentsPanel: React.FC = () => {
     return (
         <div style={{ marginTop: '30px', borderTop: '1px solid #444', paddingTop: '20px' }}>
             <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                🧪 Laboratório de Hiperparâmetros <span style={{fontSize: '0.8rem', background: '#646cff', padding: '2px 8px', borderRadius: '4px'}}>MODO AVANÇADO</span>
+                🧪 Laboratório de Hiperparâmetros <span style={{ fontSize: '0.8rem', background: '#646cff', padding: '2px 8px', borderRadius: '4px' }}>MODO AVANÇADO</span>
             </h3>
             <p style={{ color: '#888', fontSize: '0.9rem', marginBottom: '20px' }}>
                 Ajuste os parâmetros e treine modelos em tempo real usando uma amostra dos dados.
@@ -103,17 +126,26 @@ export const ExperimentsPanel: React.FC = () => {
             <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
                 {/* Coluna 1: Controles */}
                 <div style={{ flex: '1 1 300px', background: '#1e1e1e', padding: '20px', borderRadius: '8px' }}>
-                    <button 
+                    <button
                         onClick={handleSuggestParams}
-                        style={{ 
-                            width: '100%', marginBottom: '20px', 
-                            background: 'linear-gradient(45deg, #646cff, #9b59b6)', 
+                        style={{
+                            width: '100%', marginBottom: '20px',
+                            background: 'linear-gradient(45deg, #646cff, #9b59b6)',
                             color: 'white', border: 'none', padding: '10px',
                             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
                         }}
                     >
-                         ✨ Sugerir Melhor Ajuste
+                        ✨ Sugerir Melhor Ajuste
                     </button>
+                    {toast && (
+                        <Toast
+                            type={toast.type}
+                            title={toast.title}
+                            message={toast.message}
+                            onClose={closeToast}
+                            duration={5000} // Fica na tela por 5 segundos
+                        />
+                    )}
                     <div className="form-group">
                         <label>Algoritmo:</label>
                         <select value={modelType} onChange={e => setModelType(e.target.value)}>
@@ -142,8 +174,8 @@ export const ExperimentsPanel: React.FC = () => {
                         </div>
                     )}
 
-                    <button 
-                        onClick={handleRunExperiment} 
+                    <button
+                        onClick={handleRunExperiment}
                         disabled={loading}
                         style={{ width: '100%', marginTop: '10px', background: loading ? '#555' : '#2ecc71', color: '#000', fontWeight: 'bold' }}
                     >
