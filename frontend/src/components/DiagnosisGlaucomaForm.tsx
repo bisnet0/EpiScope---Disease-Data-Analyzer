@@ -2,7 +2,7 @@ import React, { useState, useMemo, type ChangeEvent } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell,
 } from "recharts";
-import { useAuth } from "../context/AuthContext";
+import api from "../services/api"; // <--- Importando Axios
 
 interface GlaucomaApiResponse {
   friendly_response: string;
@@ -19,7 +19,7 @@ const COLORS: { [key: string]: string } = {
 };
 
 export const DiagnosisGlaucomaForm: React.FC = () => {
-  const { token } = useAuth();
+  // Não precisamos mais de useAuth nem token
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [result, setResult] = useState<GlaucomaApiResponse | null>(null);
@@ -44,6 +44,7 @@ export const DiagnosisGlaucomaForm: React.FC = () => {
       setError("Selecione uma imagem.");
       return;
     }
+    
     setLoading(true);
     setError(null);
     setResult(null);
@@ -52,22 +53,17 @@ export const DiagnosisGlaucomaForm: React.FC = () => {
     formData.append("image", imageFile);
 
     try {
-      const response = await fetch("http://localhost:5000/diagnose-glaucoma", {
-        method: "POST",
-        headers: {
-            'Authorization': `Bearer ${token}` 
-        },
-        body: formData,
-      });
+      // SUBSTITUIÇÃO: api.post com formData
+      // O Axios envia o cookie automaticamente e define o header multipart
+      const response = await api.post("/diagnose-glaucoma", formData);
 
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.error || `Erro ${response.status}`);
-      }
-      const data: GlaucomaApiResponse = await response.json();
-      setResult(data);
+      // Sucesso (status 200)
+      setResult(response.data);
+      
     } catch (err: any) {
-      setError(err.message || "Erro na análise.");
+      // Tratamento de erro padronizado
+      const msg = err.response?.data?.error || err.message || "Erro na análise da imagem.";
+      setError(msg);
     } finally {
       setLoading(false);
     }

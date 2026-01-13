@@ -1,7 +1,6 @@
-// src/context/AuthContext.tsx
-import React, { createContext, useState, useEffect, useContext } from 'react';
-import { jwtDecode } from "jwt-decode";
-import type { ReactNode } from 'react';
+import React, { createContext, useState, useEffect, useContext, type ReactNode } from 'react';
+import { ethers } from 'ethers';
+import api from '../services/api'; // Importe nosso novo axios
 
 interface User {
   id: string;
@@ -11,55 +10,89 @@ interface User {
 
 interface AuthContextData {
   user: User | null;
-  token: string | null;
-  signIn: (token: string, userData: User) => void;
-  signOut: () => void;
+  signIn: (userData: User) => void;
+  signOut: () => Promise<void>;
   isAuthenticated: boolean;
+  loadingAuth: boolean; // Para não piscar tela de login
+  
+  // Web3
+  walletAddress: string | null;
+  connectWallet: () => Promise<void>;
+  signer: ethers.JsonRpcSigner | null;
 }
 
 const AuthContext = createContext<AuthContextData>({} as AuthContextData);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const [loadingAuth, setLoadingAuth] = useState(true);
+  
+  // Web3 States
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const [signer, setSigner] = useState<ethers.JsonRpcSigner | null>(null);
 
   useEffect(() => {
-    // Ao carregar a página, verifica se tem token salvo
-    const storedToken = localStorage.getItem('@EpiScope:token');
-    const storedUser = localStorage.getItem('@EpiScope:user');
-
-    if (storedToken && storedUser) {
-      // Opcional: Verificar se o token expirou usando jwt-decode
-      try {
-        const decoded: any = jwtDecode(storedToken);
-        if (decoded.exp * 1000 < Date.now()) {
-            signOut();
-        } else {
-            setToken(storedToken);
-            setUser(JSON.parse(storedUser));
+    // Ao carregar a página, perguntamos ao backend: "Ainda tenho cookie válido?"
+    const checkSession = async () => {
+        try {
+            const response = await api.get('/auth/me');
+            setUser(response.data); // Backend retorna o user se o cookie estiver ok
+            checkWalletConnection(); // Se logou, tenta conectar wallet
+        } catch (error) {
+            // Se der 401, o interceptador tentou refresh. Se falhou, cai aqui.
+            setUser(null);
+        } finally {
+            setLoadingAuth(false);
         }
-      } catch {
-        signOut();
-      }
-    }
+    };
+    checkSession();
   }, []);
 
-  const signIn = (newToken: string, newUser: User) => {
-    setToken(newToken);
-    setUser(newUser);
-    localStorage.setItem('@EpiScope:token', newToken);
-    localStorage.setItem('@EpiScope:user', JSON.stringify(newUser));
+  // Web3 Functions
+  const checkWalletConnection = async () => {
+      if (window.ethereum) {
+          try {
+              const provider = new ethers.BrowserProvider(window.ethereum);
+              const accounts = await provider.listAccounts();
+              if (accounts.length > 0) {
+                  const s = await provider.getSigner();
+                  setWalletAddress(accounts[0].address);
+                  setSigner(s);
+              }
+          } catch (err) { console.error("Erro Web3:", err); }
+      }
   };
 
-  const signOut = () => {
-    setToken(null);
+  const connectWallet = async () => {
+      if (!window.ethereum) return alert("MetaMask não encontrada!");
+      try {
+          const provider = new ethers.BrowserProvider(window.ethereum);
+          await provider.send("eth_requestAccounts", []);
+          const s = await provider.getSigner();
+          setWalletAddress(await s.getAddress());
+          setSigner(s);
+      } catch (error) { console.error("Erro conectar wallet:", error); }
+  };
+
+  // Web2 Functions
+  const signIn = (userData: User) => {
+    setUser(userData);
+  };
+
+  const signOut = async () => {
+    try {
+        await api.post('/auth/logout'); // Avisa backend para limpar cookies
+    } catch (e) { console.error(e); }
     setUser(null);
-    localStorage.removeItem('@EpiScope:token');
-    localStorage.removeItem('@EpiScope:user');
+    setWalletAddress(null);
+    setSigner(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, signIn, signOut, isAuthenticated: !!user }}>
+    <AuthContext.Provider value={{ 
+        user, signIn, signOut, isAuthenticated: !!user, loadingAuth,
+        walletAddress, connectWallet, signer 
+    }}>
       {children}
     </AuthContext.Provider>
   );

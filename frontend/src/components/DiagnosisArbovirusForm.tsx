@@ -1,11 +1,11 @@
-import { ExperimentsPanel } from './ExperimentsPanel';
 import React, { useState, useMemo } from 'react';
 import {
-    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, ReferenceLine
+    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine
 } from 'recharts';
-import { useAuth } from '../context/AuthContext';
+import api from '../services/api';
+import { ExperimentsPanel } from './ExperimentsPanel';
 
-// Interfaces da Resposta
+
 interface ComparativeStat {
     diagnosis: string;
     confidence: number;
@@ -23,7 +23,7 @@ interface ArbovirusApiResponse {
     };
 }
 
-// Cores
+
 const COLORS: { [key: string]: string } = {
     dengue: '#8884d8',
     chikungunya: '#82ca9d',
@@ -39,7 +39,7 @@ const MODEL_COLORS: { [key: string]: string } = {
 };
 
 export const DiagnosisArbovirusForm: React.FC = () => {
-    const { token } = useAuth();
+    
     const [textDescription, setTextDescription] = useState('');
     const [age, setAge] = useState<number | ''>('');
     const [sex, setSex] = useState('M');
@@ -55,27 +55,20 @@ export const DiagnosisArbovirusForm: React.FC = () => {
         setResult(null);
 
         try {
-            const response = await fetch('http://localhost:5000/diagnose', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    text_description: textDescription,
-                    age: Number(age),
-                    sex: sex,
-                }),
+            
+            const response = await api.post('/diagnose', {
+                text_description: textDescription,
+                age: Number(age),
+                sex: sex,
             });
 
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.error || `Erro HTTP: ${response.status}`);
-            }
-            const data: ArbovirusApiResponse = await response.json();
-            setResult(data);
+            
+            setResult(response.data);
+
         } catch (err: any) {
-            setError(err.message || 'Erro ao processar solicitação.');
+            
+            const msg = err.response?.data?.error || err.message || 'Erro ao processar solicitação.';
+            setError(msg);
         } finally {
             setLoading(false);
         }
@@ -85,7 +78,7 @@ export const DiagnosisArbovirusForm: React.FC = () => {
         return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br />');
     };
 
-    // Gráfico 1: Probabilidades da Doença (Modelo Vencedor)
+    
     const diseaseChartData = useMemo(() => {
         if (!result) return [];
         return Object.entries(result.analysis_details.probabilities)
@@ -97,7 +90,7 @@ export const DiagnosisArbovirusForm: React.FC = () => {
             .sort((a, b) => b.probability - a.probability);
     }, [result]);
 
-    // Gráfico 2: Comparativo de Modelos
+    
     const modelsChartData = useMemo(() => {
         if (!result || !result.analysis_details.comparative_stats) return [];
         return Object.entries(result.analysis_details.comparative_stats)
@@ -196,9 +189,9 @@ export const DiagnosisArbovirusForm: React.FC = () => {
                     </button>
                 </div>
 
+                {/* Importante: O ExperimentsPanel TAMBÉM precisará ser atualizado para usar 'api' */}
                 {showLab && <ExperimentsPanel />}
             </div>
         </div>
-
     );
 };

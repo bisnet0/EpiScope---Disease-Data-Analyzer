@@ -1,4 +1,3 @@
-# backend/app.py
 from datetime import timedelta
 import os
 from flask import Flask
@@ -13,22 +12,31 @@ from backend.models.ml_log_model import ModelTrainingLog
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)
+
+# --- CORS LIMPO E CORRETO ---
+# Usamos apenas a lib. Sem after_request manual.
+# origins: Lista com a URL exata do front (sem barra no final)
+CORS(app, resources={r"/*": {"origins": ["http://localhost:5173"]}}, supports_credentials=True)
 
 # Configurações
 app.config["SQLALCHEMY_DATABASE_URI"] = f"postgresql://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}@db:5432/{os.getenv('POSTGRES_DB')}"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+# JWT Cookies
 app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "dev-secret")
-app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(minutes=30)
+app.config["JWT_TOKEN_LOCATION"] = ["cookies"] 
+app.config["JWT_COOKIE_SECURE"] = False 
+app.config["JWT_COOKIE_CSRF_PROTECT"] = False 
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(minutes=15)
+app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=7)
 
 # Inicialização
 db.init_app(app)
 jwt = JWTManager(app)
 
-# Registra as rotas
+# Rotas
 app.register_blueprint(api_bp)
 
-# Cria tabelas ao iniciar (apenas para dev/teste)
 with app.app_context():
     db.create_all()
 

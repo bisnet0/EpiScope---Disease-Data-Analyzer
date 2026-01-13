@@ -1,9 +1,9 @@
-import Toast from './Toast';
 import React, { useState } from 'react';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine
 } from 'recharts';
-import { useAuth } from '../context/AuthContext';
+import api from '../services/api';
+import Toast from './Toast'; 
 
 interface ExperimentResult {
     accuracy: number;
@@ -18,7 +18,7 @@ interface ToastState {
 }
 
 export const ExperimentsPanel: React.FC = () => {
-    const { token } = useAuth();
+    // Não precisamos mais do token do contexto
     const [modelType, setModelType] = useState('xgboost');
 
     // Parâmetros (Estado flexível)
@@ -28,8 +28,9 @@ export const ExperimentsPanel: React.FC = () => {
 
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState<ExperimentResult | null>(null);
-    const [history, setHistory] = useState<any[]>([]); // Histórico da sessão atual
+    const [history, setHistory] = useState<any[]>([]); 
     const [toast, setToast] = useState<ToastState | null>(null);
+    
     const closeToast = () => setToast(null);
 
     const handleRunExperiment = async () => {
@@ -40,28 +41,30 @@ export const ExperimentsPanel: React.FC = () => {
             if (modelType !== 'decision_tree') params.n_estimators = nEstimators;
             if (modelType === 'xgboost') params.learning_rate = learningRate;
 
-            const response = await fetch('http://localhost:5000/diagnose/experiment', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ model_type: modelType, params })
+            // SUBSTITUIÇÃO: fetch -> api.post
+            const response = await api.post('/diagnose/experiment', {
+                model_type: modelType, 
+                params 
             });
 
-            const data = await response.json();
+            const data = response.data;
+            
             if (data.success) {
                 setResult(data);
-                // Adiciona ao histórico local do gráfico
                 setHistory(prev => [...prev, {
                     name: `Exp #${prev.length + 1} (${modelType})`,
                     accuracy: (data.accuracy * 100).toFixed(1),
                     config: JSON.stringify(params)
                 }]);
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("Erro no experimento:", error);
-            alert("Erro ao rodar experimento. Veja o console.");
+            // Mostra Toast de erro em vez de alert
+            setToast({
+                type: 'error',
+                title: 'Erro',
+                message: error.response?.data?.error || 'Erro ao rodar experimento.'
+            });
         } finally {
             setLoading(false);
         }
@@ -70,12 +73,9 @@ export const ExperimentsPanel: React.FC = () => {
     const handleSuggestParams = async () => {
         setLoading(true);
         try {
-            const response = await fetch('http://localhost:5000/diagnose/advisor', {
-                method: 'GET',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-
-            const data = await response.json();
+            // SUBSTITUIÇÃO: fetch -> api.get
+            const response = await api.get('/diagnose/advisor');
+            const data = response.data;
 
             if (data.success && data.suggestion) {
                 const { model_type, params, accuracy, origin } = data.suggestion;
@@ -86,7 +86,6 @@ export const ExperimentsPanel: React.FC = () => {
                 if (params.max_depth) setMaxDepth(Number(params.max_depth));
                 if (params.learning_rate) setLearningRate(Number(params.learning_rate));
 
-                // 2. SUCESSO: Chama o Toast Bonito
                 setToast({
                     type: 'success',
                     title: 'Configuração Otimizada!',
@@ -94,20 +93,18 @@ export const ExperimentsPanel: React.FC = () => {
                 });
 
             } else {
-                // 3. AVISO: Chama o Toast de Info
                 setToast({
                     type: 'info',
-                    title: 'Sem sugestões no momento',
-                    message: 'Ainda não temos dados históricos suficientes para gerar uma sugestão confiável.'
+                    title: 'Sem sugestões',
+                    message: 'Ainda não temos dados históricos suficientes.'
                 });
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            // 4. ERRO: Chama o Toast de Erro
             setToast({
                 type: 'error',
                 title: 'Erro de Conexão',
-                message: 'Não foi possível consultar o AI Advisor. Verifique sua conexão ou tente novamente.'
+                message: error.response?.data?.error || 'Não foi possível consultar o AI Advisor.'
             });
         } finally {
             setLoading(false);
@@ -132,20 +129,23 @@ export const ExperimentsPanel: React.FC = () => {
                             width: '100%', marginBottom: '20px',
                             background: 'linear-gradient(45deg, #646cff, #9b59b6)',
                             color: 'white', border: 'none', padding: '10px',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer'
                         }}
+                        disabled={loading}
                     >
                         ✨ Sugerir Melhor Ajuste
                     </button>
+                    
                     {toast && (
                         <Toast
                             type={toast.type}
                             title={toast.title}
                             message={toast.message}
                             onClose={closeToast}
-                            duration={5000} // Fica na tela por 5 segundos
+                            duration={5000}
                         />
                     )}
+
                     <div className="form-group">
                         <label>Algoritmo:</label>
                         <select value={modelType} onChange={e => setModelType(e.target.value)}>
@@ -177,7 +177,7 @@ export const ExperimentsPanel: React.FC = () => {
                     <button
                         onClick={handleRunExperiment}
                         disabled={loading}
-                        style={{ width: '100%', marginTop: '10px', background: loading ? '#555' : '#2ecc71', color: '#000', fontWeight: 'bold' }}
+                        style={{ width: '100%', marginTop: '10px', background: loading ? '#555' : '#2ecc71', color: '#000', fontWeight: 'bold', cursor: loading ? 'not-allowed' : 'pointer' }}
                     >
                         {loading ? 'Treinando...' : '🧪 Rodar Experimento'}
                     </button>
@@ -192,7 +192,7 @@ export const ExperimentsPanel: React.FC = () => {
                                 <ResponsiveContainer>
                                     <BarChart data={history}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="#444" />
-                                        <XAxis dataKey="name" stroke="#aaa" />
+                                        <XAxis dataKey="name" stroke="#aaa" fontSize={12} tickFormatter={val => val.split(' ')[1]} />
                                         <YAxis domain={[0, 100]} unit="%" stroke="#aaa" />
                                         <Tooltip contentStyle={{ background: '#333' }} />
                                         <ReferenceLine y={70} label="Meta (70%)" stroke="red" strokeDasharray="3 3" />
