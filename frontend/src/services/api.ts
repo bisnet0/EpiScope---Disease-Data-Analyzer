@@ -1,31 +1,48 @@
 import axios from 'axios';
 
 const api = axios.create({
-  // Mudamos para bater no PROXY do Vite
-  baseURL: '/api', 
+  baseURL: '/api',
+  withCredentials: true,
+});
+const refreshApi = axios.create({
+  baseURL: '/api',
   withCredentials: true,
 });
 
+let isRefreshing = false;
+
+
 api.interceptors.response.use(
-  (response) => {
-    return response;
-  },
+  (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    // Se der 401 e não for retry
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401) {
+
+      if (originalRequest._retry) {
+        return Promise.reject(error);
+      }
+
+      if (isRefreshing) {
+        return Promise.reject(error);
+      }
+
       originalRequest._retry = true;
+      isRefreshing = true;
 
       try {
-        // O proxy vai redirecionar isso para localhost:5000/auth/refresh
-        await api.post('/auth/refresh');
+        await refreshApi.post('/auth/refresh');
+        isRefreshing = false;
+
         return api(originalRequest);
+
       } catch (refreshError) {
-        // Se falhar, apenas rejeita. O AuthContext lida com o logout.
+        isRefreshing = false;
+
         return Promise.reject(refreshError);
       }
     }
+
     return Promise.reject(error);
   }
 );
