@@ -13,7 +13,8 @@ from backend.controllers.diagnose_controller import (
     structure_symptoms_only, 
     analyze_glaucoma, 
     run_experiment, 
-    get_ai_suggestion
+    get_ai_suggestion,
+    get_user_history
 )
 
 api_bp = Blueprint('api', __name__)
@@ -32,3 +33,4 @@ api_bp.route("/structure-symptoms", methods=["POST"])(jwt_required()(structure_s
 api_bp.route("/diagnose-glaucoma", methods=["POST"])(jwt_required()(analyze_glaucoma))
 api_bp.route("/diagnose/experiment", methods=["POST"])(jwt_required()(run_experiment))
 api_bp.route("/diagnose/advisor", methods=["GET"])(jwt_required()(get_ai_suggestion))
+api_bp.route("/diagnose/history", methods=["GET"])(jwt_required()(get_user_history))
