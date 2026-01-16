@@ -1,4 +1,7 @@
 import os
+import random
+
+import numpy as np
 import joblib
 import json
 import pandas as pd
@@ -470,3 +473,164 @@ def get_training_data_sample(limit=50000):
     except Exception as e:
         print(f"Erro carregando dados: {e}")
         return None, None
+
+
+class GeneticOptimizer:
+    def __init__(self, model_type, X_train, y_train, X_test, y_test):
+        self.model_type = model_type
+        self.X_train = X_train
+        self.y_train = y_train
+        self.X_test = X_test
+        self.y_test = y_test
+
+    def get_random_gene(self, param_name):
+        """Gera um valor aleatório para um gene (parâmetro)"""
+        # Espaço de Busca (DNA dos Modelos)
+        ranges = {
+            # XGBoost DNA
+            "n_estimators": lambda: random.randint(50, 500),
+            "max_depth": lambda: random.randint(3, 20),
+            "learning_rate": lambda: round(random.uniform(0.01, 0.5), 3),
+            "subsample": lambda: round(random.uniform(0.5, 1.0), 2),
+            "colsample_bytree": lambda: round(random.uniform(0.5, 1.0), 2),
+            "gamma": lambda: round(random.uniform(0, 5), 2),
+            # Random Forest DNA (compartilha n_estimators e max_depth)
+            "min_samples_split": lambda: random.randint(2, 20),
+            "min_samples_leaf": lambda: random.randint(1, 10),
+            # Decision Tree DNA (compartilha max_depth, min_samples...)
+            "criterion": lambda: random.choice(["gini", "entropy", "log_loss"]),
+        }
+        return ranges.get(param_name, lambda: 0)()
+
+    def create_individual(self):
+        """Cria um modelo com parâmetros aleatórios"""
+        params = {}
+        if self.model_type == "xgboost":
+            params = {
+                "n_estimators": self.get_random_gene("n_estimators"),
+                "max_depth": self.get_random_gene("max_depth"),
+                "learning_rate": self.get_random_gene("learning_rate"),
+                "subsample": self.get_random_gene("subsample"),
+                "colsample_bytree": self.get_random_gene("colsample_bytree"),
+                "gamma": self.get_random_gene("gamma"),
+            }
+        elif self.model_type == "random_forest":
+            params = {
+                "n_estimators": self.get_random_gene("n_estimators"),
+                "max_depth": self.get_random_gene("max_depth"),
+                "min_samples_split": self.get_random_gene("min_samples_split"),
+                "min_samples_leaf": self.get_random_gene("min_samples_leaf"),
+            }
+        elif self.model_type == "decision_tree":
+            params = {
+                "max_depth": self.get_random_gene("max_depth"),
+                "min_samples_split": self.get_random_gene("min_samples_split"),
+                "criterion": self.get_random_gene("criterion"),
+            }
+        return params
+
+    def evaluate(self, params):
+        """Treina e retorna a acurácia (Fitness Function)"""
+        try:
+            if self.model_type == "xgboost":
+                # XGB precisa saber num_class
+                num_classes = self.y_train.nunique()
+                model = XGBClassifier(
+                    **params,
+                    objective="multi:softmax",
+                    num_class=num_classes,
+                    n_jobs=1,
+                    random_state=42,
+                )
+            elif self.model_type == "random_forest":
+                model = RandomForestClassifier(**params, n_jobs=1, random_state=42)
+            elif self.model_type == "decision_tree":
+                model = DecisionTreeClassifier(**params, random_state=42)
+
+            model.fit(self.X_train, self.y_train)
+            acc = accuracy_score(self.y_test, model.predict(self.X_test))
+            return acc
+        except:
+            return 0.0
+
+    def run(self, generations=5, population_size=10):
+        """Executa o Algoritmo Genético"""
+        population = [self.create_individual() for _ in range(population_size)]
+        history = []
+        best_overall = {"accuracy": 0, "params": {}}
+
+        print(
+            f"🧬 Iniciando Evolução: {self.model_type.upper()} | Gen: {generations} | Pop: {population_size}"
+        )
+
+        for gen in range(generations):
+            # 1. Avaliação (Fitness)
+            scores = []
+            for indiv in population:
+                acc = self.evaluate(indiv)
+                scores.append((acc, indiv))
+                if acc > best_overall["accuracy"]:
+                    best_overall = {"accuracy": acc, "params": indiv}
+
+            # Ordena pelos melhores
+            scores.sort(key=lambda x: x[0], reverse=True)
+            best_gen_acc = scores[0][0]
+
+            history.append(
+                {
+                    "generation": gen + 1,
+                    "best_accuracy": float(best_gen_acc),
+                    "avg_accuracy": float(np.mean([s[0] for s in scores])),
+                }
+            )
+
+            # 2. Seleção (Elitismo - mantemos os top 50%)
+            top_half = [s[1] for s in scores[: population_size // 2]]
+
+            # 3. Crossover e Mutação para preencher o resto
+            new_population = top_half[:]
+            while len(new_population) < population_size:
+                parent1 = random.choice(top_half)
+                parent2 = random.choice(top_half)
+                child = parent1.copy()
+
+                # Crossover (mistura 50% dos genes)
+                for k in child.keys():
+                    if random.random() > 0.5:
+                        child[k] = parent2[k]
+
+                # Mutação (10% de chance de mudar um gene aleatório)
+                if random.random() < 0.2:
+                    gene_to_mutate = random.choice(list(child.keys()))
+                    child[gene_to_mutate] = self.get_random_gene(gene_to_mutate)
+
+                new_population.append(child)
+
+            population = new_population
+
+        return history, best_overall
+
+
+# --- ROTA DE SERVIÇO ---
+def run_genetic_pipeline(model_type):
+    # 1. Pega amostra rápida (5000 linhas para o AG ser ágil no front)
+    X, y = get_training_data_sample(limit=5000)
+    if X is None:
+        return {"error": "Sem dados"}, 500
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.3, random_state=42, stratify=y
+    )
+
+    # 2. Inicializa e Roda o AG
+    optimizer = GeneticOptimizer(model_type, X_train, y_train, X_test, y_test)
+
+    # Roda 5 gerações com 8 indivíduos (40 treinos no total)
+    # Isso deve levar ~10-20 segundos, aceitável para UX de "Loading"
+    history, best = optimizer.run(generations=5, population_size=8)
+
+    return {
+        "success": True,
+        "history": history,  # Para o gráfico de evolução
+        "best_individual": best,  # Para preencher os sliders
+    }, 200

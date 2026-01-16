@@ -7,7 +7,7 @@ from backend.services.ai_service import (
     run_symptom_structure,
     run_experiment_pipeline,
     get_best_optimization_suggestion,
-    
+    run_genetic_pipeline,
 )
 
 def analyze_arbovirus():
@@ -113,3 +113,10 @@ def get_user_history():
     history.sort(key=lambda x: x['date'], reverse=True)
     
     return jsonify(history), 200
+
+def run_evolutionary_optimization():
+    data = request.get_json()
+    model_type = data.get("model_type", "xgboost")
+    
+    result, status = run_genetic_pipeline(model_type)
+    return jsonify(result), status

@@ -1,22 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { ethers } from 'ethers';
 import { useAuth } from '../context/AuthContext';
-import api from '../services/api'; // <--- Axios configurado
+import api from '../services/api'; 
 import { ShieldCheck, CloudUpload, ClockHistory, FileEarmarkText, CheckCircle } from 'react-bootstrap-icons';
 
-// Interface do Histórico vindo do Backend
+
 interface HistoryItem {
     id: number;
     type: 'Arbovirose' | 'Glaucoma';
     date: string;
     details: string;
     result: any;
-    signature?: string; // Se já tiver hash da tx (futuro)
+    signature?: string; 
 }
 
-// Constantes Cartesi (Localhost)
+
 const INPUT_BOX_ADDRESS = "0x59b22D57D4f067708AB0c00552767405926dc768";
-const DAPP_ADDRESS = "0x70ac08179605AF2D9e75782b8DEcDD3c22aA4D0C";
+const DAPP_ADDRESS = "0xab7528bb862fB57E8A2BCd567a2e929a0Be56a5e";
 const INPUTBOX_ABI = ["function addInput(address _dapp, bytes memory _input) returns (bytes32)"];
 
 export const DiagnosisDAppForm: React.FC = () => {
@@ -25,7 +25,7 @@ export const DiagnosisDAppForm: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [sendingId, setSendingId] = useState<number | null>(null);
 
-    // Carrega histórico ao abrir a aba
+    
     useEffect(() => {
         fetchHistory();
     }, []);
@@ -33,7 +33,7 @@ export const DiagnosisDAppForm: React.FC = () => {
     const fetchHistory = async () => {
         setLoading(true);
         try {
-            // Usa api (Axios) para buscar histórico com cookie
+            
             const response = await api.get('/diagnose/history');
             setHistory(response.data);
         } catch (error) {
@@ -53,21 +53,21 @@ export const DiagnosisDAppForm: React.FC = () => {
         setSendingId(item.id);
 
         try {
-            // 1. Preparar os dados para imutabilidade
+            
             const payload = JSON.stringify({
                 action: "register_diagnosis",
                 diagnosis_id: item.id,
                 type: item.type,
                 timestamp: item.date,
-                data_hash: ethers.id(JSON.stringify(item.result)), // Hash do resultado para privacidade/integridade
+                data_hash: ethers.id(JSON.stringify(item.result)), 
                 submitter: walletAddress
             });
 
-            // 2. Converte para Bytes
+            
             const inputBytes = ethers.toUtf8Bytes(payload);
 
-            // 3. Envia Transação para o InputBox da Cartesi
-            // Nota: Isso vai abrir o MetaMask pedindo confirmação e GÁS (eth de teste)
+            
+            
             const inputBox = new ethers.Contract(INPUT_BOX_ADDRESS, INPUTBOX_ABI, signer);
             
             console.log(`Enviando Input para DApp ${DAPP_ADDRESS}...`);
@@ -76,8 +76,8 @@ export const DiagnosisDAppForm: React.FC = () => {
             console.log("Transação enviada:", tx.hash);
             alert(`✅ Transação enviada para Blockchain!\nHash: ${tx.hash.substring(0, 15)}...`);
             
-            // Opcional: Atualizar o backend dizendo que este item foi enviado (pending)
-            // await api.post(`/diagnose/${item.id}/register-tx`, { tx_hash: tx.hash });
+            
+            
 
         } catch (error: any) {
             console.error("Erro Blockchain:", error);
