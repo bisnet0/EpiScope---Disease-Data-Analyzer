@@ -1,7 +1,7 @@
 from flask import request, jsonify
 from flask_jwt_extended import jwt_required
 from sqlalchemy import func
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from backend.models.user_model import db
 from backend.models.diagnosis_model import ArbovirusDiagnosis, GlaucomaDiagnosis
 from backend.models.ml_log_model import ModelTrainingLog
@@ -73,7 +73,7 @@ def get_dashboard_stats():
         timeline = [
             {
                 "id": log.id,
-                "date": log.created_at.strftime("%d/%m %H:%M"),
+                "date": log.created_at.replace(tzinfo=timezone.utc).isoformat(),
                 "accuracy": round(log.accuracy * 100, 2),
                 "model": log.model_name.replace("Arbovirus_", "").replace(
                     "Glaucoma_", ""

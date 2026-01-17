@@ -43,6 +43,33 @@ export const DiagnosisDAppForm: React.FC = () => {
         }
     };
 
+        const formatDateBR = (iso: string) => {
+        const date = new Date(iso);
+
+        const day = date.toLocaleString("pt-BR", {
+            day: "2-digit",
+            timeZone: "America/Sao_Paulo"
+        });
+
+        const month = date.toLocaleString("pt-BR", {
+            month: "2-digit",
+            timeZone: "America/Sao_Paulo"
+        });
+
+        const hour = date.toLocaleString("pt-BR", {
+            hour: "2-digit",
+            hour12: false,
+            timeZone: "America/Sao_Paulo"
+        });
+
+        const minute = date.toLocaleString("pt-BR", {
+            minute: "2-digit",
+            timeZone: "America/Sao_Paulo"
+        });
+
+        return `${hour}h${minute}m`;
+    };
+
     const handleRegisterOnChain = async (item: HistoryItem) => {
         if (!signer || !walletAddress) {
             alert("Por favor, conecte sua carteira primeiro.");
@@ -137,8 +164,8 @@ export const DiagnosisDAppForm: React.FC = () => {
                                             <td style={{ padding: '15px' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                     <ClockHistory size={14}/> 
-                                                    {new Date(item.date).toLocaleDateString()}
-                                                    <small style={{color: '#666'}}>{new Date(item.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</small>
+                                                    {new Date(item.date).toLocaleDateString("pt-BR")}
+                                                    <small style={{color: '#666'}}> {formatDateBR(item.date)}</small>
                                                 </div>
                                             </td>
                                             <td style={{ padding: '15px' }}>

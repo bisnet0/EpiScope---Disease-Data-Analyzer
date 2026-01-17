@@ -1,3 +1,4 @@
+from datetime import timezone
 from backend.models.diagnosis_model import ArbovirusDiagnosis, GlaucomaDiagnosis
 from flask import request, jsonify
 from flask_jwt_extended import get_jwt_identity
@@ -88,7 +89,7 @@ def get_user_history():
         history.append({
             "id": item.id,
             "type": "Arbovirose",
-            "date": item.created_at.isoformat(),
+            "date": item.created_at.replace(tzinfo=timezone.utc).isoformat(),
             # CORREÇÃO 1: O nome correto é text_description
             "details": f"Sintomas: {item.text_description[:40]}..." if item.text_description else "Descrição não disponível",
             # CORREÇÃO 2: O nome correto é prediction_result
@@ -103,7 +104,7 @@ def get_user_history():
         history.append({
             "id": item.id,
             "type": "Glaucoma",
-            "date": item.created_at.isoformat(),
+            "date": item.created_at.replace(tzinfo=timezone.utc).isoformat(),
             # Glaucoma não salva o path da imagem, então colocamos texto fixo
             "details": "Imagem de Fundo de Olho (Processada)",
             "result": item.prediction_result, 
