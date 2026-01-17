@@ -183,7 +183,7 @@ export const DiagnosisArbovirusForm: React.FC = () => {
                     <button
                         type="button"
                         onClick={() => setShowLab(!showLab)}
-                        style={{ background: 'transparent', border: '1px solid #555', color: '#aaa' }}
+                        style={{ background: 'transparent', border: '1px solid rgb(27, 132, 69)', color: '#aaa' }}
                     >
                         {showLab ? 'Fechar Laboratório' : '🔬 Abrir Laboratório de IA (Modo Avançado)'}
                     </button>

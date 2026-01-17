@@ -13,14 +13,16 @@
 }
 
 main {
-  max-width: 1366px; /* Conteúdo centralizado */
+  max-width: 1366px;
+  /* Conteúdo centralizado */
   margin: 0 auto;
   padding: 2rem;
 }
 
 .dashboard-header {
   display: flex;
-  justify-content: space-between; /* Distribui: Esquerda - Centro - Direita */
+  justify-content: space-between;
+  /* Distribui: Esquerda - Centro - Direita */
   align-items: center;
   padding: 0.8rem 2rem;
   background-color: #1a1a1a;
@@ -28,17 +30,19 @@ main {
   width: 100%;
   box-sizing: border-box;
   border-radius: 8px;
-  
+
   /* Opcional: Fixar no topo */
   position: sticky;
   top: 0;
   z-index: 1000;
 }
+
 .header-left {
   display: flex;
   align-items: center;
   gap: 15px;
-  min-width: 200px; /* Garante espaço para o logo */
+  min-width: 200px;
+  /* Garante espaço para o logo */
 }
 
 .header-left h1 {
@@ -62,7 +66,8 @@ main {
   align-items: center;
   justify-content: flex-end;
   gap: 1rem;
-  min-width: 200px; /* Equilibra com o lado esquerdo */
+  min-width: 200px;
+  /* Equilibra com o lado esquerdo */
 }
 
 .user-info {
@@ -78,7 +83,7 @@ main {
   border: 1px solid #444;
   color: #ff6b6b;
   padding: 8px;
-  border-radius: 50%; /* Botão redondo */
+  /* Botão redondo */
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -193,6 +198,10 @@ button:disabled {
   color: #aaa;
   padding: 0.5em 1em;
   font-size: 0.9em;
+  display: flex;
+  align-items: center;
+  /* 🔥 alinha verticalmente ícone e texto */
+  gap: 6px;
 }
 
 .mode-selector button.active {
@@ -212,7 +221,8 @@ button:disabled {
 footer {
   margin-top: 3rem;
   padding: 1.5rem 0;
-  background-color: #242424; /* azul escuro */
+  background-color: #242424;
+  /* azul escuro */
   color: #cbd5e1;
   text-align: center;
   border-radius: 12px;
@@ -242,7 +252,8 @@ footer {
 }
 
 .social-links a:hover {
-  color: #38bdf8; /* azul claro */
+  color: #38bdf8;
+  /* azul claro */
   transform: translateY(-2px);
 }
 

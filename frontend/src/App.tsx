@@ -7,6 +7,7 @@ import { Dashboard } from './components/Dashboard'; // <--- Importado!
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Linkedin, Github, Globe, BoxArrowRight, PersonCircle, Wallet2, Activity } from 'react-bootstrap-icons';
 import { FaMosquito, FaRegEye } from "react-icons/fa6";
+import { VscSignOut } from "react-icons/vsc";
 
 import './App.css';
 import { BrowserRouter } from 'react-router-dom';
@@ -48,6 +49,26 @@ const MainLayout = () => {
           <h1>EpiScope AI</h1>
         </div>
 
+        
+
+        <div className="mode-selector" style={{ marginRight: '10px' }}>
+          {/* 3. Botão do Dashboard */}
+          <button onClick={() => setMode('dashboard')} className={mode === 'dashboard' ? 'active' : ''}>
+            <Activity style={{ marginRight: 5 }} /> Dashboard
+          </button>
+
+          <button onClick={() => setMode('web2')} className={mode === 'web2' ? 'active' : ''}>
+            <FaMosquito style={{ marginRight: 5 }} />Arboviroses
+          </button>
+          <button onClick={() => setMode('image')} className={mode === 'image' ? 'active' : ''}>
+            <FaRegEye style={{ marginRight: 5 }} />Glaucoma
+          </button>
+          <button onClick={() => setMode('web3')} className={mode === 'web3' ? 'active' : ''}>
+            <PiSignatureLight style={{ marginRight: 5 }} />Assinatura
+
+          </button>
+        </div>
+
         <div className="user-profile">
           {walletAddress ? (
             <div style={{
@@ -75,25 +96,7 @@ const MainLayout = () => {
             <span>{user?.username}</span>
           </div>
           <button onClick={signOut} className="logout-btn" title="Sair">
-            <BoxArrowRight size={20} />
-          </button>
-        </div>
-
-        <div className="mode-selector">
-          {/* 3. Botão do Dashboard */}
-          <button onClick={() => setMode('dashboard')} className={mode === 'dashboard' ? 'active' : ''}>
-            <Activity style={{ marginRight: 5 }} /> Dashboard
-          </button>
-
-          <button onClick={() => setMode('web2')} className={mode === 'web2' ? 'active' : ''}>
-            <FaMosquito style={{ marginRight: 5 }} />Arboviroses
-          </button>
-          <button onClick={() => setMode('image')} className={mode === 'image' ? 'active' : ''}>
-            <FaRegEye style={{ marginRight: 5 }} />Glaucoma
-          </button>
-          <button onClick={() => setMode('web3')} className={mode === 'web3' ? 'active' : ''}>
-            <PiSignatureLight style={{ marginRight: 5 }} />Assinatura
-            
+           <VscSignOut />
           </button>
         </div>
       </header>
