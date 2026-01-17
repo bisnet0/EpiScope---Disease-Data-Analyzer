@@ -3,18 +3,23 @@ import { DiagnosisArbovirusForm } from './components/DiagnosisArbovirusForm';
 import { DiagnosisGlaucomaForm } from './components/DiagnosisGlaucomaForm';
 import { DiagnosisDAppForm } from './components/DiagnosisDAppForm';
 import { LoginForm } from './components/LoginForm';
+import { Dashboard } from './components/Dashboard'; // <--- Importado!
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { Linkedin, Github, Globe, BoxArrowRight, PersonCircle, Wallet2 } from 'react-bootstrap-icons';
+import { Linkedin, Github, Globe, BoxArrowRight, PersonCircle, Wallet2, Activity } from 'react-bootstrap-icons';
+import { FaMosquito, FaRegEye } from "react-icons/fa6";
+
 import './App.css';
 import { BrowserRouter } from 'react-router-dom';
+import { PiSignatureLight } from 'react-icons/pi';
 
-type Mode = 'web2' | 'web3' | 'image';
+// 1. Adicionamos 'dashboard' aqui
+type Mode = 'dashboard' | 'web2' | 'web3' | 'image';
 
 const MainLayout = () => {
-  const [mode, setMode] = useState<Mode>('web2');
+  // 2. Dashboard agora é a Home
+  const [mode, setMode] = useState<Mode>('dashboard');
 
   const { user, isAuthenticated, loadingAuth, signOut, walletAddress, connectWallet } = useAuth();
-
 
   if (loadingAuth) {
     return (
@@ -44,7 +49,6 @@ const MainLayout = () => {
         </div>
 
         <div className="user-profile">
-          {/* --- LÓGICA DA WALLET ADICIONADA AQUI --- */}
           {walletAddress ? (
             <div style={{
               display: 'flex', alignItems: 'center', gap: '5px',
@@ -52,7 +56,6 @@ const MainLayout = () => {
               padding: '5px 10px', borderRadius: '20px', fontSize: '0.8rem', marginRight: '10px'
             }}>
               <Wallet2 />
-              {/* Mostra começo...fim do endereço */}
               <span>{walletAddress.substring(0, 6)}...{walletAddress.substring(38)}</span>
             </div>
           ) : (
@@ -66,7 +69,6 @@ const MainLayout = () => {
               Conectar Wallet
             </button>
           )}
-          {/* --------------------------------------- */}
 
           <div className="user-info">
             <PersonCircle size={20} style={{ marginRight: '8px' }} />
@@ -78,19 +80,27 @@ const MainLayout = () => {
         </div>
 
         <div className="mode-selector">
-          <button onClick={() => setMode('web2')} className={mode === 'web2' ? 'active' : ''}>
-            Arboviroses
+          {/* 3. Botão do Dashboard */}
+          <button onClick={() => setMode('dashboard')} className={mode === 'dashboard' ? 'active' : ''}>
+            <Activity style={{ marginRight: 5 }} /> Dashboard
           </button>
-          <button onClick={() => setMode('web3')} className={mode === 'web3' ? 'active' : ''}>
-           Assinatura DApp
+
+          <button onClick={() => setMode('web2')} className={mode === 'web2' ? 'active' : ''}>
+            <FaMosquito style={{ marginRight: 5 }} />Arboviroses
           </button>
           <button onClick={() => setMode('image')} className={mode === 'image' ? 'active' : ''}>
-            Glaucoma
+            <FaRegEye style={{ marginRight: 5 }} />Glaucoma
+          </button>
+          <button onClick={() => setMode('web3')} className={mode === 'web3' ? 'active' : ''}>
+            <PiSignatureLight style={{ marginRight: 5 }} />Assinatura
+            
           </button>
         </div>
       </header>
 
       <main>
+        {/* 4. Renderiza o Dashboard */}
+        {mode === 'dashboard' && <Dashboard />}
         {mode === 'web2' && <DiagnosisArbovirusForm />}
         {mode === 'web3' && <DiagnosisDAppForm />}
         {mode === 'image' && <DiagnosisGlaucomaForm />}

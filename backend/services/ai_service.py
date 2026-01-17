@@ -410,23 +410,17 @@ def run_glaucoma_pipeline(image_bytes, user_id):
 
 
 def run_glaucoma_genetic_pipeline(model_type):
-    # 1. Obtém os "Vetores de Características" (Embeddings)
     X, y = get_glaucoma_embeddings_sample(limit=2000)
 
     if X is None:
         return {"error": "Falha ao carregar vetores de imagem"}, 500
 
-    # 2. Divide Treino/Teste
-
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.3, random_state=42
     )
 
-    # 3. Reusa nossa Engine Genética poderosa (GeneticOptimizer)
-    # Ela funciona perfeitamente pois agora estamos lidando com vetores numéricos!
     optimizer = GeneticOptimizer(model_type, X_train, y_train, X_test, y_test)
 
-    # Roda a evolução
     history, best = optimizer.run(generations=5, population_size=8)
 
     return {
@@ -443,18 +437,12 @@ def get_glaucoma_embeddings_sample(limit=1000):
     Isso permite rodar o AG rapidamente sem processar gigabytes de imagens.
     """
     try:
-        # Simula 20 características extraídas da imagem (ex: texturas, bordas, CDR)
-        # Em produção, isso viria de um 'model.predict(imagens)'
         np.random.seed(42)
 
-        # Cria vetores aleatórios
         X = np.random.rand(limit, 20)
 
-        # Cria targets (0: Normal, 1: Glaucoma) baseados em uma lógica não-linear
-        # Isso garante que o modelo precise "aprender" de verdade
         y = (X[:, 0] * X[:, 1] + X[:, 2] > 0.8).astype(int)
 
-        # Converte para DataFrame para ser compatível com nosso GeneticOptimizer
         feature_names = [f"cnn_feature_{i}" for i in range(20)]
         X_df = pd.DataFrame(X, columns=feature_names)
         y_series = pd.Series(y, name="target")
@@ -632,11 +620,26 @@ def run_genetic_pipeline(model_type):
     )
 
     optimizer = GeneticOptimizer(model_type, X_train, y_train, X_test, y_test)
-
     history, best = optimizer.run(generations=5, population_size=8)
 
-    return {
-        "success": True,
-        "history": history,
-        "best_individual": best,
-    }, 200
+    try:
+        ARTIFACTS_DIR = "/app/model_artifacts"
+        if not os.path.exists(ARTIFACTS_DIR):
+            os.makedirs(ARTIFACTS_DIR)
+
+        best_params_path = os.path.join(ARTIFACTS_DIR, "best_hyperparameters.json")
+
+        current_config = {}
+        if os.path.exists(best_params_path):
+            with open(best_params_path, "r") as f:
+                current_config = json.load(f)
+
+        with open(best_params_path, "w") as f:
+            json.dump(best["params"], f, indent=4)
+
+        print(f"🧬 DNA Vencedor salvo em: {best_params_path}")
+
+    except Exception as e:
+        print(f"⚠️ Erro ao salvar hiperparâmetros: {e}")
+
+    return {"success": True, "history": history, "best_individual": best}, 200

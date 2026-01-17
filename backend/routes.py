@@ -19,6 +19,8 @@ from backend.controllers.diagnose_controller import (
     run_glaucoma_evolution
 )
 
+from backend.controllers.dashboard_controller import get_dashboard_stats
+
 api_bp = Blueprint('api', __name__)
 
 # Rotas de Autenticação
@@ -38,3 +40,6 @@ api_bp.route("/diagnose/advisor", methods=["GET"])(jwt_required()(get_ai_suggest
 api_bp.route("/diagnose/history", methods=["GET"])(jwt_required()(get_user_history))
 api_bp.route("/diagnose/optimize-ga", methods=["POST"])(jwt_required()(run_evolutionary_optimization))
 api_bp.route("/diagnose/glaucoma/optimize-ga", methods=["POST"])(jwt_required()(run_glaucoma_evolution))
+
+# Rota do Dashboard
+api_bp.route("/dashboard/stats", methods=["GET"])(jwt_required()(get_dashboard_stats))
