@@ -4,6 +4,8 @@ import {
 } from "recharts";
 import api from "../services/api"; // <--- Importando Axios
 
+import { GlaucomaExperimentsPanel } from "./GlaucomaExperimentsPanel";
+
 interface GlaucomaApiResponse {
   friendly_response: string;
   analysis_details: {
@@ -25,6 +27,7 @@ export const DiagnosisGlaucomaForm: React.FC = () => {
   const [result, setResult] = useState<GlaucomaApiResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showLab, setShowLab] = useState(false);
 
   const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -44,7 +47,7 @@ export const DiagnosisGlaucomaForm: React.FC = () => {
       setError("Selecione uma imagem.");
       return;
     }
-    
+
     setLoading(true);
     setError(null);
     setResult(null);
@@ -59,7 +62,7 @@ export const DiagnosisGlaucomaForm: React.FC = () => {
 
       // Sucesso (status 200)
       setResult(response.data);
-      
+
     } catch (err: any) {
       // Tratamento de erro padronizado
       const msg = err.response?.data?.error || err.message || "Erro na análise da imagem.";
@@ -104,14 +107,14 @@ export const DiagnosisGlaucomaForm: React.FC = () => {
           <div className="result-box">
             <h3>👁️ Resultado da Visão Computacional</h3>
             <div dangerouslySetInnerHTML={{ __html: formatResponse(result.friendly_response) }} />
-            
+
             <div style={{ height: 250, marginTop: '20px' }}>
               <ResponsiveContainer>
                 <BarChart data={chartData} layout="vertical" margin={{ left: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#444" />
                   <XAxis type="number" unit="%" domain={[0, 100]} stroke="#aaa" />
                   <YAxis type="category" dataKey="name" width={100} stroke="#aaa" />
-                  <Tooltip contentStyle={{backgroundColor: '#333'}} />
+                  <Tooltip contentStyle={{ backgroundColor: '#333' }} />
                   <Legend />
                   <Bar dataKey="probability" name="Confiança (%)">
                     {chartData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
@@ -122,6 +125,17 @@ export const DiagnosisGlaucomaForm: React.FC = () => {
           </div>
         )}
       </div>
+      <div style={{ marginTop: '40px', textAlign: 'center' }}>
+        <button
+          type="button"
+          onClick={() => setShowLab(!showLab)}
+          style={{ background: 'transparent', border: '1px solid #e91e63', color: '#e91e63', padding: '8px 16px', borderRadius: '4px', cursor: 'pointer' }}
+        >
+          {showLab ? 'Fechar Lab' : '👁️ Abrir Lab de Visão Computacional (AG)'}
+        </button>
+      </div>
+
+      {showLab && <GlaucomaExperimentsPanel />}
     </div>
   );
 };

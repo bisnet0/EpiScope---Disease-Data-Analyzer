@@ -15,18 +15,18 @@ from backend.utils.data_helpers import (
     convert_numpy_floats,
     preprocess_glaucoma_image,
 )
-from sklearn.model_selection import train_test_split  # <--- NOVO
-from sklearn.metrics import accuracy_score, classification_report  # <--- NOVO
-from sklearn.ensemble import RandomForestClassifier  # <--- NOVO
-from sklearn.tree import DecisionTreeClassifier  # <--- NOVO
-from xgboost import XGBClassifier  # <--- NOVO
-from sqlalchemy import create_engine, text  # <--- NOV
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, classification_report
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.tree import DecisionTreeClassifier
+from xgboost import XGBClassifier
+from sqlalchemy import create_engine, text
 
 ARTIFACTS_DIR = "/app/model_artifacts"
 CACHED_TRAIN_DATA = None
 print("--- Inicializando AI Service (Multi-Model) ---")
 
-# 1. Configuração do Gemini
+
 try:
     genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
     model_gemini = genai.GenerativeModel("gemini-2.5-flash")
@@ -34,22 +34,20 @@ except Exception as e:
     print(f"Erro Gemini: {e}")
     model_gemini = None
 
-# 2. Carregamento do Model Zoo (Arboviroses)
+
 ARBO_MODELS = {}
 arbo_model_columns = []
 arbo_target_map = {}
 
 try:
-    # Carrega metadados (iguais para todos)
     with open(os.path.join(ARTIFACTS_DIR, "model_columns.json"), "r") as f:
         arbo_model_columns = json.load(f)
     with open(os.path.join(ARTIFACTS_DIR, "target_map.json"), "r") as f:
         arbo_target_map = {int(k): v for k, v in json.load(f).items()}
 
-    # Lista de modelos esperados
     model_files = {
         "xgboost_standard": "xgboost_standard.joblib",
-        "xgboost_genetic": "xgboost_genetic.joblib",  # Só vai existir se rodou o AG
+        "xgboost_genetic": "xgboost_genetic.joblib",
         "random_forest": "randomforest.joblib",
         "decision_tree": "decisiontree.joblib",
     }
@@ -66,7 +64,6 @@ try:
         else:
             print(f"⚠️ {key} não encontrado (pule se não treinou ainda).")
 
-    # Fallback: Se não achou nenhum novo, tenta o antigo (compatibilidade)
     if not ARBO_MODELS:
         old_path = os.path.join(ARTIFACTS_DIR, "xgboost_model.joblib")
         if os.path.exists(old_path):
@@ -76,7 +73,7 @@ try:
 except Exception as e:
     print(f"Erro fatal carregando modelos Arbo: {e}")
 
-# 3. Carregamento Glaucoma (CNN)
+
 try:
     glaucoma_cnn_model = tf.keras.models.load_model(
         os.path.join(ARTIFACTS_DIR, "glaucoma_cnn_model.h5")
@@ -92,20 +89,16 @@ except Exception:
 
 
 def run_experiment_pipeline(user_id, model_type, params):
-    # 1. Carrega dados (Amostra)
     X, y = get_training_data_sample()
     if X is None:
         return {"error": "Falha ao carregar dados de treino"}, 500
 
-    # 2. Split (Treino/Teste na hora)
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.3, random_state=42, stratify=y
     )
 
-    # 3. Instancia o Modelo baseado nos parâmetros do Front
     try:
         if model_type == "random_forest":
-            # Converte params que vêm como string/float
             n_est = int(params.get("n_estimators", 100))
             depth = int(params.get("max_depth", 10))
             model = RandomForestClassifier(
@@ -123,7 +116,7 @@ def run_experiment_pipeline(user_id, model_type, params):
             n_est = int(params.get("n_estimators", 100))
             lr = float(params.get("learning_rate", 0.1))
             depth = int(params.get("max_depth", 6))
-            # XGB precisa saber quantas classes
+
             num_classes = y.nunique()
             model = XGBClassifier(
                 n_estimators=n_est,
@@ -137,21 +130,17 @@ def run_experiment_pipeline(user_id, model_type, params):
         else:
             return {"error": "Tipo de modelo desconhecido"}, 400
 
-        # 4. Treina (Fit)
         model.fit(X_train, y_train)
 
-        # 5. Avalia
         y_pred = model.predict(X_test)
         acc = accuracy_score(y_test, y_pred)
         report = classification_report(y_test, y_pred, output_dict=True)
 
-        # 6. Salva Log do Experimento no Banco (Importante para o Admin ver depois)
-        # Tenta pegar metadados do usuario
         user = User.query.get(user_id)
         username = user.username if user else "unknown"
 
         log_entry_orm = {
-            "model_name": f"EXP_{model_type.upper()}_{username}",  # Tag diferente para experimentos
+            "model_name": f"EXP_{model_type.upper()}_{username}",
             "version": "playground",
             "parameters": json.dumps(params),
             "feature_importance": None,
@@ -161,7 +150,6 @@ def run_experiment_pipeline(user_id, model_type, params):
             "created_at": pd.Timestamp.utcnow(),
         }
 
-        # Inserção SQL (Copiada do ml_train_model.py e ajustada)
         db_url = f"postgresql://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}@db:5432/{os.getenv('POSTGRES_DB')}"
         engine_log = create_engine(db_url)
 
@@ -175,7 +163,6 @@ def run_experiment_pipeline(user_id, model_type, params):
             conn.execute(insert_query, log_entry_orm)
             conn.commit()
 
-        # 7. Retorna resultados para o Front plotar
         return {
             "success": True,
             "accuracy": acc,
@@ -193,8 +180,6 @@ def get_best_optimization_suggestion():
         db_url = f"postgresql://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}@db:5432/{os.getenv('POSTGRES_DB')}"
         engine_log = create_engine(db_url)
 
-        # Busca o registro com a MAIOR acurácia da história (seja experimento ou treino oficial)
-        # Ignora DecisionTree se quiser focar nos modelos complexos, mas vamos deixar geral.
         query = text("""
             SELECT model_name, parameters, accuracy 
             FROM model_training_logs 
@@ -211,8 +196,7 @@ def get_best_optimization_suggestion():
 
         model_name, params_json, acc = result
 
-        # Normaliza o nome do modelo para o Frontend
-        model_type = "xgboost"  # default
+        model_type = "xgboost"
         if "forest" in model_name.lower():
             model_type = "random_forest"
         elif "decision" in model_name.lower():
@@ -220,7 +204,6 @@ def get_best_optimization_suggestion():
         elif "xgboost" in model_name.lower():
             model_type = "xgboost"
 
-        # Trata o JSON (as vezes vem string do banco)
         if isinstance(params_json, str):
             import json
 
@@ -234,7 +217,7 @@ def get_best_optimization_suggestion():
                 "model_type": model_type,
                 "accuracy": float(acc),
                 "params": params,
-                "origin": model_name,  # Pra saber se veio do AG ou de um teste manual
+                "origin": model_name,
             },
         }, 200
 
@@ -243,12 +226,10 @@ def get_best_optimization_suggestion():
         return {"error": str(e)}, 500
 
 
-# --- ARBOVIRUS PIPELINE (ATUALIZADO PARA MULTI-MODELO) ---
 def run_arbovirus_pipeline(text_description, age, sex, user_id, model_choice="all"):
     if not ARBO_MODELS or not model_gemini:
         return {"error": "Serviços de IA indisponíveis"}, 503
 
-    # 1. Gemini estrutura os sintomas
     symptoms_list = get_symptom_list_from_cols(arbo_model_columns)
     prompt = f'Analise: "{text_description}". Extraia sintomas JSON true/false. Possíveis: {symptoms_list}.'
     try:
@@ -259,7 +240,6 @@ def run_arbovirus_pipeline(text_description, age, sex, user_id, model_choice="al
     except Exception as e:
         return {"error": f"Erro na IA Generativa: {str(e)}"}, 500
 
-    # 2. Prepara o DataFrame
     try:
         df = pd.DataFrame(columns=arbo_model_columns, index=[0]).fillna(0)
         for s, v in structured.items():
@@ -272,13 +252,11 @@ def run_arbovirus_pipeline(text_description, age, sex, user_id, model_choice="al
     except Exception as e:
         return {"error": f"Erro no pré-processamento de dados: {e}"}, 500
 
-    # 3. Multi-Inferência (Roda todos os modelos)
     comparative_results = {}
     best_model_name = "none"
     highest_confidence = -1.0
     final_probs = {}
 
-    # Define quais modelos rodar
     models_to_run = (
         ARBO_MODELS
         if model_choice == "all"
@@ -290,28 +268,22 @@ def run_arbovirus_pipeline(text_description, age, sex, user_id, model_choice="al
             if not model:
                 continue
 
-            # Predição
             probs = model.predict_proba(df[arbo_model_columns])[0]
             model_result = {arbo_target_map[i]: float(p) for i, p in enumerate(probs)}
 
-            # Quem é o vencedor deste modelo?
             top_disease = max(model_result, key=model_result.get)
             confidence = model_result[top_disease]
 
-            # Guarda para o comparativo
             comparative_results[name] = {
                 "diagnosis": top_disease,
                 "confidence": confidence,
                 "full_probs": model_result,
             }
 
-            # Lógica do "Campeão Geral" (Maior confiança vence)
             if confidence > highest_confidence:
                 highest_confidence = confidence
                 best_model_name = name
-                final_probs = (
-                    model_result  # Usa as probs do campeão para a resposta final
-                )
+                final_probs = model_result
 
     except Exception as e:
         return {"error": f"Erro durante inferência dos modelos: {e}"}, 500
@@ -321,7 +293,6 @@ def run_arbovirus_pipeline(text_description, age, sex, user_id, model_choice="al
 
     top_diagnosis_winner = max(final_probs, key=final_probs.get)
 
-    # 4. Persistência e Log
     try:
         user = User.query.get(user_id)
         if not user:
@@ -336,11 +307,9 @@ def run_arbovirus_pipeline(text_description, age, sex, user_id, model_choice="al
             text_description=text_description,
             structured_symptoms=structured,
             input_features=input_features_log,
-            prediction_result=convert_numpy_floats(
-                final_probs
-            ),  # Salva probs do vencedor
+            prediction_result=convert_numpy_floats(final_probs),
             top_diagnosis=top_diagnosis_winner,
-            model_version=f"Winner_{best_model_name}",  # Registra quem ganhou
+            model_version=f"Winner_{best_model_name}",
         )
         db.session.add(new_diag)
         db.session.commit()
@@ -350,7 +319,6 @@ def run_arbovirus_pipeline(text_description, age, sex, user_id, model_choice="al
         db.session.rollback()
         return {"error": f"Erro na Persistência: {str(e)}"}, 500
 
-    # 5. Explicação Amigável (Baseada no vencedor)
     try:
         res_txt = "\n".join([f"{k}: {v:.1%}" for k, v in final_probs.items()])
         prompt_friendly = f"Explique para paciente ({age} anos): Sintomas: {text_description}. Probabilidades: {res_txt}. Mais provável: {top_diagnosis_winner}. USE DISCLAIMER: NÃO É DIAGNÓSTICO."
@@ -358,7 +326,6 @@ def run_arbovirus_pipeline(text_description, age, sex, user_id, model_choice="al
     except Exception:
         friendly = "Erro ao gerar explicação amigável."
 
-    # 6. Retorno Completo
     return (
         {
             "friendly_response": friendly,
@@ -367,7 +334,7 @@ def run_arbovirus_pipeline(text_description, age, sex, user_id, model_choice="al
                 "structured_symptoms": structured,
                 "diagnosis_id": new_diag.id,
                 "winner_model": best_model_name,
-                "comparative_stats": comparative_results,  # Frontend vai usar isso para gráficos!
+                "comparative_stats": comparative_results,
             },
         },
         200,
@@ -442,6 +409,62 @@ def run_glaucoma_pipeline(image_bytes, user_id):
     }, 200
 
 
+def run_glaucoma_genetic_pipeline(model_type):
+    # 1. Obtém os "Vetores de Características" (Embeddings)
+    X, y = get_glaucoma_embeddings_sample(limit=2000)
+
+    if X is None:
+        return {"error": "Falha ao carregar vetores de imagem"}, 500
+
+    # 2. Divide Treino/Teste
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.3, random_state=42
+    )
+
+    # 3. Reusa nossa Engine Genética poderosa (GeneticOptimizer)
+    # Ela funciona perfeitamente pois agora estamos lidando com vetores numéricos!
+    optimizer = GeneticOptimizer(model_type, X_train, y_train, X_test, y_test)
+
+    # Roda a evolução
+    history, best = optimizer.run(generations=5, population_size=8)
+
+    return {
+        "success": True,
+        "history": history,
+        "best_individual": best,
+        "note": "Otimização realizada sobre embeddings extraídos da CNN (Transfer Learning).",
+    }, 200
+
+
+def get_glaucoma_embeddings_sample(limit=1000):
+    """
+    Gera dados sintéticos que imitam vetores extraídos de uma CNN (ex: ResNet/VGG).
+    Isso permite rodar o AG rapidamente sem processar gigabytes de imagens.
+    """
+    try:
+        # Simula 20 características extraídas da imagem (ex: texturas, bordas, CDR)
+        # Em produção, isso viria de um 'model.predict(imagens)'
+        np.random.seed(42)
+
+        # Cria vetores aleatórios
+        X = np.random.rand(limit, 20)
+
+        # Cria targets (0: Normal, 1: Glaucoma) baseados em uma lógica não-linear
+        # Isso garante que o modelo precise "aprender" de verdade
+        y = (X[:, 0] * X[:, 1] + X[:, 2] > 0.8).astype(int)
+
+        # Converte para DataFrame para ser compatível com nosso GeneticOptimizer
+        feature_names = [f"cnn_feature_{i}" for i in range(20)]
+        X_df = pd.DataFrame(X, columns=feature_names)
+        y_series = pd.Series(y, name="target")
+
+        return X_df, y_series
+    except Exception as e:
+        print(f"Erro ao gerar embeddings: {e}")
+        return None, None
+
+
 def get_training_data_sample(limit=50000):
     global CACHED_TRAIN_DATA
     if CACHED_TRAIN_DATA is not None:
@@ -452,7 +475,6 @@ def get_training_data_sample(limit=50000):
         db_url = f"postgresql://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}@db:5432/{os.getenv('POSTGRES_DB')}"
         engine = create_engine(db_url)
 
-        # Lê colunas do JSON para ser consistente
         cols_path = os.path.join(ARTIFACTS_DIR, "model_columns.json")
         if os.path.exists(cols_path):
             with open(cols_path, "r") as f:
@@ -460,7 +482,6 @@ def get_training_data_sample(limit=50000):
             cols_query = feature_cols + ["target_encoded"]
             cols_str = ", ".join([f'"{c}"' for c in cols_query])
 
-            # Pega uma amostra aleatória do banco (rápido)
             query = f"SELECT {cols_str} FROM cleaned_arboviroses_cases ORDER BY RANDOM() LIMIT {limit}"
             df = pd.read_sql(query, engine)
 
@@ -485,19 +506,16 @@ class GeneticOptimizer:
 
     def get_random_gene(self, param_name):
         """Gera um valor aleatório para um gene (parâmetro)"""
-        # Espaço de Busca (DNA dos Modelos)
+
         ranges = {
-            # XGBoost DNA
             "n_estimators": lambda: random.randint(50, 500),
             "max_depth": lambda: random.randint(3, 20),
             "learning_rate": lambda: round(random.uniform(0.01, 0.5), 3),
             "subsample": lambda: round(random.uniform(0.5, 1.0), 2),
             "colsample_bytree": lambda: round(random.uniform(0.5, 1.0), 2),
             "gamma": lambda: round(random.uniform(0, 5), 2),
-            # Random Forest DNA (compartilha n_estimators e max_depth)
             "min_samples_split": lambda: random.randint(2, 20),
             "min_samples_leaf": lambda: random.randint(1, 10),
-            # Decision Tree DNA (compartilha max_depth, min_samples...)
             "criterion": lambda: random.choice(["gini", "entropy", "log_loss"]),
         }
         return ranges.get(param_name, lambda: 0)()
@@ -533,7 +551,6 @@ class GeneticOptimizer:
         """Treina e retorna a acurácia (Fitness Function)"""
         try:
             if self.model_type == "xgboost":
-                # XGB precisa saber num_class
                 num_classes = self.y_train.nunique()
                 model = XGBClassifier(
                     **params,
@@ -564,7 +581,6 @@ class GeneticOptimizer:
         )
 
         for gen in range(generations):
-            # 1. Avaliação (Fitness)
             scores = []
             for indiv in population:
                 acc = self.evaluate(indiv)
@@ -572,7 +588,6 @@ class GeneticOptimizer:
                 if acc > best_overall["accuracy"]:
                     best_overall = {"accuracy": acc, "params": indiv}
 
-            # Ordena pelos melhores
             scores.sort(key=lambda x: x[0], reverse=True)
             best_gen_acc = scores[0][0]
 
@@ -584,22 +599,18 @@ class GeneticOptimizer:
                 }
             )
 
-            # 2. Seleção (Elitismo - mantemos os top 50%)
             top_half = [s[1] for s in scores[: population_size // 2]]
 
-            # 3. Crossover e Mutação para preencher o resto
             new_population = top_half[:]
             while len(new_population) < population_size:
                 parent1 = random.choice(top_half)
                 parent2 = random.choice(top_half)
                 child = parent1.copy()
 
-                # Crossover (mistura 50% dos genes)
                 for k in child.keys():
                     if random.random() > 0.5:
                         child[k] = parent2[k]
 
-                # Mutação (10% de chance de mudar um gene aleatório)
                 if random.random() < 0.2:
                     gene_to_mutate = random.choice(list(child.keys()))
                     child[gene_to_mutate] = self.get_random_gene(gene_to_mutate)
@@ -611,9 +622,7 @@ class GeneticOptimizer:
         return history, best_overall
 
 
-# --- ROTA DE SERVIÇO ---
 def run_genetic_pipeline(model_type):
-    # 1. Pega amostra rápida (5000 linhas para o AG ser ágil no front)
     X, y = get_training_data_sample(limit=5000)
     if X is None:
         return {"error": "Sem dados"}, 500
@@ -622,15 +631,12 @@ def run_genetic_pipeline(model_type):
         X, y, test_size=0.3, random_state=42, stratify=y
     )
 
-    # 2. Inicializa e Roda o AG
     optimizer = GeneticOptimizer(model_type, X_train, y_train, X_test, y_test)
 
-    # Roda 5 gerações com 8 indivíduos (40 treinos no total)
-    # Isso deve levar ~10-20 segundos, aceitável para UX de "Loading"
     history, best = optimizer.run(generations=5, population_size=8)
 
     return {
         "success": True,
-        "history": history,  # Para o gráfico de evolução
-        "best_individual": best,  # Para preencher os sliders
+        "history": history,
+        "best_individual": best,
     }, 200

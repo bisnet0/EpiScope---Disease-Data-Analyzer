@@ -3,6 +3,7 @@ from flask import request, jsonify
 from flask_jwt_extended import get_jwt_identity
 from backend.services.ai_service import (
     run_arbovirus_pipeline,
+    run_glaucoma_genetic_pipeline,
     run_glaucoma_pipeline,
     run_symptom_structure,
     run_experiment_pipeline,
@@ -119,4 +120,11 @@ def run_evolutionary_optimization():
     model_type = data.get("model_type", "xgboost")
     
     result, status = run_genetic_pipeline(model_type)
+    return jsonify(result), status
+
+def run_glaucoma_evolution():
+    data = request.get_json()
+    model_type = data.get("model_type", "xgboost") # O classificador final
+    
+    result, status = run_glaucoma_genetic_pipeline(model_type)
     return jsonify(result), status

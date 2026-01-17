@@ -4,7 +4,7 @@ import {
 } from 'recharts';
 import api from '../services/api';
 // Se não tiver Toast, remova.
-import Toast from './Toast'; 
+import Toast from './Toast';
 
 interface ExperimentResult {
     accuracy: number;
@@ -34,15 +34,15 @@ export const ExperimentsPanel: React.FC = () => {
 
     const [loading, setLoading] = useState(false);
     const [loadingMessage, setLoadingMessage] = useState('');
-    
+
     // Resultados Manuais vs Evolutivos
-    const [manualHistory, setManualHistory] = useState<any[]>([]); 
+    const [manualHistory, setManualHistory] = useState<any[]>([]);
     const [evolutionHistory, setEvolutionHistory] = useState<EvolutionStep[]>([]);
     const [viewMode, setViewMode] = useState<'manual' | 'evolution'>('manual');
 
     const [result, setResult] = useState<ExperimentResult | null>(null);
     const [toast, setToast] = useState<ToastState | null>(null);
-    
+
     const closeToast = () => setToast(null);
 
     // 1. EXPERIMENTO MANUAL (Ocorre ao clicar em "Rodar Experimento")
@@ -55,12 +55,12 @@ export const ExperimentsPanel: React.FC = () => {
             if (modelType === 'xgboost') params.learning_rate = learningRate;
 
             const response = await api.post('/diagnose/experiment', {
-                model_type: modelType, 
-                params 
+                model_type: modelType,
+                params
             });
 
             const data = response.data;
-            
+
             if (data.success) {
                 setResult(data);
                 setManualHistory(prev => [...prev, {
@@ -111,7 +111,7 @@ export const ExperimentsPanel: React.FC = () => {
             const response = await api.post('/diagnose/optimize-ga', {
                 model_type: modelType
             });
-            
+
             const data = response.data;
             if (data.success) {
                 // Atualiza Gráfico de Evolução
@@ -120,10 +120,10 @@ export const ExperimentsPanel: React.FC = () => {
                     best_accuracy: parseFloat((h.best_accuracy * 100).toFixed(2)),
                     avg_accuracy: parseFloat((h.avg_accuracy * 100).toFixed(2))
                 })));
-                
+
                 // Aplica o "Indivíduo Alfa" nos sliders
                 applyParams(modelType, data.best_individual.params);
-                
+
                 setViewMode('evolution');
                 setToast({
                     type: 'success',
@@ -152,23 +152,23 @@ export const ExperimentsPanel: React.FC = () => {
             <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 🧪 Laboratório de Hiperparâmetros <span style={{ fontSize: '0.8rem', background: '#646cff', padding: '2px 8px', borderRadius: '4px' }}>MODO AVANÇADO</span>
             </h3>
-            
+
             <p style={{ color: '#888', fontSize: '0.9rem', marginBottom: '20px' }}>
                 Utilize Algoritmos Genéticos para encontrar a configuração perfeita ou teste manualmente.
             </p>
 
             <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
-                
+
                 {/* --- COLUNA 1: CONTROLES --- */}
                 <div style={{ flex: '1 1 300px', background: '#1e1e1e', padding: '20px', borderRadius: '8px' }}>
-                    
+
                     {/* Botões de IA */}
                     <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
                         <button
                             onClick={handleSuggestParams}
                             disabled={loading}
                             title="Buscar melhor histórico"
-                            style={{ flex: 1, background: '#333', border: '1px solid #555', color: '#fff', padding: '10px', cursor: 'pointer', borderRadius: '6px' }}
+                            style={{ flex: 1, background: 'linear-gradient(-45deg, #101bec80, #1db731e5)', border: '1px solid #555', color: '#fff', padding: '10px', cursor: 'pointer', borderRadius: '6px' }}
                         >
                             🔮 Oráculo
                         </button>
@@ -222,7 +222,7 @@ export const ExperimentsPanel: React.FC = () => {
 
                 {/* --- COLUNA 2: GRÁFICOS --- */}
                 <div style={{ flex: '2 1 400px', background: '#1e1e1e', padding: '20px', borderRadius: '8px', minHeight: '350px' }}>
-                    
+
                     {/* Toggle de Visualização */}
                     <div style={{ marginBottom: '15px', borderBottom: '1px solid #333', paddingBottom: '10px' }}>
                         <button onClick={() => setViewMode('manual')} style={{ marginRight: '15px', background: 'none', border: 'none', color: viewMode === 'manual' ? '#2ecc71' : '#666', cursor: 'pointer', fontWeight: 'bold' }}>
@@ -262,13 +262,13 @@ export const ExperimentsPanel: React.FC = () => {
                                     <XAxis dataKey="generation" label={{ value: 'Geração', position: 'insideBottom', offset: -5 }} stroke="#aaa" />
                                     <YAxis domain={['auto', 'auto']} unit="%" stroke="#aaa" />
                                     <Tooltip contentStyle={{ background: '#333' }} />
-                                    <Legend verticalAlign="top" height={36}/>
-                                    
-                                    <Line type="monotone" dataKey="best_accuracy" name="Melhor Indivíduo" stroke="#8e44ad" strokeWidth={3} dot={{r: 4}} activeDot={{r: 6}} />
+                                    <Legend verticalAlign="top" height={36} />
+
+                                    <Line type="monotone" dataKey="best_accuracy" name="Melhor Indivíduo" stroke="#8e44ad" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
                                     <Line type="monotone" dataKey="avg_accuracy" name="Média da População" stroke="#8884d8" strokeDasharray="5 5" />
                                 </LineChart>
                             </ResponsiveContainer>
-                            <p style={{textAlign:'center', fontSize:'0.8rem', color:'#888', marginTop:'10px'}}>
+                            <p style={{ textAlign: 'center', fontSize: '0.8rem', color: '#888', marginTop: '10px' }}>
                                 O algoritmo seleciona os melhores modelos e cria "filhos" (Crossover/Mutação) a cada geração.
                             </p>
                         </div>
@@ -289,7 +289,7 @@ export const ExperimentsPanel: React.FC = () => {
                     )}
                 </div>
             </div>
-            
+
             {/* Toast Component (Se existir) */}
             {toast && <Toast type={toast.type} message={toast.message} onClose={closeToast} title={toast.title} />}
         </div>

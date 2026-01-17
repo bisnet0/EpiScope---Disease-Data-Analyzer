@@ -79,13 +79,13 @@ const MainLayout = () => {
 
         <div className="mode-selector">
           <button onClick={() => setMode('web2')} className={mode === 'web2' ? 'active' : ''}>
-            Arboviroses (Multi-Model)
+            Arboviroses
           </button>
           <button onClick={() => setMode('web3')} className={mode === 'web3' ? 'active' : ''}>
-            Web3 (Cartesi)
+           Assinatura DApp
           </button>
           <button onClick={() => setMode('image')} className={mode === 'image' ? 'active' : ''}>
-            Glaucoma (CNN)
+            Glaucoma
           </button>
         </div>
       </header>
