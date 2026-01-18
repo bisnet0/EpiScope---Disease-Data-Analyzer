@@ -3,7 +3,7 @@ import {
     BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine, Legend
 } from 'recharts';
 import api from '../services/api';
-// Se não tiver Toast, remova.
+
 import Toast from './Toast';
 
 interface ExperimentResult {
@@ -27,7 +27,7 @@ interface ToastState {
 export const ExperimentsPanel: React.FC = () => {
     const [modelType, setModelType] = useState('xgboost');
 
-    // Parâmetros (Estado flexível)
+
     const [nEstimators, setNEstimators] = useState(100);
     const [maxDepth, setMaxDepth] = useState(6);
     const [learningRate, setLearningRate] = useState(0.1);
@@ -35,7 +35,7 @@ export const ExperimentsPanel: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [loadingMessage, setLoadingMessage] = useState('');
 
-    // Resultados Manuais vs Evolutivos
+
     const [manualHistory, setManualHistory] = useState<any[]>([]);
     const [evolutionHistory, setEvolutionHistory] = useState<EvolutionStep[]>([]);
     const [viewMode, setViewMode] = useState<'manual' | 'evolution'>('manual');
@@ -43,9 +43,14 @@ export const ExperimentsPanel: React.FC = () => {
     const [result, setResult] = useState<ExperimentResult | null>(null);
     const [toast, setToast] = useState<ToastState | null>(null);
 
+    const [generations, setGenerations] = useState(5);
+    const [popSize, setPopSize] = useState(10);
+    const [mutationRate, setMutationRate] = useState(0.1);
+    const [showAdvancedGA, setShowAdvancedGA] = useState(false);
+
     const closeToast = () => setToast(null);
 
-    // 1. EXPERIMENTO MANUAL (Ocorre ao clicar em "Rodar Experimento")
+
     const handleRunExperiment = async () => {
         setLoading(true);
         setLoadingMessage('Treinando modelo individual...');
@@ -78,7 +83,7 @@ export const ExperimentsPanel: React.FC = () => {
         }
     };
 
-    // 2. AI ADVISOR (Consulta histórico global)
+
     const handleSuggestParams = async () => {
         setLoading(true);
         setLoadingMessage('Consultando o Oráculo...');
@@ -101,27 +106,31 @@ export const ExperimentsPanel: React.FC = () => {
         }
     };
 
-    // 3. ALGORITMO GENÉTICO (Novo!)
+
     const handleRunEvolution = async () => {
         setLoading(true);
-        setLoadingMessage(`🧬 Evoluindo ${modelType.toUpperCase()} (Isso leva uns segundos)...`);
-        setEvolutionHistory([]); // Limpa gráfico anterior
+        setLoadingMessage(`🧬 Evoluindo com Pop=${popSize}, Gen=${generations}...`);
+        setEvolutionHistory([]);
 
         try {
             const response = await api.post('/diagnose/optimize-ga', {
-                model_type: modelType
+                model_type: modelType,
+                generations,
+                population_size: popSize,
+                mutation_rate: mutationRate,
+                crossover_rate: 0.7
             });
 
             const data = response.data;
             if (data.success) {
-                // Atualiza Gráfico de Evolução
+
                 setEvolutionHistory(data.history.map((h: any) => ({
                     generation: h.generation,
                     best_accuracy: parseFloat((h.best_accuracy * 100).toFixed(2)),
                     avg_accuracy: parseFloat((h.avg_accuracy * 100).toFixed(2))
                 })));
 
-                // Aplica o "Indivíduo Alfa" nos sliders
+
                 applyParams(modelType, data.best_individual.params);
 
                 setViewMode('evolution');
@@ -139,7 +148,7 @@ export const ExperimentsPanel: React.FC = () => {
         }
     };
 
-    // Helper para preencher sliders
+
     const applyParams = (type: string, params: any) => {
         setModelType(type);
         if (params.n_estimators) setNEstimators(Number(params.n_estimators));
@@ -180,6 +189,32 @@ export const ExperimentsPanel: React.FC = () => {
                         >
                             🧬 Evoluir
                         </button>
+                    </div>
+                    <div style={{ marginTop: '15px', borderTop: '1px solid #333', paddingTop: '10px' }}>
+                        <button
+                            onClick={() => setShowAdvancedGA(!showAdvancedGA)}
+                            style={{ background: 'none', border: 'none', color: '#8e44ad', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', padding: 0 }}
+                        >
+                            {showAdvancedGA ? '▼ Ocultar Config Genética' : '▶ Configurar Algoritmo Genético'}
+                        </button>
+
+                        {showAdvancedGA && (
+                            <div style={{ marginTop: '10px', background: '#252525', padding: '10px', borderRadius: '6px' }}>
+                                <div className="form-group">
+                                    <label style={{ fontSize: '0.8rem' }}>Gerações: {generations}</label>
+                                    <input type="range" min="3" max="20" value={generations} onChange={e => setGenerations(Number(e.target.value))} style={{ height: '4px' }} />
+                                </div>
+                                <div className="form-group">
+                                    <label style={{ fontSize: '0.8rem' }}>População: {popSize}</label>
+                                    <input type="range" min="5" max="50" value={popSize} onChange={e => setPopSize(Number(e.target.value))} style={{ height: '4px' }} />
+                                </div>
+                                <div className="form-group">
+                                    <label style={{ fontSize: '0.8rem' }}>Taxa de Mutação: {Math.round(mutationRate * 100)}%</label>
+                                    <input type="range" min="0.01" max="0.5" step="0.01" value={mutationRate} onChange={e => setMutationRate(Number(e.target.value))} style={{ height: '4px' }} />
+                                </div>
+                                <small style={{ color: '#666', fontSize: '0.7rem' }}>Atenção: Aumentar População/Gerações aumenta o tempo de processamento.</small>
+                            </div>
+                        )}
                     </div>
 
                     {/* Form Manual */}

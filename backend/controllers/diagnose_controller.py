@@ -12,6 +12,7 @@ from backend.services.ai_service import (
     run_genetic_pipeline,
 )
 
+
 def analyze_arbovirus():
     current_user_id = get_jwt_identity()
 
@@ -75,57 +76,65 @@ def get_ai_suggestion():
 
 def get_user_history():
     current_user_id = get_jwt_identity()
-    
+
     arbovirus = ArbovirusDiagnosis.query.filter_by(user_id=current_user_id).all()
     glaucoma = GlaucomaDiagnosis.query.filter_by(user_id=current_user_id).all()
-    
+
     history = []
-    
-    # --- ARBOVIROSES ---
+
     for item in arbovirus:
-        # Usa getattr para evitar erro se a coluna blockchain_hash ainda não foi criada no banco
-        tx_hash = getattr(item, 'blockchain_hash', None)
-        
-        history.append({
-            "id": item.id,
-            "type": "Arbovirose",
-            "date": item.created_at.replace(tzinfo=timezone.utc).isoformat(),
-            # CORREÇÃO 1: O nome correto é text_description
-            "details": f"Sintomas: {item.text_description[:40]}..." if item.text_description else "Descrição não disponível",
-            # CORREÇÃO 2: O nome correto é prediction_result
-            "result": item.prediction_result,
-            "signature": tx_hash
-        })
-        
-    # --- GLAUCOMA ---
+        tx_hash = getattr(item, "blockchain_hash", None)
+
+        history.append(
+            {
+                "id": item.id,
+                "type": "Arbovirose",
+                "date": item.created_at.replace(tzinfo=timezone.utc).isoformat(),
+                "details": f"Sintomas: {item.text_description[:40]}..."
+                if item.text_description
+                else "Descrição não disponível",
+                "result": item.prediction_result,
+                "signature": tx_hash,
+            }
+        )
+
     for item in glaucoma:
-        tx_hash = getattr(item, 'blockchain_hash', None)
-        
-        history.append({
-            "id": item.id,
-            "type": "Glaucoma",
-            "date": item.created_at.replace(tzinfo=timezone.utc).isoformat(),
-            # Glaucoma não salva o path da imagem, então colocamos texto fixo
-            "details": "Imagem de Fundo de Olho (Processada)",
-            "result": item.prediction_result, 
-            "signature": tx_hash
-        })
-    
-    # Ordena do mais recente
-    history.sort(key=lambda x: x['date'], reverse=True)
-    
+        tx_hash = getattr(item, "blockchain_hash", None)
+
+        history.append(
+            {
+                "id": item.id,
+                "type": "Glaucoma",
+                "date": item.created_at.replace(tzinfo=timezone.utc).isoformat(),
+                "details": "Imagem de Fundo de Olho (Processada)",
+                "result": item.prediction_result,
+                "signature": tx_hash,
+            }
+        )
+
+    history.sort(key=lambda x: x["date"], reverse=True)
+
     return jsonify(history), 200
+
 
 def run_evolutionary_optimization():
     data = request.get_json()
     model_type = data.get("model_type", "xgboost")
-    
-    result, status = run_genetic_pipeline(model_type)
+
+    ga_config = {
+        "generations": data.get("generations", 5),
+        "population_size": data.get("population_size", 10),
+        "mutation_rate": data.get("mutation_rate", 0.1),
+        "crossover_rate": data.get("crossover_rate", 0.7),
+    }
+
+    result, status = run_genetic_pipeline(model_type, ga_config)
     return jsonify(result), status
+
 
 def run_glaucoma_evolution():
     data = request.get_json()
-    model_type = data.get("model_type", "xgboost") # O classificador final
-    
+    model_type = data.get("model_type", "xgboost")
+
     result, status = run_glaucoma_genetic_pipeline(model_type)
     return jsonify(result), status

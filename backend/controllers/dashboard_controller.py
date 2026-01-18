@@ -2,6 +2,7 @@ from flask import request, jsonify
 from flask_jwt_extended import jwt_required
 from sqlalchemy import func
 from datetime import datetime, timedelta, timezone
+import json
 from backend.models.user_model import db
 from backend.models.diagnosis_model import ArbovirusDiagnosis, GlaucomaDiagnosis
 from backend.models.ml_log_model import ModelTrainingLog
@@ -47,6 +48,51 @@ def get_dashboard_stats():
 
         total_trainings = query_logs.count()
 
+        all_logs = query_logs.all()
+
+        ga_stats = {
+            "mutation": [],
+            "population": [],
+            "crossover": [],
+            "generations": [],
+        }
+
+        for log in all_logs:
+            if log.parameters:
+                try:
+                    p = (
+                        log.parameters
+                        if isinstance(log.parameters, dict)
+                        else json.loads(log.parameters)
+                    )
+
+                    if "ga_config" in p:
+                        cfg = p["ga_config"]
+                        acc = round(log.accuracy * 100, 2)
+
+                        if cfg.get("mutation_rate"):
+                            ga_stats["mutation"].append(
+                                {"x": cfg["mutation_rate"], "y": acc}
+                            )
+                        if cfg.get("population_size"):
+                            ga_stats["population"].append(
+                                {"x": cfg["population_size"], "y": acc}
+                            )
+                        if cfg.get("crossover_rate"):
+                            ga_stats["crossover"].append(
+                                {"x": cfg["crossover_rate"], "y": acc}
+                            )
+                        if cfg.get("generations"):
+                            ga_stats["generations"].append(
+                                {"x": cfg["generations"], "y": acc}
+                            )
+                except Exception as e:
+                    print(f"Log skip: {e}")
+                    continue
+
+        for k in ga_stats:
+            ga_stats[k].sort(key=lambda item: item["x"])
+
         model_stats = (
             query_logs.with_entities(
                 ModelTrainingLog.model_name, func.avg(ModelTrainingLog.accuracy)
@@ -57,30 +103,39 @@ def get_dashboard_stats():
 
         model_performance = []
         for m in model_stats:
-            clean_name = (
-                m[0]
-                .replace("Arbovirus_", "")
-                .replace("Glaucoma_", "")
-                .replace("_", " ")
-            )
+            raw_name = m[0] if m[0] else "Unknown"
+
+            raw_acc = m[1] if m[1] is not None else 0.0
+
             model_performance.append(
-                {"name": clean_name, "accuracy": round(m[1] * 100, 2)}
+                {
+                    "name": raw_name.replace("Arbovirus_", "")
+                    .replace("Glaucoma_", "")
+                    .replace("_", " "),
+                    "accuracy": round(raw_acc * 100, 2),
+                }
             )
 
-        timeline_query = (
-            query_logs.order_by(ModelTrainingLog.created_at.asc()).limit(100).all()
-        )
-        timeline = [
-            {
-                "id": log.id,
-                "date": log.created_at.replace(tzinfo=timezone.utc).isoformat(),
-                "accuracy": round(log.accuracy * 100, 2),
-                "model": log.model_name.replace("Arbovirus_", "").replace(
-                    "Glaucoma_", ""
-                ),
-            }
-            for log in timeline_query
-        ]
+        timeline = []
+
+        for log in all_logs[-50:]:
+            if log.accuracy is None:
+                continue
+
+            log_name = log.model_name if log.model_name else "Unknown"
+
+            timeline.append(
+                {
+                    "id": log.id,
+                    "date": log.created_at.replace(tzinfo=timezone.utc).strftime(
+                        "%d/%m %H:%M"
+                    ),
+                    "accuracy": round(log.accuracy * 100, 2),
+                    "model": log_name.replace("Arbovirus_", "").replace(
+                        "Glaucoma_", ""
+                    ),
+                }
+            )
 
         return jsonify(
             {
@@ -94,11 +149,15 @@ def get_dashboard_stats():
                 "charts": {
                     "model_performance": model_performance,
                     "learning_curve": timeline,
+                    "ga_analysis": ga_stats,
                 },
                 "filters_applied": {"period": period, "model": model_filter},
             }
         ), 200
 
     except Exception as e:
-        print(f"Erro no dashboard: {e}")
-        return jsonify({"error": "Erro ao carregar estatísticas"}), 500
+        import traceback
+
+        print(f"ERRO CRÍTICO DASHBOARD: {e}", flush=True)
+        traceback.print_exc()
+        return jsonify({"error": "Erro interno", "details": str(e)}), 500

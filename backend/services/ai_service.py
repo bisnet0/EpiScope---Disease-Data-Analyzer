@@ -1,3 +1,4 @@
+import datetime
 import os
 import random
 
@@ -8,6 +9,7 @@ import pandas as pd
 import tensorflow as tf
 import google.generativeai as genai
 from backend.models.user_model import db, User
+from backend.models.ml_log_model import ModelTrainingLog
 from backend.models.diagnosis_model import ArbovirusDiagnosis, GlaucomaDiagnosis
 from backend.utils.data_helpers import (
     parse_json_from_gemini_response,
@@ -485,16 +487,25 @@ def get_training_data_sample(limit=50000):
 
 
 class GeneticOptimizer:
-    def __init__(self, model_type, X_train, y_train, X_test, y_test):
+    def __init__(
+        self,
+        model_type,
+        X_train,
+        y_train,
+        X_test,
+        y_test,
+        mutation_rate=0.1,
+        crossover_rate=0.7,
+    ):
         self.model_type = model_type
         self.X_train = X_train
         self.y_train = y_train
         self.X_test = X_test
         self.y_test = y_test
+        self.mutation_rate = mutation_rate
+        self.crossover_rate = crossover_rate
 
     def get_random_gene(self, param_name):
-        """Gera um valor aleatório para um gene (parâmetro)"""
-
         ranges = {
             "n_estimators": lambda: random.randint(50, 500),
             "max_depth": lambda: random.randint(3, 20),
@@ -509,7 +520,6 @@ class GeneticOptimizer:
         return ranges.get(param_name, lambda: 0)()
 
     def create_individual(self):
-        """Cria um modelo com parâmetros aleatórios"""
         params = {}
         if self.model_type == "xgboost":
             params = {
@@ -536,10 +546,13 @@ class GeneticOptimizer:
         return params
 
     def evaluate(self, params):
-        """Treina e retorna a acurácia (Fitness Function)"""
         try:
             if self.model_type == "xgboost":
-                num_classes = self.y_train.nunique()
+                num_classes = (
+                    self.y_train.nunique()
+                    if hasattr(self.y_train, "nunique")
+                    else len(np.unique(self.y_train))
+                )
                 model = XGBClassifier(
                     **params,
                     objective="multi:softmax",
@@ -559,13 +572,12 @@ class GeneticOptimizer:
             return 0.0
 
     def run(self, generations=5, population_size=10):
-        """Executa o Algoritmo Genético"""
         population = [self.create_individual() for _ in range(population_size)]
         history = []
         best_overall = {"accuracy": 0, "params": {}}
 
         print(
-            f"🧬 Iniciando Evolução: {self.model_type.upper()} | Gen: {generations} | Pop: {population_size}"
+            f"🧬 AG Iniciado: Mut={self.mutation_rate}, Cross={self.crossover_rate}, Pop={population_size}"
         )
 
         for gen in range(generations):
@@ -577,17 +589,16 @@ class GeneticOptimizer:
                     best_overall = {"accuracy": acc, "params": indiv}
 
             scores.sort(key=lambda x: x[0], reverse=True)
-            best_gen_acc = scores[0][0]
 
             history.append(
                 {
                     "generation": gen + 1,
-                    "best_accuracy": float(best_gen_acc),
+                    "best_accuracy": float(scores[0][0]),
                     "avg_accuracy": float(np.mean([s[0] for s in scores])),
                 }
             )
 
-            top_half = [s[1] for s in scores[: population_size // 2]]
+            top_half = [s[1] for s in scores[: max(1, population_size // 2)]]
 
             new_population = top_half[:]
             while len(new_population) < population_size:
@@ -596,10 +607,10 @@ class GeneticOptimizer:
                 child = parent1.copy()
 
                 for k in child.keys():
-                    if random.random() > 0.5:
+                    if random.random() < self.crossover_rate:
                         child[k] = parent2[k]
 
-                if random.random() < 0.2:
+                if random.random() < self.mutation_rate:
                     gene_to_mutate = random.choice(list(child.keys()))
                     child[gene_to_mutate] = self.get_random_gene(gene_to_mutate)
 
@@ -609,37 +620,60 @@ class GeneticOptimizer:
 
         return history, best_overall
 
-
-def run_genetic_pipeline(model_type):
+def run_genetic_pipeline(model_type, ga_config=None):
+    # Config Padrão se não vier do front
+    if ga_config is None:
+        ga_config = {"generations": 5, "population_size": 10, "mutation_rate": 0.1, "crossover_rate": 0.7}
+        
     X, y = get_training_data_sample(limit=5000)
-    if X is None:
-        return {"error": "Sem dados"}, 500
-
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.3, random_state=42, stratify=y
+    if X is None: return {"error": "Sem dados"}, 500
+    
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42, stratify=y)
+    
+    # Instancia com Params Dinâmicos
+    optimizer = GeneticOptimizer(
+        model_type, X_train, y_train, X_test, y_test,
+        mutation_rate=float(ga_config.get("mutation_rate", 0.1)),
+        crossover_rate=float(ga_config.get("crossover_rate", 0.7))
     )
-
-    optimizer = GeneticOptimizer(model_type, X_train, y_train, X_test, y_test)
-    history, best = optimizer.run(generations=5, population_size=8)
-
+    
+    history, best = optimizer.run(
+        generations=int(ga_config.get("generations", 5)), 
+        population_size=int(ga_config.get("population_size", 10))
+    )
+    
+    # --- SALVAR ARTEFATO NO DISCO ---
     try:
         ARTIFACTS_DIR = "/app/model_artifacts"
-        if not os.path.exists(ARTIFACTS_DIR):
-            os.makedirs(ARTIFACTS_DIR)
-
+        if not os.path.exists(ARTIFACTS_DIR): os.makedirs(ARTIFACTS_DIR)
+        
         best_params_path = os.path.join(ARTIFACTS_DIR, "best_hyperparameters.json")
-
-        current_config = {}
-        if os.path.exists(best_params_path):
-            with open(best_params_path, "r") as f:
-                current_config = json.load(f)
-
-        with open(best_params_path, "w") as f:
-            json.dump(best["params"], f, indent=4)
-
-        print(f"🧬 DNA Vencedor salvo em: {best_params_path}")
-
+        with open(best_params_path, 'w') as f:
+            json.dump(best['params'], f, indent=4)
     except Exception as e:
-        print(f"⚠️ Erro ao salvar hiperparâmetros: {e}")
+        print(f"⚠️ Erro ao salvar arquivo: {e}")
 
-    return {"success": True, "history": history, "best_individual": best}, 200
+    # --- NOVO: LOGAR NO BANCO DE DADOS (PARA O DASHBOARD) ---
+    try:
+        log = ModelTrainingLog(
+            model_name=f"{model_type}_GA_Lab", # Marcamos como GA_Lab para diferenciar
+            accuracy=best['accuracy'],
+            metrics=json.dumps({"history": history}), # Salvamos a curva de aprendizado
+            params=json.dumps({
+                "model_params": best['params'],
+                "ga_config": ga_config # SALVAMOS A CONFIG DO AG! ISSO É O OURO PARA O DASHBOARD
+            }),
+            created_at=datetime.utcnow()
+        )
+        db.session.add(log)
+        db.session.commit()
+        print("✅ Experimento genético logado no DB!")
+    except Exception as e:
+        print(f"⚠️ Erro ao logar no DB: {e}")
+        db.session.rollback()
+    
+    return {
+        "success": True,
+        "history": history,
+        "best_individual": best
+    }, 200
