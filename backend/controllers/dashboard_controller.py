@@ -1,6 +1,6 @@
 from flask import request, jsonify
 from flask_jwt_extended import jwt_required
-from sqlalchemy import func
+from sqlalchemy import func, text
 from datetime import datetime, timedelta, timezone
 import json
 from backend.models.user_model import db
@@ -31,6 +31,11 @@ def get_dashboard_stats():
                 GlaucomaDiagnosis.created_at >= start_date
             )
             query_logs = query_logs.filter(ModelTrainingLog.created_at >= start_date)
+
+        if model_filter == "glaucoma":
+            query_arbo = query_arbo.filter(text("1=0"))
+        elif model_filter in ["xgboost", "random_forest", "decision_tree"]:
+            query_glaucoma = query_glaucoma.filter(text("1=0"))
 
         if model_filter != "all":
             query_logs = query_logs.filter(
@@ -127,7 +132,7 @@ def get_dashboard_stats():
             timeline.append(
                 {
                     "id": log.id,
-                    "date": log.created_at.replace(tzinfo=timezone.utc).strftime(
+                    "date": (log.created_at - timedelta(hours=3)).strftime(
                         "%d/%m %H:%M"
                     ),
                     "accuracy": round(log.accuracy * 100, 2),

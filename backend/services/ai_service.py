@@ -1,6 +1,7 @@
-import datetime
+from datetime import datetime
 import os
 import random
+import traceback
 
 import numpy as np
 import joblib
@@ -411,7 +412,15 @@ def run_glaucoma_pipeline(image_bytes, user_id):
     }, 200
 
 
-def run_glaucoma_genetic_pipeline(model_type):
+def run_glaucoma_genetic_pipeline(model_type, user_id, ga_config=None):
+    if ga_config is None:
+        ga_config = {
+            "generations": 5,
+            "population_size": 8,
+            "mutation_rate": 0.1,
+            "crossover_rate": 0.7,
+        }
+
     X, y = get_glaucoma_embeddings_sample(limit=2000)
 
     if X is None:
@@ -421,15 +430,74 @@ def run_glaucoma_genetic_pipeline(model_type):
         X, y, test_size=0.3, random_state=42
     )
 
-    optimizer = GeneticOptimizer(model_type, X_train, y_train, X_test, y_test)
+    GENS = int(ga_config.get("generations", 5))
+    POP_SIZE = int(ga_config.get("population_size", 8))
+    MUT_RATE = float(ga_config.get("mutation_rate", 0.1))
+    CROSS_RATE = float(ga_config.get("crossover_rate", 0.7))
 
-    history, best = optimizer.run(generations=5, population_size=8)
+    optimizer = GeneticOptimizer(
+        model_type,
+        X_train,
+        y_train,
+        X_test,
+        y_test,
+        mutation_rate=MUT_RATE,
+        crossover_rate=CROSS_RATE,
+    )
+    history, best = optimizer.run(generations=GENS, population_size=POP_SIZE)
+
+    try:
+        user = User.query.get(user_id)
+        username = user.username if user else "unknown"
+
+        log_name = f"Glaucoma_EXP_{model_type.upper()}_HYBRID_{username}"
+
+        def clean_numpy(obj):
+            if isinstance(obj, (np.integer, np.int64)):
+                return int(obj)
+            elif isinstance(obj, (np.floating, np.float64, np.float32)):
+                return float(obj)
+            elif isinstance(obj, np.ndarray):
+                return obj.tolist()
+            return obj
+
+        clean_params = {k: clean_numpy(v) for k, v in best["params"].items()}
+
+        final_params = {
+            "model_params": clean_params,
+            "ga_config": {
+                "generations": GENS,
+                "population_size": POP_SIZE,
+                "mutation_rate": MUT_RATE,
+                "crossover_rate": CROSS_RATE,
+            },
+        }
+
+        log_entry = ModelTrainingLog(
+            model_name=log_name,
+            version="GA_Hybrid_v1",
+            parameters=json.dumps(final_params),
+            feature_importance=None,
+            metrics=json.dumps({"history": history}, default=clean_numpy),
+            accuracy=float(best["accuracy"]),
+            dataset_size=len(X),
+            created_at=datetime.utcnow(),
+        )
+
+        db.session.add(log_entry)
+        db.session.commit()
+        print(f"✅ SUCESSO! Log salvo: {log_name} com params dinâmicos.")
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ ERRO AO SALVAR NO DB: {str(e)}")
+        traceback.print_exc()
 
     return {
         "success": True,
         "history": history,
         "best_individual": best,
-        "note": "Otimização realizada sobre embeddings extraídos da CNN (Transfer Learning).",
+        "note": "Otimização realizada com sucesso.",
     }, 200
 
 
@@ -620,60 +688,85 @@ class GeneticOptimizer:
 
         return history, best_overall
 
-def run_genetic_pipeline(model_type, ga_config=None):
-    # Config Padrão se não vier do front
-    if ga_config is None:
-        ga_config = {"generations": 5, "population_size": 10, "mutation_rate": 0.1, "crossover_rate": 0.7}
-        
-    X, y = get_training_data_sample(limit=5000)
-    if X is None: return {"error": "Sem dados"}, 500
-    
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42, stratify=y)
-    
-    # Instancia com Params Dinâmicos
-    optimizer = GeneticOptimizer(
-        model_type, X_train, y_train, X_test, y_test,
-        mutation_rate=float(ga_config.get("mutation_rate", 0.1)),
-        crossover_rate=float(ga_config.get("crossover_rate", 0.7))
-    )
-    
-    history, best = optimizer.run(
-        generations=int(ga_config.get("generations", 5)), 
-        population_size=int(ga_config.get("population_size", 10))
-    )
-    
-    # --- SALVAR ARTEFATO NO DISCO ---
-    try:
-        ARTIFACTS_DIR = "/app/model_artifacts"
-        if not os.path.exists(ARTIFACTS_DIR): os.makedirs(ARTIFACTS_DIR)
-        
-        best_params_path = os.path.join(ARTIFACTS_DIR, "best_hyperparameters.json")
-        with open(best_params_path, 'w') as f:
-            json.dump(best['params'], f, indent=4)
-    except Exception as e:
-        print(f"⚠️ Erro ao salvar arquivo: {e}")
 
-    # --- NOVO: LOGAR NO BANCO DE DADOS (PARA O DASHBOARD) ---
+def run_genetic_pipeline(model_type, user_id, ga_config=None):
+    if ga_config is None:
+        ga_config = {
+            "generations": 5,
+            "population_size": 10,
+            "mutation_rate": 0.1,
+            "crossover_rate": 0.7,
+        }
+
+    X, y = get_training_data_sample(limit=5000)
+    if X is None:
+        return {"error": "Sem dados"}, 500
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.3, random_state=42, stratify=y
+    )
+
+    GENS = int(ga_config.get("generations", 5))
+    POP_SIZE = int(ga_config.get("population_size", 10))
+    MUT_RATE = float(ga_config.get("mutation_rate", 0.1))
+    CROSS_RATE = float(ga_config.get("crossover_rate", 0.7))
+
+    optimizer = GeneticOptimizer(
+        model_type,
+        X_train,
+        y_train,
+        X_test,
+        y_test,
+        mutation_rate=MUT_RATE,
+        crossover_rate=CROSS_RATE,
+    )
+
+    history, best = optimizer.run(generations=GENS, population_size=POP_SIZE)
+
     try:
+        user = User.query.get(user_id)
+        username = user.username if user else "unknown"
+
+        log_name = f"EXP_{model_type.upper()}_GA_{username}"
+
+        def clean_numpy(obj):
+            if isinstance(obj, (np.integer, np.int64)):
+                return int(obj)
+            elif isinstance(obj, (np.floating, np.float64, np.float32)):
+                return float(obj)
+            elif isinstance(obj, np.ndarray):
+                return obj.tolist()
+            return obj
+
+        clean_model_params = {k: clean_numpy(v) for k, v in best["params"].items()}
+
+        final_params = {
+            "model_params": clean_model_params,
+            "ga_config": {
+                "generations": GENS,
+                "population_size": POP_SIZE,
+                "mutation_rate": MUT_RATE,
+                "crossover_rate": CROSS_RATE,
+            },
+        }
+
         log = ModelTrainingLog(
-            model_name=f"{model_type}_GA_Lab", # Marcamos como GA_Lab para diferenciar
-            accuracy=best['accuracy'],
-            metrics=json.dumps({"history": history}), # Salvamos a curva de aprendizado
-            params=json.dumps({
-                "model_params": best['params'],
-                "ga_config": ga_config # SALVAMOS A CONFIG DO AG! ISSO É O OURO PARA O DASHBOARD
-            }),
-            created_at=datetime.utcnow()
+            model_name=log_name,
+            version="GA_Arbo_v1",
+            accuracy=float(best["accuracy"]),
+            metrics=json.dumps({"history": history}, default=clean_numpy),
+            parameters=json.dumps(final_params),
+            dataset_size=len(X),
+            created_at=datetime.utcnow(),
         )
+
         db.session.add(log)
         db.session.commit()
-        print("✅ Experimento genético logado no DB!")
+        print(f"✅ SUCESSO ARBO! Log salvo: {log_name}")
+
     except Exception as e:
-        print(f"⚠️ Erro ao logar no DB: {e}")
+        print(f"❌ ERRO AO SALVAR ARBO NO DB: {e}")
+        traceback.print_exc()
         db.session.rollback()
-    
-    return {
-        "success": True,
-        "history": history,
-        "best_individual": best
-    }, 200
+
+    return {"success": True, "history": history, "best_individual": best}, 200

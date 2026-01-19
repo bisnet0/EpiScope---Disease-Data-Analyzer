@@ -118,23 +118,38 @@ def get_user_history():
 
 
 def run_evolutionary_optimization():
+    current_user_id = get_jwt_identity()
+
     data = request.get_json()
     model_type = data.get("model_type", "xgboost")
 
     ga_config = {
-        "generations": data.get("generations", 5),
-        "population_size": data.get("population_size", 10),
-        "mutation_rate": data.get("mutation_rate", 0.1),
-        "crossover_rate": data.get("crossover_rate", 0.7),
+        "generations": int(data.get("generations", 5)),
+        "population_size": int(data.get("population_size", 10)),
+        "mutation_rate": float(data.get("mutation_rate", 0.1)),
+        "crossover_rate": float(data.get("crossover_rate", 0.7)),
     }
 
-    result, status = run_genetic_pipeline(model_type, ga_config)
+    result, status = run_genetic_pipeline(model_type, current_user_id, ga_config)
+
     return jsonify(result), status
 
 
 def run_glaucoma_evolution():
+    current_user_id = get_jwt_identity()
     data = request.get_json()
+
     model_type = data.get("model_type", "xgboost")
 
-    result, status = run_glaucoma_genetic_pipeline(model_type)
+    ga_config = {
+        "generations": int(data.get("generations", 5)),
+        "population_size": int(data.get("population_size", 8)),
+        "mutation_rate": float(data.get("mutation_rate", 0.1)),
+        "crossover_rate": float(data.get("crossover_rate", 0.7)),
+    }
+
+    result, status = run_glaucoma_genetic_pipeline(
+        model_type, current_user_id, ga_config
+    )
+
     return jsonify(result), status
