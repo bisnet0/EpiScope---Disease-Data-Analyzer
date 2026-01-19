@@ -17,3 +17,5 @@ Pillow
 opencv-python-headless
 ijson
 openpyxl
+pytest
+pytest-flask
