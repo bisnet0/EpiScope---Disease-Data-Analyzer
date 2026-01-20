@@ -177,12 +177,18 @@ docker-compose exec backend python backend/ml-workflow/arbovirus/ml_diagnose_dat
 ### 🔹 Treinamento e Exportação
 
 ```bash
-docker-compose exec backend python train_arbovirus_model.py
-docker-compose exec backend python export_model_logic.py
+docker-compose exec backend python backend/ml-workflow/arbovirus/ml_train_model.py
+docker-compose exec backend python backend/ml-workflow/arbovirus/ml_train_multimodels.py
 ```
 
 O arquivo exportado será usado pelo DApp da Cartesi Machine.
 Ou se for o caso de apenas assinar com o Nonodo basta rodar o DApp da Instalação e Configuração.
+
+### 🔹 Otimização do Algoritmo Genético
+
+```bash
+docker-compose exec backend python backend/ml-workflow/arbovirus/ml_optimize_ga.py
+```
 
 ---
 
