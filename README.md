@@ -338,34 +338,6 @@ Login: `admin@admin.com` / Senha: `admin`
 
 ---
 
-## 🏥 Diagnóstico Clínico
-
-### 🔹 `POST /diagnose` -- Diagnóstico textual
-
-**Payload**
-
-```json
-{
-  "text_description": "Paciente relata dor retro-orbital e exantema.",
-  "age": 26,
-  "sex": "M"
-}
-```
-
-**Response**
-
-```json
-{
-  "analysis_details": {
-    "probabilities": {
-      "chikungunya": 0.15,
-      "dengue": 0.84,
-      "zika": 0.01
-    }
-  },
-  "friendly_response": "A análise indica alta probabilidade de Dengue..."
-}
-```
 
 ## 🏥 Diagnóstico Clínico (Arboviroses & Glaucoma)
 
