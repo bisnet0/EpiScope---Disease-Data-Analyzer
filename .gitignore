@@ -12,3 +12,4 @@ docker-backups/
 *.psd
 new_data/
 __pycache__/
+wsl
