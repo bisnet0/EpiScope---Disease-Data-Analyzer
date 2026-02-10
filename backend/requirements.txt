@@ -3,19 +3,33 @@ flask-cors
 flask-jwt-extended
 flask-sqlalchemy
 werkzeug
+
+# IA / LLM
 google-generativeai>=0.8.3
+langchain>=0.2.17
+langchain-community>=0.2.19
+langgraph>=0.0.40
+langchain-google-genai>=1.0.0
+
+# Infra
 python-dotenv
 requests
 pandas
 SQLAlchemy
 psycopg2-binary
-cryptography 
+cryptography
+
+# ML pesado
 scikit-learn
 xgboost
 tensorflow
+
+# Utilidades
 Pillow
 opencv-python-headless
 ijson
 openpyxl
+
+# Testes
 pytest
 pytest-flask
