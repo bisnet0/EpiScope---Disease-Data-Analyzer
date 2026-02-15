@@ -13,3 +13,5 @@ docker-backups/
 new_data/
 __pycache__/
 wsl
+.csv
+model_artifacts/

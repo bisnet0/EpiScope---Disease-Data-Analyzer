@@ -22,11 +22,11 @@ print("Iniciando script de treinamento da CNN (V3 - Com Logs)...")
 start_time = time.time()
 
 
-DATASET_DIR = "/app/data/drishti_gs"
+DATASET_DIR = "/app/backend/data/drishti_gs"
 METADATA_FILE = os.path.join(DATASET_DIR, "Drishti-GS1_diagnosis.xlsx")
 IMAGE_DIR = os.path.join(DATASET_DIR, "Training", "Images")
 
-ARTIFACTS_DIR = "/app/model_artifacts"
+ARTIFACTS_DIR = "/app/backend/model_artifacts"
 MODEL_SAVE_PATH = os.path.join(ARTIFACTS_DIR, "glaucoma_cnn_model.h5")
 INFO_SAVE_PATH = os.path.join(ARTIFACTS_DIR, "glaucoma_info.json")
 
@@ -64,6 +64,8 @@ def preprocess_image(
 
 
 def load_data_from_excel(metadata_path, image_dir):
+    
+    
     print(f"Carregando metadados de: {metadata_path}")
     try:
         try:

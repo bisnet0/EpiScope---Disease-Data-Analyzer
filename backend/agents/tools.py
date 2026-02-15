@@ -1,41 +1,53 @@
+import json
+from flask_jwt_extended import get_jwt_identity # <--- O SEGREDO
 from langchain_core.tools import tool
-# Importe suas funções REAIS da Fase 2
-# Se der erro de import aqui, verifique se o caminho backend.services.ai_service está correto
 from backend.services.ai_service import run_arbovirus_pipeline, run_glaucoma_pipeline
 
-# --- Ferramenta 1: Especialista em Arboviroses ---
 @tool("arbovirus_specialist")
 def arbovirus_tool(symptoms: str, age: int, sex: str):
     """
     Use esta ferramenta APENAS quando tiver sintomas claros, idade e sexo do paciente.
-    Retorna probabilidades de Dengue, Zika e Chikungunya.
+    Retorna diagnóstico e hash da blockchain.
     """
-    # Passamos user_id=None pois no terminal não temos sessão, mas a função aceita
     try:
-        result, status = run_arbovirus_pipeline(symptoms, age, sex, user_id=None)
+        # Pega o ID do usuário logado via JWT (Automático pelo Flask)
+        current_user_id = get_jwt_identity()
+        
+        if not current_user_id:
+            return {"error": "Usuário não autenticado. Faça login novamente."}
+
+        # Chama o Pipeline Real
+        result, status = run_arbovirus_pipeline(symptoms, age, sex, user_id=current_user_id)
+
         if status != 200:
-            return {"error": "Falha técnica na análise do modelo XGBoost."}
-        return result
+            return {"error": f"Falha interna no pipeline (Status {status})."}
+
+        # Formata a resposta para o Agente entender e falar bonito
+        if isinstance(result, list) and len(result) > 0:
+            data = result[0]
+            texto = data.get('text', 'Sem texto')
+            signature = data.get('extras', {}).get('signature', 'N/A')
+            
+            return f"""
+            [SISTEMA MÉDICO]
+            Diagnóstico: {texto}
+            Assinatura Blockchain: {signature}
+            """
+            
+        return str(result)
+
     except Exception as e:
-        return {"error": f"Erro interno ao executar modelo: {str(e)}"}
+        return {"error": f"Erro crítico na ferramenta: {str(e)}"}
 
-# --- Ferramenta 2: Especialista em Glaucoma ---
+# Mocks para as outras (por enquanto)
 @tool("glaucoma_specialist")
-def glaucoma_tool(image_path: str = None):
-    """
-    Analisa imagens de fundo de olho para detectar glaucoma.
-    Por enquanto, pede apenas confirmação de recebimento da imagem.
-    """
-    return {"info": "Processamento de imagem via Agente preparado. Módulo VLM aguardando ativação."}
+def glaucoma_tool(image_path: str = None): 
+    """Analisa imagens de fundo de olho."""
+    return "Módulo VLM offline."
 
-# --- Ferramenta 3: Gerente de Laboratório ---
 @tool("lab_manager")
-def lab_manager_tool(command: str):
-    """
-    Ferramenta administrativa para gerenciar o treinamento de IA.
-    Use quando o usuário pedir para 'otimizar', 'evoluir' ou 'treinar'.
-    """
-    return {"info": "Acesso ao laboratório genético detectado. Aguardando implementação do Auto-Manager."}
+def lab_manager_tool(command: str): 
+    """Gerencia treinamentos."""
+    return "Lab offline."
 
-# LISTA EXPORTADA - ESSA É A LINHA QUE ESTÁ FALTANDO NO SEU ARQUIVO
 MEDICAL_TOOLS = [arbovirus_tool, glaucoma_tool, lab_manager_tool]

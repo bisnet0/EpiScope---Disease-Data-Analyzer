@@ -32,7 +32,7 @@ print("--- Inicializando AI Service (Multi-Model) ---")
 
 try:
     genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-    model_gemini = genai.GenerativeModel("gemini-2.5-flash")
+    model_gemini = genai.GenerativeModel("gemini-3-flash-preview")
 except Exception as e:
     print(f"Erro Gemini: {e}")
     model_gemini = None
@@ -250,6 +250,7 @@ def run_arbovirus_pipeline(text_description, age, sex, user_id, model_choice="al
                 df.loc[0, s] = 1
         df.loc[0, "idade"] = age
         df.loc[0, "sexo_encoded"] = 1 if sex.upper() == "F" else 0
+        df = df.apply(pd.to_numeric, errors='coerce').fillna(0)
 
         input_features_log = convert_numpy_floats(df.to_dict(orient="records")[0])
     except Exception as e:
@@ -324,8 +325,9 @@ def run_arbovirus_pipeline(text_description, age, sex, user_id, model_choice="al
 
     try:
         res_txt = "\n".join([f"{k}: {v:.1%}" for k, v in final_probs.items()])
-        prompt_friendly = f"Explique para paciente ({age} anos): Sintomas: {text_description}. Probabilidades: {res_txt}. Mais provável: {top_diagnosis_winner}. USE DISCLAIMER: NÃO É DIAGNÓSTICO."
-        friendly = model_gemini.generate_content(prompt_friendly).text
+        # prompt_friendly = f"Explique para paciente ({age} anos): Sintomas: {text_description}. Probabilidades: {res_txt}. Mais provável: {top_diagnosis_winner}. USE DISCLAIMER: NÃO É DIAGNÓSTICO."
+        # friendly = model_gemini.generate_content(prompt_friendly).text
+        friendly = "Explicação desativada para economia de cota."
     except Exception:
         friendly = "Erro ao gerar explicação amigável."
 

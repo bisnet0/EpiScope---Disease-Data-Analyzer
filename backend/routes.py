@@ -18,6 +18,7 @@ from backend.controllers.diagnose_controller import (
     run_evolutionary_optimization,
     run_glaucoma_evolution
 )
+from backend.controllers.agent_controller import agent_bp
 
 from backend.controllers.dashboard_controller import get_dashboard_stats
 
@@ -43,3 +44,7 @@ api_bp.route("/diagnose/glaucoma/optimize-ga", methods=["POST"])(jwt_required()(
 
 # Rota do Dashboard
 api_bp.route("/dashboard/stats", methods=["GET"])(jwt_required()(get_dashboard_stats))
+
+# Rotas do Agente Dr. EpiScope
+api_bp.register_blueprint(agent_bp, url_prefix='/agent')
+

@@ -1,200 +1,163 @@
 import pandas as pd
-from sqlalchemy import create_engine, inspect
 import os
 import glob
 import time
-import ijson
-import itertools
+from sqlalchemy import create_engine, text
+from io import StringIO
 
-print("Iniciando script de ingestão de novos dados (v4 - Correção OOM Killer)...")
+# ======================
+# CONFIGURAÇÃO
+# ======================
 
+DOENCA_ALVO = "zika"  # "dengue" | "chikungunya" | "zika"
+CHUNK_SIZE = 100_000 # Reduzi um pouco para garantir estabilidade na RAM
 
-DB_URL = f"postgresql://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}@db:5432/{os.getenv('POSTGRES_DB')}"
+TABLE_FINAL = "raw_arboviroses_cases"
+
+STAGING_TABLES = {
+    "dengue": "temp_clean_dengue",
+    "chikungunya": "temp_clean_chikungunya",
+    "zika": "temp_clean_zika",
+}
+
+FILE_PREFIX = {
+    "dengue": "DENG",
+    "chikungunya": "CHIK",
+    "zika": "ZIKA",
+}
+
+# ======================
+# CONEXÃO
+# ======================
+
+DB_URL = (
+    f"postgresql://{os.getenv('POSTGRES_USER')}:"
+    f"{os.getenv('POSTGRES_PASSWORD')}@db:5432/"
+    f"{os.getenv('POSTGRES_DB')}"
+)
 engine = create_engine(DB_URL)
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-ML_WORKFLOW_DIR = os.path.dirname(SCRIPT_DIR)
-BACKEND_ROOT = os.path.dirname(ML_WORKFLOW_DIR)
+BACKEND_ROOT = os.path.dirname(os.path.dirname(SCRIPT_DIR))
 NEW_DATA_DIR = os.path.join(BACKEND_ROOT, "new_data")
 
-print(f"DEBUG: Script rodando em: {SCRIPT_DIR}")
-print(f"DEBUG: Procurando dados em: {NEW_DATA_DIR}")
+STAGING_TABLE = STAGING_TABLES[DOENCA_ALVO]
+FILE_PREFIX_DOENCA = FILE_PREFIX[DOENCA_ALVO]
 
-if os.path.exists(NEW_DATA_DIR):
-    arquivos = os.listdir(NEW_DATA_DIR)
-    print(f"DEBUG: Arquivos encontrados na pasta: {len(arquivos)}")
-else:
-    print(f"ERRO CRÍTICO: A pasta {NEW_DATA_DIR} não existe!")
+# ======================
+# FUNÇÕES
+# ======================
 
-COMPOSITE_KEY_COLS = [
-    "dt_notific",
-    "id_municip",
-    "nu_idade_n",
-    "cs_sexo",
-    "dt_sin_pri",
-    "doenca_alvo",
-]
-CHUNK_SIZE = 50000
+def recreate_staging_table():
+    print(f"\nRecriando staging: {STAGING_TABLE}")
+    # Criamos apenas a estrutura, sem índices, constraints ou triggers
+    sql = f"""
+        DROP TABLE IF EXISTS {STAGING_TABLE};
+        CREATE TABLE {STAGING_TABLE} AS 
+        SELECT * FROM {TABLE_FINAL} WHERE 1=0;
+    """
+    with engine.connect() as conn:
+        with conn.begin():
+            conn.execute(text(sql))
 
+def copy_chunk_to_staging(df):
+    buffer = StringIO()
+    # Gravamos o CSV temporário com formato de data ISO (AAAA-MM-DD)
+    df.to_csv(buffer, index=False, header=False, sep=';', date_format='%Y-%m-%d')
+    buffer.seek(0)
 
-def get_existing_keys(engine):
-    print("Buscando chaves existentes no banco de dados para evitar duplicatas...")
-    query = f"SELECT {', '.join(COMPOSITE_KEY_COLS)} FROM raw_arboviroses_cases"
+    columns = ",".join([f'"{c}"' for c in df.columns])
+    copy_sql = f"COPY {STAGING_TABLE} ({columns}) FROM STDIN WITH (FORMAT CSV, DELIMITER ';', NULL '')"
 
+    conn = engine.raw_connection()
     try:
-        existing_data_iter = pd.read_sql(query, engine, chunksize=CHUNK_SIZE)
-        existing_keys = set()
-
-        for chunk in existing_data_iter:
-            keys_in_chunk = [tuple(x) for x in chunk.to_numpy()]
-            existing_keys.update(keys_in_chunk)
-
-        print(f"Encontradas {len(existing_keys)} chaves únicas existentes.")
-        return existing_keys
+        cur = conn.cursor()
+        cur.copy_expert(copy_sql, buffer)
+        conn.commit()
     except Exception as e:
-        print(
-            f"Tabela 'raw_arboviroses_cases' ainda não existe? {e}. Iniciando com zero chaves."
-        )
-        return set()
-
-
-def process_file(filepath, existing_keys, engine, db_columns):
-    """
-    Processa um único arquivo (JSON ou CSV), limpa, remove duplicatas E SALVA NO BANCO chunk-por-chunk.
-    """
-    filename = os.path.basename(filepath)
-    print(f"\nProcessando arquivo: {filename}...")
-
-    if "chikungunya" in filename.lower():
-        doenca_alvo = "chikungunya"
-    elif "dengue" in filename.lower():
-        doenca_alvo = "dengue"
-    elif "zika" in filename.lower():
-        doenca_alvo = "zika"
-    else:
-        print(
-            f"AVISO: Não foi possível determinar a doença para {filename}. Pulando arquivo."
-        )
-        return 0, 0
-
-    reader = None
-    if filepath.endswith(".json"):
-        try:
-            print(f"  Abrindo {filename} com streaming parser (ijson)...")
-            f = open(filepath, "rb")
-            objects = ijson.items(f, "item")
-            reader = iter(lambda: list(itertools.islice(objects, CHUNK_SIZE)), [])
-        except Exception as e:
-            print(f"  ERRO: Falha ao abrir {filename} com ijson. Erro: {e}")
-            if "f" in locals():
-                f.close()
-            return 0, 0
-
-    elif filepath.endswith(".csv"):
-        reader = pd.read_csv(filepath, chunksize=CHUNK_SIZE, low_memory=False)
-    else:
-        print(f"Formato de arquivo não suportado: {filename}. Pulando.")
-        return 0, 0
-
-    total_rows_in_file = 0
-    total_rows_inserted = 0
-
-    try:
-        for i, data_chunk in enumerate(reader):
-            if not data_chunk:
-                break
-
-            if filepath.endswith(".json"):
-                chunk = pd.DataFrame.from_records(data_chunk)
-            else:
-                chunk = data_chunk
-
-            print(f"  ...processando chunk {i + 1} ({len(chunk)} registros)")
-
-            chunk.columns = chunk.columns.str.lower()
-            chunk["doenca_alvo"] = doenca_alvo
-
-            for col in COMPOSITE_KEY_COLS:
-                if col not in chunk.columns:
-                    chunk[col] = None
-
-            total_rows_in_file += len(chunk)
-
-            chunk_keys = chunk[COMPOSITE_KEY_COLS].astype(str).values.tolist()
-            chunk["composite_key"] = [tuple(key) for key in chunk_keys]
-
-            new_rows_chunk = chunk[~chunk["composite_key"].isin(existing_keys)]
-            existing_keys.update(new_rows_chunk["composite_key"])
-
-            if not new_rows_chunk.empty:
-                rows_to_insert_count = len(new_rows_chunk)
-                total_rows_inserted += rows_to_insert_count
-
-                new_rows_chunk_filtered = new_rows_chunk[
-                    new_rows_chunk.columns.intersection(db_columns)
-                ]
-
-                try:
-                    new_rows_chunk_filtered.to_sql(
-                        "raw_arboviroses_cases", engine, if_exists="append", index=False
-                    )
-                    print(
-                        f"  ...SALVO: {rows_to_insert_count} novos registros inseridos no banco."
-                    )
-                except Exception as e:
-                    print(f"  ...ERRO AO SALVAR CHUNK: {e}")
-
+        conn.rollback()
+        print(f"Erro no COPY: {e}")
+        raise e
     finally:
-        if filepath.endswith(".json") and "f" in locals():
-            f.close()
-            print(f"  Arquivo {filename} fechado.")
+        cur.close()
+        conn.close()
 
-    print(
-        f"Arquivo {filename} processado. Total de {total_rows_in_file} linhas. {total_rows_inserted} linhas novas inseridas."
-    )
-    return total_rows_in_file, total_rows_inserted
+def process_csv(filepath):
+    filename = os.path.basename(filepath)
+    print(f"\nLendo {filename}...")
+    
+    total = 0
+    try:
+        reader = pd.read_csv(filepath, chunksize=CHUNK_SIZE, low_memory=False, encoding='utf-8')
+    except UnicodeDecodeError:
+        reader = pd.read_csv(filepath, chunksize=CHUNK_SIZE, low_memory=False, encoding='latin1')
 
+    with engine.connect() as conn:
+        res = conn.execute(text(f"SELECT column_name, data_type FROM information_schema.columns WHERE table_name = '{TABLE_FINAL}'"))
+        db_info = {row[0]: row[1] for row in res}
+        db_cols = list(db_info.keys())
+
+    for i, chunk in enumerate(reader):
+        chunk.columns = chunk.columns.str.lower()
+        chunk["doenca_alvo"] = DOENCA_ALVO
+
+        # 1. Tratamento de Datas (O Coração do Ajuste)
+        date_cols = [c for c, t in db_info.items() if 'date' in t.lower()]
+        for col in date_cols:
+            if col in chunk.columns:
+                # Transforma lixo em NaT (Not a Time), que o to_csv vira NULL
+                chunk[col] = pd.to_datetime(chunk[col], errors='coerce').dt.date
+
+        # 2. Garante todas as colunas do banco
+        for col in db_cols:
+            if col not in chunk.columns:
+                chunk[col] = None
+        
+        # 3. Reordena e limpa fragmentação
+        chunk = chunk[db_cols].copy()
+
+        copy_chunk_to_staging(chunk)
+        total += len(chunk)
+        print(f"  Chunk {i + 1} - {total} linhas processadas")
+
+    return total
+
+def merge_staging_into_final():
+    print(f"\nFazendo merge {STAGING_TABLE} → {TABLE_FINAL}")
+    # Use o nome exato da sua constraint de unicidade aqui
+    sql = f"""
+        INSERT INTO {TABLE_FINAL}
+        SELECT * FROM {STAGING_TABLE}
+        ON CONFLICT (dt_notific, id_municip, nu_idade_n, cs_sexo, dt_sin_pri, doenca_alvo) 
+        DO NOTHING;
+    """
+    with engine.connect() as conn:
+        with conn.begin():
+            conn.execute(text(sql))
+
+def drop_staging():
+    print(f"Limpando staging {STAGING_TABLE}")
+    with engine.connect() as conn:
+        with conn.begin():
+            conn.execute(text(f"DROP TABLE IF EXISTS {STAGING_TABLE}"))
 
 def main():
-    start_time = time.time()
-
-    existing_keys = get_existing_keys(engine)
-
-    try:
-        inspector = inspect(engine)
-        db_columns = [
-            col["name"] for col in inspector.get_columns("raw_arboviroses_cases")
-        ]
-        if not db_columns:
-            print("ERRO: Tabela 'raw_arboviroses_cases' parece não ter colunas.")
-            return
-    except Exception as e:
-        print(
-            f"ERRO: Não foi possível inspecionar colunas do banco. A tabela existe? Erro: {e}"
-        )
+    start = time.time()
+    print(f"=== INGESTÃO DATA-SENSITIVE: {DOENCA_ALVO.upper()} ===")
+    recreate_staging_table()
+    files = sorted(glob.glob(os.path.join(NEW_DATA_DIR, f"{FILE_PREFIX_DOENCA}*.csv")))
+    
+    if not files:
+        print("Nenhum arquivo encontrado.")
         return
 
-    files_to_process = glob.glob(os.path.join(NEW_DATA_DIR, "*.*"))
-    if not files_to_process:
-        print(f"Nenhum arquivo encontrado em '{NEW_DATA_DIR}'. Encerrando.")
-        return
+    total_linhas = 0
+    for f in files:
+        total_linhas += process_csv(f)
 
-    print(f"Encontrados {len(files_to_process)} arquivos para processar.")
-
-    grand_total_processed = 0
-    grand_total_inserted = 0
-
-    for f in files_to_process:
-        processed, inserted = process_file(f, existing_keys, engine, db_columns)
-        grand_total_processed += processed
-        grand_total_inserted += inserted
-
-    end_time = time.time()
-    print("\n--- Processamento Concluído ---")
-    print(f"Total de linhas lidas: {grand_total_processed}")
-    print(f"Total de NOVAS linhas inseridas no banco: {grand_total_inserted}")
-    print(f"Ingestão concluída em {end_time - start_time:.2f} segundos.")
-
+    merge_staging_into_final()
+    drop_staging()
+    print(f"\n--- CONCLUÍDO EM {time.time() - start:.2f}s ---")
 
 if __name__ == "__main__":
     main()
