@@ -4,7 +4,7 @@ import {
   getAdvisorSuggestionApi, 
   runGeneticOptimizationApi 
 } from '../services/experiments-service';
-import { ExperimentResult, EvolutionStep, ToastState, ManualHistoryItem } from '../types';
+import { type ExperimentResult, type EvolutionStep, type ToastState, type ManualHistoryItem } from '../types';
 
 export const useExperiments = () => {
   // Estados de Configuração do Modelo

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { runGlaucomaGeneticOptimization } from '../services/glaucoma-experiments-service';
-import { EvolutionStep, ToastState } from '../types';
+import { type EvolutionStep, type ToastState } from '../types';
 
 export const useGlaucomaExperiments = () => {
   const [modelType, setModelType] = useState('xgboost');

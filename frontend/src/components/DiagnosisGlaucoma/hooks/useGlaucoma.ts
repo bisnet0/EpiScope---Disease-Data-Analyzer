@@ -1,6 +1,6 @@
-import { useState, useMemo, ChangeEvent } from "react";
+import { useState, useMemo, type ChangeEvent } from "react";
 import { fetchGlaucomaDiagnosis } from "../services/glaucoma-service";
-import { GlaucomaApiResponse, ChartDataPoint } from "../types";
+import { type GlaucomaApiResponse, type ChartDataPoint } from "../types";
 import { GLAUCOMA_COLORS } from "../utils/constants";
 
 export const useGlaucoma = () => {

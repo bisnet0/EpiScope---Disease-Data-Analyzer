@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../../context/AuthContext"; // Ajuste o caminho
 import { fetchDiagnosisHistory } from "../services/dapp-service";
 import { sendDiagnosisToCartesi } from "../services/blockchain-service";
-import { HistoryItem, ToastState } from "../types";
+import { type HistoryItem, type ToastState } from "../types";
 import { DAPP_ADDRESS } from "../utils/constants";
 import { shortenAddress } from "../utils/formatters";
 

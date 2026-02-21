@@ -1,6 +1,6 @@
 import { ethers } from "ethers";
-import { INPUT_BOX_ADDRESS, DAPP_ADDRESS, INPUTBOX_ABI } from "../pages/DiagnosisDApp/utils/constants";
-import { HistoryItem } from "../components/DiagnosisDApp/types";
+import { INPUT_BOX_ADDRESS, DAPP_ADDRESS, INPUTBOX_ABI } from "../utils/constants";
+import { type HistoryItem } from "../types";
 
 export const sendDiagnosisToCartesi = async (
   item: HistoryItem, 

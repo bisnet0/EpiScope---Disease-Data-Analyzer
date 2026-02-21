@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef, ChangeEvent, KeyboardEvent } from "react";
+import { useState, useEffect, useRef, type ChangeEvent, type KeyboardEvent } from "react";
 import { useToast } from "@chakra-ui/react";
 import { fetchChatHistory, sendChatMessageApi } from "../services/agent-service";
-import { Message } from "../types";
+import { type Message } from "../types";
 
 export const useAgentChat = () => {
   const [isOpen, setIsOpen] = useState<boolean>(false);

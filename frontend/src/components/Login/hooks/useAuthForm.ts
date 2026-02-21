@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { loginApi, registerApi } from '../services/auth-service';
-import { AuthPayload } from '../types';
+import { type AuthPayload } from '../types';
 
 export const useAuthForm = () => {
   const { signIn } = useAuth();
