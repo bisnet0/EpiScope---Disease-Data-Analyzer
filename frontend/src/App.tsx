@@ -3,7 +3,7 @@ import { DiagnosisArbovirusForm } from "./components/DiagnosisArbovirusForm";
 import { DiagnosisGlaucomaForm } from "./components/DiagnosisGlaucomaForm";
 import { DiagnosisDAppForm } from "./components/DiagnosisDAppForm";
 import { LoginForm } from "./components/LoginForm";
-import { Dashboard } from "./components/Dashboard"; // <--- Importado!
+import { DashboardPage } from "./components/Dashboard/DashboardPage"; // <--- Importado!
 import ThemeToggle from './components/ThemeToggle';
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import {
@@ -161,7 +161,7 @@ const MainLayout = () => {
 
       <main>
         {/* 4. Renderiza o Dashboard */}
-        {mode === "dashboard" && <Dashboard />}
+        {mode === "dashboard" && <DashboardPage />}
         {mode === "web2" && <DiagnosisArbovirusForm />}
         {mode === "web3" && <DiagnosisDAppForm />}
         {mode === "image" && <DiagnosisGlaucomaForm />}
