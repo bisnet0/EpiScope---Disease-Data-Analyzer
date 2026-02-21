@@ -6,7 +6,7 @@ import React, {
   type ReactNode,
 } from "react";
 import { ethers } from "ethers";
-import api from "../services/api";
+import api from "../middleware/api";
 import { useNavigate } from "react-router-dom";
 
 declare global {

@@ -3,7 +3,7 @@ import {
   runManualExperimentApi, 
   getAdvisorSuggestionApi, 
   runGeneticOptimizationApi 
-} from '../../../services/experiments-service';
+} from '../../../middleware/experiments-service';
 import { ExperimentResult, EvolutionStep, ToastState, ManualHistoryItem } from '../types';
 
 export const useExperiments = () => {

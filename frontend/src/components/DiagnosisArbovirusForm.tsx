@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine
 } from 'recharts';
-import api from '../services/api';
+import api from '../middleware/api';
 import { ExperimentsPanel } from './ExperimentsPanel';
 
 

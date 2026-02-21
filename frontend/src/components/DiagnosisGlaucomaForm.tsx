@@ -2,7 +2,7 @@ import React, { useState, useMemo, type ChangeEvent } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell,
 } from "recharts";
-import api from "../services/api"; // <--- Importando Axios
+import api from "../middleware/api"; // <--- Importando Axios
 
 import { GlaucomaExperimentsPanel } from "./GlaucomaExperimentsPanel";
 

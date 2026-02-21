@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { fetchDiagnosis } from '../../../services/diagnosis-service';
+import { fetchDiagnosis } from '../../../middleware/diagnosis-service';
 import { ArbovirusApiResponse } from '../types';
 import { DISEASE_COLORS, MODEL_COLORS } from '../utils/constants';
 

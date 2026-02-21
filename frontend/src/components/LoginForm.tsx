@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import './LoginForm.css';
-import api from '../services/api';
+import api from '../middleware/api';
 
 export const LoginForm: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);

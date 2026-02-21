@@ -1,5 +1,5 @@
 import { useState, useMemo, ChangeEvent } from "react";
-import { fetchGlaucomaDiagnosis } from "../../../services/glaucoma-service";
+import { fetchGlaucomaDiagnosis } from "../../../middleware/glaucoma-service";
 import { GlaucomaApiResponse, ChartDataPoint } from "../types";
 import { GLAUCOMA_COLORS } from "../utils/constants";
 

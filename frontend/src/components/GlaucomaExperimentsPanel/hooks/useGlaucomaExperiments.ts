@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { runGlaucomaGeneticOptimization } from '../../../services/glaucoma-experiments-service';
+import { runGlaucomaGeneticOptimization } from '../../../middleware/glaucoma-experiments-service';
 import { EvolutionStep, ToastState } from '../types';
 
 export const useGlaucomaExperiments = () => {

@@ -4,7 +4,7 @@ import { DiagnosisGlaucomaForm } from "./components/DiagnosisGlaucomaForm";
 import { DiagnosisDAppForm } from "./components/DiagnosisDAppForm";
 import { LoginForm } from "./components/LoginForm";
 import { DashboardPage } from "./components/Dashboard/DashboardPage"; // <--- Importado!
-import ThemeToggle from './components/ThemeToggle';
+import ThemeToggle from './components/Theme/ThemeToggle';
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import {
   Linkedin,

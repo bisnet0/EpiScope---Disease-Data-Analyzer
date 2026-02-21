@@ -25,7 +25,7 @@ import {
   FiTrash2,
 } from "react-icons/fi";
 import ReactMarkdown from "react-markdown";
-import api from "../services/api";
+import api from "../middleware/api";
 
 interface Message {
   id: string;

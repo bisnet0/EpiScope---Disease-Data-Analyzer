@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from 'recharts';
-import api from '../services/api';
+import api from '../middleware/api';
 import Toast from './Toast';
 
 interface EvolutionStep {
