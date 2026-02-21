@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, ChangeEvent, KeyboardEvent } from "react";
 import { useToast } from "@chakra-ui/react";
-import { fetchChatHistory, sendChatMessageApi } from "../../../middleware/agent-service";
+import { fetchChatHistory, sendChatMessageApi } from "../services/agent-service";
 import { Message } from "../types";
 
 export const useAgentChat = () => {

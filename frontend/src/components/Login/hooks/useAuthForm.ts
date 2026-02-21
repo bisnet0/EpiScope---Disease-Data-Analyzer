@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../../../context/AuthContext';
-import { loginApi, registerApi } from '../../../middleware/auth-service';
+import { loginApi, registerApi } from '../services/auth-service';
 import { AuthPayload } from '../types';
 
 export const useAuthForm = () => {
