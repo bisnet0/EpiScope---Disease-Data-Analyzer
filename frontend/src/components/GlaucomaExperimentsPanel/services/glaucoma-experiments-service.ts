@@ -1,4 +1,4 @@
-import api from "./api";
+import api from "../../../middleware/api";
 import { GlaucomaGARunParams } from "../components/GlaucomaExperimentsPanel/types";
 
 export const runGlaucomaGeneticOptimization = async (payload: GlaucomaGARunParams) => {

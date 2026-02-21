@@ -2,7 +2,7 @@ import React from "react";
 import { useGlaucoma } from "./hooks/useGlaucoma";
 import { GlaucomaInputForm } from "./components/GlaucomaInputForm";
 import { GlaucomaResultChart } from "./components/GlaucomaResultChart";
-import { GlaucomaExperimentsPanel } from "../GlaucomaExperimentsPanel"; // Ajuste o caminho
+import { GlaucomaExperimentsPanel } from "../GlaucomaExperimentsPanel/GlaucomaExperimentsPanel";
 
 export const DiagnosisGlaucomaForm: React.FC = () => {
   const { state, actions, charts } = useGlaucoma();

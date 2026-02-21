@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { DiagnosisArbovirusForm } from "./components/DiagnosisArbovirusForm";
-import { DiagnosisGlaucomaForm } from "./components/DiagnosisGlaucomaForm";
-import { DiagnosisDAppForm } from "./components/DiagnosisDAppForm";
-import { LoginForm } from "./components/LoginForm";
-import { DashboardPage } from "./components/Dashboard/DashboardPage"; // <--- Importado!
+import { DiagnosisArbovirusForm } from "./components/DiagnosisArbovirus/DiagnosisArbovirusPage";
+import { DiagnosisGlaucomaForm } from "./components/DiagnosisGlaucoma/DiagnosisGlaucomaPage";
+import { DiagnosisDAppForm } from "./components/DiagnosisDApp/DiagnosisDAppForm";
+import { LoginForm } from "./components/Login/LoginForm";
+import { DashboardPage } from "./components/Dashboard/DashboardPage";
 import ThemeToggle from './components/Theme/ThemeToggle';
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import {
@@ -20,7 +20,7 @@ import { VscSignOut } from "react-icons/vsc";
 import "./App.css";
 import { BrowserRouter } from "react-router-dom";
 import { PiSignatureLight } from "react-icons/pi";
-import AgentChat from "./components/AgentChat";
+import AgentChat from "./components/AgentChat/AgentChat";
 
 // 1. Adicionamos 'dashboard' aqui
 type Mode = "dashboard" | "web2" | "web3" | "image";

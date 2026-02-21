@@ -1,5 +1,5 @@
-import api from "./api";
-import { Message, ChatResponse, ChatPayload } from "../components/AgentChat/types";
+import api from "../../../middleware/api";
+import { type Message, type ChatResponse, type ChatPayload } from "../types";
 
 export const fetchChatHistory = async (): Promise<Message[]> => {
   const response = await api.get<Message[]>("/agent/history");

@@ -1,5 +1,5 @@
-import api from "./api";
-import { HistoryItem } from "../components/DiagnosisDApp/types";
+import api from "../../../middleware/api";
+import { type HistoryItem } from "../types";
 
 export const fetchDiagnosisHistory = async (): Promise<HistoryItem[]> => {
   const response = await api.get("/diagnose/history");

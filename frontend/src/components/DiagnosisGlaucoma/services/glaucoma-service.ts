@@ -1,5 +1,5 @@
-import api from "./api";
-import { GlaucomaApiResponse } from "../components/DiagnosisGlaucoma/types";
+import api from "../../../middleware/api";
+import { type GlaucomaApiResponse } from "../types";
 
 export const fetchGlaucomaDiagnosis = async (imageFile: File): Promise<GlaucomaApiResponse> => {
   const formData = new FormData();

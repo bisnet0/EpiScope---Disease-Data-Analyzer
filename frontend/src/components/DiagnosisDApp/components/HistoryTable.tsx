@@ -1,6 +1,6 @@
 import React from "react";
 import { ClockHistory, CheckCircle, CloudUpload } from "react-bootstrap-icons";
-import { HistoryItem } from "../types";
+import { type HistoryItem } from "../types";
 import { formatTimeBR } from "../utils/formatters";
 
 interface Props {

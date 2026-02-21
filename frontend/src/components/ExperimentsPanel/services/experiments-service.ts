@@ -1,4 +1,4 @@
-import api from "./api";
+import api from "../../../middleware/api";
 import { GARunParams } from "../components/ExperimentsPanel/types";
 
 export const runManualExperimentApi = async (modelType: string, params: any) => {

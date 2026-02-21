@@ -2,7 +2,7 @@ import React from 'react';
 import { useExperiments } from './hooks/useExperiments';
 import { ControlsColumn } from './components/ControlsColumn';
 import { ChartsColumn } from './components/ChartsColumn';
-import Toast from '../Toast'; // Ajuste o caminho se necessário
+import Toast from '../Toast/Toast';
 
 export const ExperimentsPanel: React.FC = () => {
   const { state, setters, actions } = useExperiments();

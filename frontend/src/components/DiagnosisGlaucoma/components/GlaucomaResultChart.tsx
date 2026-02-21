@@ -1,6 +1,6 @@
 import React from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from "recharts";
-import { GlaucomaApiResponse, ChartDataPoint } from "../types";
+import { type GlaucomaApiResponse, type ChartDataPoint } from "../types";
 import { formatResponseHtml } from "../utils/formatters";
 
 interface Props {

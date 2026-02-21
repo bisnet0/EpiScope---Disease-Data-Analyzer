@@ -1,5 +1,5 @@
-import api from "./api";
-import { AuthPayload, AuthResponse } from "../components/Login/types"; // Ajuste o caminho
+import api from "../../../middleware/api";
+import { type AuthPayload, type AuthResponse } from "../types";
 
 export const loginApi = async (payload: AuthPayload): Promise<AuthResponse> => {
   const response = await api.post("/auth/login", payload);

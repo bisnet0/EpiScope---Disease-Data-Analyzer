@@ -1,5 +1,5 @@
 import React from "react";
-import Toast from "../../components/Toast"; // Importação do componente genérico
+import Toast from "../Toast/Toast";
 import { useDAppLedger } from "./hooks/useDAppLedger";
 import { DAppHeader } from "./components/DAppHeader";
 import { HistoryTable } from "./components/HistoryTable";

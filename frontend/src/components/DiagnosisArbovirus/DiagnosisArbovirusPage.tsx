@@ -4,7 +4,7 @@ import { formatResponseHtml } from './utils/formatters';
 import { DiagnosisInputForm } from './components/DiagnosisInputForm';
 import { ProbabilityChart } from './components/Charts/ProbabilityChart';
 import { AlgorithmsChart } from './components/Charts/AlgorithmsChart';
-import { ExperimentsPanel } from '../ExperimentsPanel'; // Ajuste o caminho conforme seu projeto
+import { ExperimentsPanel } from '../ExperimentsPanel/ExperimentsPanel';
 
 export const DiagnosisArbovirusForm: React.FC = () => {
   const { form, state, actions, charts } = useDiagnosis();
