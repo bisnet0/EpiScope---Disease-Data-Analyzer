@@ -1,5 +1,4 @@
-import React from 'react';
-import { ToastType, ToastStyleConfig } from '../types';
+import { type ToastType, type ToastStyleConfig } from '../types';
 
 export const TOAST_CONFIG: Record<ToastType, ToastStyleConfig> = {
   success: {

@@ -1,5 +1,5 @@
 import api from "../../../middleware/api";
-import { GARunParams } from "../components/ExperimentsPanel/types";
+import { type GARunParams } from "../types";
 
 export const runManualExperimentApi = async (modelType: string, params: any) => {
   const response = await api.post('/diagnose/experiment', {
