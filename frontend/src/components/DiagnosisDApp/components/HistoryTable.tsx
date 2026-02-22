@@ -1,82 +1,90 @@
 import React from "react";
+import { 
+  Box, Text, Badge, Button, Icon, Center, 
+  Table, Thead, Tbody, Tr, Th, Td, TableContainer 
+} from "@chakra-ui/react";
 import { ClockHistory, CheckCircle, CloudUpload } from "react-bootstrap-icons";
-import { type HistoryItem } from "../types";
+import { type HistoryTableProps } from "../types";
 import { formatTimeBR } from "../utils/formatters";
+import { useDAppThemeFx } from "../styles/theme-fx";
 
-interface Props {
-  history: HistoryItem[];
-  walletAddress: string | null;
-  sendingId: number | null;
-  onRegisterOnChain: (item: HistoryItem) => void;
-}
 
-export const HistoryTable: React.FC<Props> = ({ history, walletAddress, sendingId, onRegisterOnChain }) => {
+
+export const HistoryTable: React.FC<HistoryTableProps> = ({ history, walletAddress, sendingId, onRegisterOnChain }) => {
+  const themeFx = useDAppThemeFx();
+
   if (history.length === 0) {
     return (
-      <div style={{ textAlign: "center", padding: "40px", background: "#1e1e1e", borderRadius: "8px" }}>
-        <p>Nenhum diagnóstico encontrado.</p>
-        <small style={{ color: "#666" }}>Realize um diagnóstico nas outras abas primeiro.</small>
-      </div>
+      <Center flexDirection="column" p={10} bg={themeFx.innerBg} borderRadius="xl" border="1px solid" borderColor={themeFx.cardBorder}>
+        <Text color={themeFx.textColor} fontWeight="bold">Nenhum diagnóstico encontrado.</Text>
+        <Text color={themeFx.mutedText} fontSize="sm">Realize um diagnóstico nas outras abas primeiro.</Text>
+      </Center>
     );
   }
 
   return (
-    <table style={{ width: "100%", borderCollapse: "collapse", color: "#eee", minWidth: "600px" }}>
-      <thead>
-        <tr style={{ borderBottom: "1px solid #444", textAlign: "left", color: "#888" }}>
-          <th style={{ padding: "15px" }}>Data</th>
-          <th style={{ padding: "15px" }}>Tipo</th>
-          <th style={{ padding: "15px" }}>Resumo</th>
-          <th style={{ padding: "15px", textAlign: "right" }}>Ação Blockchain</th>
-        </tr>
-      </thead>
-      <tbody>
-        {history.map((item) => (
-          <tr key={`${item.type}-${item.id}`} style={{ borderBottom: "1px solid #333", transition: "background 0.2s" }}>
-            <td style={{ padding: "15px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <ClockHistory size={14} />
-                {new Date(item.date).toLocaleDateString("pt-BR")}
-                <small style={{ color: "#666" }}> {formatTimeBR(item.date)}</small>
-              </div>
-            </td>
-            <td style={{ padding: "15px" }}>
-              <span style={{
-                background: item.type === "Arbovirose" ? "rgba(52, 152, 219, 0.2)" : "rgba(233, 30, 99, 0.2)",
-                color: item.type === "Arbovirose" ? "#3498db" : "#e91e63",
-                padding: "4px 10px", borderRadius: "12px", fontSize: "0.8rem", fontWeight: "500"
-              }}>
-                {item.type}
-              </span>
-            </td>
-            <td style={{ padding: "15px", color: "#ccc", fontSize: "0.9rem", maxWidth: "300px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-              {item.details}
-            </td>
-            <td style={{ padding: "15px", textAlign: "right" }}>
-              {item.signature ? (
-                <span title="Registrado na Blockchain" style={{ color: "#2ecc71", display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "5px" }}>
-                  <CheckCircle /> Registrado
-                </span>
-              ) : (
-                <button
-                  onClick={() => onRegisterOnChain(item)}
-                  disabled={sendingId === item.id || !walletAddress}
-                  style={{
-                    background: "transparent",
-                    border: walletAddress ? "1px solid #646cff" : "1px solid #444",
-                    color: walletAddress ? "#646cff" : "#666",
-                    padding: "6px 12px", fontSize: "0.8rem", borderRadius: "6px",
-                    cursor: walletAddress ? "pointer" : "not-allowed",
-                    display: "inline-flex", alignItems: "center", gap: "6px", transition: "all 0.2s"
-                  }}
+    <TableContainer border="1px solid" borderColor={themeFx.tableBorder} borderRadius="xl" bg={themeFx.innerBg}>
+      <Table variant="simple" size="md">
+        <Thead bg={themeFx.tableHeaderBg}>
+          <Tr>
+            <Th color={themeFx.mutedText}>Data</Th>
+            <Th color={themeFx.mutedText}>Tipo</Th>
+            <Th color={themeFx.mutedText}>Resumo</Th>
+            <Th isNumeric color={themeFx.mutedText}>Ação Blockchain</Th>
+          </Tr>
+        </Thead>
+        <Tbody>
+          {history.map((item) => (
+            <Tr key={`${item.type}-${item.id}`} _hover={{ bg: "whiteAlpha.50" }}>
+              <Td>
+                <Box display="flex" alignItems="center" gap={2} color={themeFx.textColor}>
+                  <Icon as={ClockHistory} color={themeFx.mutedText} />
+                  {new Date(item.date).toLocaleDateString("pt-BR")}
+                  <Text as="span" fontSize="xs" color={themeFx.mutedText}>
+                    {formatTimeBR(item.date)}
+                  </Text>
+                </Box>
+              </Td>
+              
+              <Td>
+                <Badge 
+                  colorScheme={item.type === "Arbovirose" ? "blue" : "pink"} 
+                  px={3} py={1} borderRadius="full"
                 >
-                  {sendingId === item.id ? "Assinando..." : <><CloudUpload /> Registrar</>}
-                </button>
-              )}
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+                  {item.type}
+                </Badge>
+              </Td>
+              
+              <Td>
+                <Text color={themeFx.mutedText} fontSize="sm" maxW="250px" isTruncated>
+                  {item.details}
+                </Text>
+              </Td>
+              
+              <Td isNumeric>
+                {item.signature ? (
+                  <Badge colorScheme="green" variant="outline" display="inline-flex" alignItems="center" gap={1} px={2} py={1}>
+                    <Icon as={CheckCircle} /> Registrado
+                  </Badge>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant={walletAddress ? "outline" : "ghost"}
+                    colorScheme={walletAddress ? "blue" : "gray"}
+                    leftIcon={<CloudUpload />}
+                    onClick={() => onRegisterOnChain(item)}
+                    isLoading={sendingId === item.id}
+                    loadingText="Assinando..."
+                    isDisabled={!walletAddress}
+                  >
+                    Registrar
+                  </Button>
+                )}
+              </Td>
+            </Tr>
+          ))}
+        </Tbody>
+      </Table>
+    </TableContainer>
   );
 };

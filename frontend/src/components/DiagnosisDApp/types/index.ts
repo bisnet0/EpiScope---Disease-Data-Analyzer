@@ -12,3 +12,15 @@ export interface ToastState {
   type: "success" | "error" | "info";
   title?: string;
 }
+
+export interface DAppHeaderProps {
+  walletAddress: string | null;
+  connectWallet: () => void;
+}
+
+export interface HistoryTableProps {
+  history: HistoryItem[];
+  walletAddress: string | null;
+  sendingId: number | null;
+  onRegisterOnChain: (item: HistoryItem) => void;
+}

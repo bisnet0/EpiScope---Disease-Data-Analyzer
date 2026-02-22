@@ -1,26 +1,47 @@
 import React from "react";
+import { Flex, Heading, Button, Badge, Icon } from "@chakra-ui/react";
 import { ShieldCheck } from "react-bootstrap-icons";
+import { useDAppThemeFx } from "../styles/theme-fx";
+import { type DAppHeaderProps } from "../types";
 
-interface Props {
-  walletAddress: string | null;
-  connectWallet: () => void;
-}
+export const DAppHeader: React.FC<DAppHeaderProps> = ({ walletAddress, connectWallet }) => {
+  const themeFx = useDAppThemeFx();
 
-export const DAppHeader: React.FC<Props> = ({ walletAddress, connectWallet }) => (
-  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "10px" }}>
-    <h2 style={{ margin: 0, display: "flex", alignItems: "center" }}>
-      <ShieldCheck style={{ marginRight: "10px", color: "#646cff" }} />
-      Cartesi DApp Ledger
-    </h2>
+  return (
+    <Flex 
+      justify="space-between" 
+      align="center" 
+      mb={6} 
+      wrap="wrap" 
+      gap={4}
+    >
+      <Heading size="md" display="flex" alignItems="center" color={themeFx.textColor}>
+        <Icon as={ShieldCheck} color={themeFx.brandColor} mr={3} w={6} h={6} />
+        Cartesi DApp Ledger
+      </Heading>
 
-    {!walletAddress ? (
-      <button onClick={connectWallet} className="btn-primary" style={{ background: "#f39c12", padding: "8px 16px" }}>
-        🦊 Conectar MetaMask
-      </button>
-    ) : (
-      <div style={{ color: "#2ecc71", border: "1px solid #2ecc71", padding: "5px 15px", borderRadius: "20px", fontSize: "0.9rem" }}>
-        🟢 Wallet Conectada
-      </div>
-    )}
-  </div>
-);
+      {!walletAddress ? (
+        <Button 
+          onClick={connectWallet} 
+          colorScheme="orange" 
+          size="md"
+        >
+          🦊 Conectar MetaMask
+        </Button>
+      ) : (
+        <Badge 
+          colorScheme="green" 
+          variant="subtle" 
+          px={4} 
+          py={2} 
+          borderRadius="full" 
+          fontSize="sm"
+          border="1px solid"
+          borderColor="green.400"
+        >
+          🟢 Wallet Conectada
+        </Badge>
+      )}
+    </Flex>
+  );
+};

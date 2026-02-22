@@ -1,34 +1,39 @@
 import React from 'react';
+import { Box, Flex, Heading, Text, Badge } from '@chakra-ui/react';
 import { useExperiments } from './hooks/useExperiments';
 import { ControlsColumn } from './components/ControlsColumn';
 import { ChartsColumn } from './components/ChartsColumn';
+import { useExperimentsThemeFx } from './styles/theme-fx';
 import Toast from '../Toast/Toast';
 
 export const ExperimentsPanel: React.FC = () => {
   const { state, setters, actions } = useExperiments();
+  const themeFx = useExperimentsThemeFx();
 
   return (
-    <div style={{ marginTop: '30px', borderTop: '1px solid #444', paddingTop: '20px' }}>
-      <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+    <Box mt={10} borderTop="1px solid" borderColor={themeFx.cardBorder} pt={8}>
+      
+      <Heading size="md" display="flex" alignItems="center" gap={3} color={themeFx.textColor} mb={2}>
         🧪 Laboratório de Hiperparâmetros 
-        <span style={{ fontSize: '0.8rem', background: '#646cff', padding: '2px 8px', borderRadius: '4px' }}>
+        <Badge colorScheme="purple" variant="solid" borderRadius="md" px={2} py={0.5}>
           MODO AVANÇADO
-        </span>
-      </h3>
+        </Badge>
+      </Heading>
 
-      <p style={{ color: '#888', fontSize: '0.9rem', marginBottom: '20px' }}>
+      <Text color={themeFx.mutedText} fontSize="md" mb={6}>
         Utilize Algoritmos Genéticos para encontrar a configuração perfeita ou teste manualmente.
-      </p>
+      </Text>
 
-      <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+      <Flex gap={6} flexWrap="wrap">
         <ControlsColumn state={state} setters={setters} actions={actions} />
+        
         <ChartsColumn 
           viewMode={state.viewMode} 
           setViewMode={setters.setViewMode}
           manualHistory={state.manualHistory}
           evolutionHistory={state.evolutionHistory}
         />
-      </div>
+      </Flex>
 
       {state.toast && (
         <Toast 
@@ -38,6 +43,6 @@ export const ExperimentsPanel: React.FC = () => {
           title={state.toast.title} 
         />
       )}
-    </div>
+    </Box>
   );
 };

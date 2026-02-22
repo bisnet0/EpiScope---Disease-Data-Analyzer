@@ -1,4 +1,12 @@
 import React from 'react';
+import { 
+  Box, 
+  Button, 
+  FormControl, 
+  FormLabel, 
+  Input, 
+  VStack 
+} from '@chakra-ui/react';
 
 interface Props {
   state: any;
@@ -8,42 +16,60 @@ interface Props {
 
 export const AuthFields: React.FC<Props> = ({ state, setters, actions }) => {
   return (
-    <form onSubmit={actions.handleSubmit}>
-      {!state.isLogin && (
-        <div className="form-group">
-          <label>Usuário</label>
-          <input 
-            type="text" 
-            value={state.username} 
-            onChange={e => setters.setUsername(e.target.value)} 
-            required 
+    <Box as="form" onSubmit={actions.handleSubmit} w="100%">
+      <VStack spacing={4} align="flex-start">
+        
+        {!state.isLogin && (
+          <FormControl isRequired>
+            <FormLabel htmlFor="username">Usuário</FormLabel>
+            <Input 
+              id="username"
+              type="text" 
+              value={state.username} 
+              onChange={e => setters.setUsername(e.target.value)} 
+              placeholder="Seu nome de usuário"
+              focusBorderColor="blue.400"
+            />
+          </FormControl>
+        )}
+
+        <FormControl isRequired>
+          <FormLabel htmlFor="email">E-mail</FormLabel>
+          <Input 
+            id="email"
+            type="email" 
+            value={state.email} 
+            onChange={e => setters.setEmail(e.target.value)} 
+            placeholder="seu@email.com"
+            focusBorderColor="blue.400"
           />
-        </div>
-      )}
+        </FormControl>
 
-      <div className="form-group">
-        <label>E-mail</label>
-        <input 
-          type="email" 
-          value={state.email} 
-          onChange={e => setters.setEmail(e.target.value)} 
-          required 
-        />
-      </div>
+        <FormControl isRequired>
+          <FormLabel htmlFor="password">Senha</FormLabel>
+          <Input 
+            id="password"
+            type="password" 
+            value={state.password} 
+            onChange={e => setters.setPassword(e.target.value)} 
+            placeholder="********"
+            focusBorderColor="blue.400"
+          />
+        </FormControl>
 
-      <div className="form-group">
-        <label>Senha</label>
-        <input 
-          type="password" 
-          value={state.password} 
-          onChange={e => setters.setPassword(e.target.value)} 
-          required 
-        />
-      </div>
-
-      <button type="submit" disabled={state.loading} className="btn-primary">
-        {state.loading ? 'Processando...' : (state.isLogin ? 'Entrar' : 'Cadastrar')}
-      </button>
-    </form>
+        <Button 
+          type="submit" 
+          colorScheme="blue" 
+          size="lg" 
+          w="full" 
+          mt={4}
+          isLoading={state.loading}
+          loadingText="Processando..."
+        >
+          {state.isLogin ? 'Entrar' : 'Cadastrar'}
+        </Button>
+        
+      </VStack>
+    </Box>
   );
 };

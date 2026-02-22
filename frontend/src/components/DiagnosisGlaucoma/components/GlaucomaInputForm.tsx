@@ -1,32 +1,88 @@
-import React, { ChangeEvent } from "react";
+import React, { type ChangeEvent } from "react";
+import { 
+  Box, 
+  Button, 
+  FormControl, 
+  FormLabel, 
+  Input, 
+  VStack, 
+  Heading, 
+  Image, 
+  Center 
+} from '@chakra-ui/react';
+import { useGlaucomaThemeFx } from '../styles/theme-fx';
+import { type GlaucomaInputFormProps } from '../types';
 
-interface Props {
-  previewUrl: string | null;
-  loading: boolean;
-  onImageChange: (event: ChangeEvent<HTMLInputElement>) => void;
-  onSubmit: (event: React.FormEvent) => void;
-}
+export const GlaucomaInputForm: React.FC<GlaucomaInputFormProps> = ({ 
+  previewUrl, loading, onImageChange, onSubmit 
+}) => {
+  const themeFx = useGlaucomaThemeFx();
 
-export const GlaucomaInputForm: React.FC<Props> = ({ previewUrl, loading, onImageChange, onSubmit }) => (
-  <form onSubmit={onSubmit} className="form-section">
-    <h2>2. Análise de Imagem (Glaucoma CNN)</h2>
-    <div className="form-group">
-      <label>Imagem do fundo do olho:</label>
-      <input type="file" accept="image/*" onChange={onImageChange} />
-    </div>
-    
-    {previewUrl && (
-      <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-        <img 
-          src={previewUrl} 
-          alt="Preview" 
-          style={{ maxWidth: "200px", borderRadius: "8px", border: "1px solid #444" }} 
-        />
-      </div>
-    )}
-    
-    <button type="submit" disabled={loading}>
-      {loading ? "Analisando..." : "Enviar Imagem"}
-    </button>
-  </form>
-);
+  return (
+    <Box 
+      as="form" 
+      onSubmit={onSubmit} 
+      bg={themeFx.cardBg} 
+      p={{ base: 5, md: 8 }} 
+      borderRadius="xl" 
+      border="1px solid" 
+      borderColor={themeFx.cardBorder} 
+      backdropFilter="blur(16px)" 
+      boxShadow="lg"
+      w="full"
+    >
+      <VStack spacing={5} align="stretch">
+        <Heading size="md" color={themeFx.textColor}>
+          2. Análise de Imagem (Glaucoma CNN)
+        </Heading>
+
+        <FormControl isRequired>
+          <FormLabel color={themeFx.textColor}>Imagem do fundo do olho:</FormLabel>
+          <Input 
+            type="file" 
+            accept="image/*" 
+            onChange={onImageChange} 
+            bg={themeFx.inputBg}
+            p={1} // Padding reduzido para ajustar o botão nativo do browser dentro do Input
+            focusBorderColor="pink.400"
+            sx={{
+              '::file-selector-button': {
+                height: '100%',
+                mr: 4,
+                border: 'none',
+                background: 'transparent',
+                fontWeight: 'bold',
+                color: 'pink.500',
+                cursor: 'pointer'
+              }
+            }}
+          />
+        </FormControl>
+        
+        {previewUrl && (
+          <Center mb={2}>
+            <Image 
+              src={previewUrl} 
+              alt="Preview" 
+              maxW="200px" 
+              borderRadius="md" 
+              border="2px solid" 
+              borderColor="pink.400" 
+              boxShadow="md" 
+            />
+          </Center>
+        )}
+        
+        <Button 
+          type="submit" 
+          colorScheme="pink" 
+          size="lg" 
+          isLoading={loading}
+          loadingText="Analisando Mapeamento..."
+        >
+          Enviar Imagem
+        </Button>
+      </VStack>
+    </Box>
+  );
+};

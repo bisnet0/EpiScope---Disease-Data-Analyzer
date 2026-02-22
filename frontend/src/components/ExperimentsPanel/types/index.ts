@@ -30,3 +30,17 @@ export interface GARunParams {
   mutation_rate: number;
   crossover_rate: number;
 }
+
+export interface ControlsColumnProps {
+  state: any;
+  setters: any;
+  actions: any;
+}
+
+export interface ChartsColumnProps {
+  viewMode: 'manual' | 'evolution';
+  setViewMode: (mode: 'manual' | 'evolution') => void;
+  manualHistory: ManualHistoryItem[];
+  evolutionHistory: EvolutionStep[];
+}
+

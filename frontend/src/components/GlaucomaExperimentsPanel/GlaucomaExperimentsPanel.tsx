@@ -1,30 +1,34 @@
 import React from 'react';
+import { Box, Flex, Heading, Text, Badge } from '@chakra-ui/react';
 import { useGlaucomaExperiments } from './hooks/useGlaucomaExperiments';
 import { GlaucomaControls } from './components/GlaucomaControls';
 import { GlaucomaEvolutionChart } from './components/GlaucomaEvolutionChart';
-import Toast from '../Toast'; // Ajuste o caminho
+import { useGlaucomaExpThemeFx } from './styles/theme-fx';
+import Toast from '../Toast/Toast'; 
+
 
 export const GlaucomaExperimentsPanel: React.FC = () => {
   const { state, setters, actions } = useGlaucomaExperiments();
+  const themeFx = useGlaucomaExpThemeFx();
 
   return (
-    <div style={{ marginTop: '30px', borderTop: '1px solid #444', paddingTop: '20px' }}>
+    <Box mt={10} borderTop="1px solid" borderColor={themeFx.cardBorder} pt={8}>
       
-      <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#e91e63' }}>
+      <Heading size="md" display="flex" alignItems="center" gap={3} color={themeFx.accentColor} mb={2}>
         👁️ Laboratório de Visão Computacional 
-        <span style={{ fontSize: '0.8rem', background: '#333', padding: '2px 8px', borderRadius: '4px', color: '#fff' }}>
+        <Badge bg={themeFx.badgeBg} color="white" px={2} py={0.5} borderRadius="md">
           HÍBRIDO
-        </span>
-      </h3>
+        </Badge>
+      </Heading>
 
-      <p style={{ color: '#aaa', fontSize: '0.9rem', marginBottom: '20px' }}>
+      <Text color={themeFx.mutedText} fontSize="md" mb={6}>
         Otimize o classificador final (Top-Layer) que processa as características extraídas pela CNN.
-      </p>
+      </Text>
 
-      <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+      <Flex gap={6} flexWrap="wrap">
         <GlaucomaControls state={state} setters={setters} actions={actions} />
         <GlaucomaEvolutionChart history={state.evolutionHistory} modelType={state.modelType} />
-      </div>
+      </Flex>
 
       {state.toast && (
         <Toast 
@@ -34,6 +38,6 @@ export const GlaucomaExperimentsPanel: React.FC = () => {
           title={state.toast.title} 
         />
       )}
-    </div>
+    </Box>
   );
 };

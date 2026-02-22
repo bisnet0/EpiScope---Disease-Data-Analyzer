@@ -1,4 +1,5 @@
 import React from "react";
+import { Box, Text, Center, Spinner } from "@chakra-ui/react";
 import { useDashboard } from "./hooks/useDashboard";
 import { DashboardHeader } from "./components/DashboardHeader";
 import { KPICards } from "./components/Charts/KPICards";
@@ -18,16 +19,18 @@ export const DashboardPage: React.FC = () => {
 
   if (!stats && loading) {
     return (
-      <div style={{ padding: "40px", textAlign: "center", color: "#888" }}>
-        Carregando Centro de Comando...
-      </div>
+      <Center h="50vh" flexDirection="column" gap={4}>
+        <Spinner size="xl" color="blue.500" thickness="4px" />
+        <Text color="gray.500" fontWeight="medium">Inicializando Centro de Comando...</Text>
+      </Center>
     );
   }
 
   if (!stats) return null;
 
   return (
-    <div className="container fade-in" style={{ paddingBottom: "50px" }}>
+    <Box w="full" maxW="1400px" mx="auto" pb={10} animation="fade-in 0.4s">
+      
       <DashboardHeader
         periodFilter={periodFilter}
         setPeriodFilter={setPeriodFilter}
@@ -42,6 +45,7 @@ export const DashboardPage: React.FC = () => {
       <StatsCharts charts={stats.charts} kpis={stats.kpis} />
       
       <GAAnalysisCharts gaData={stats.charts.ga_analysis} />
-    </div>
+
+    </Box>
   );
 };

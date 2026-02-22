@@ -1,74 +1,114 @@
 import React from 'react';
+import { 
+  Box, Button, FormControl, FormLabel, Select, 
+  Slider, SliderTrack, SliderFilledTrack, SliderThumb, Text, VStack 
+} from '@chakra-ui/react';
+import { useGlaucomaExpThemeFx } from '../styles/theme-fx';
+import { type GlaucomaControlsProps } from '../types';
 
-interface Props {
-  state: any;
-  setters: any;
-  actions: any;
-}
 
-export const GlaucomaControls: React.FC<Props> = ({ state, setters, actions }) => {
+export const GlaucomaControls: React.FC<GlaucomaControlsProps> = ({ state, setters, actions }) => {
+  const themeFx = useGlaucomaExpThemeFx();
+
   return (
-    <div style={{ flex: '1 1 300px', background: '#1e1e1e', padding: '20px', borderRadius: '8px' }}>
-      <div className="form-group">
-        <label>Classificador Final (Head):</label>
-        <select value={state.modelType} onChange={e => setters.setModelType(e.target.value)}>
+    <Box 
+      flex="1 1 300px" 
+      bg={themeFx.cardBg} 
+      p={6} 
+      borderRadius="xl" 
+      border="1px solid" 
+      borderColor={themeFx.cardBorder}
+      backdropFilter="blur(16px)"
+      boxShadow="lg"
+    >
+      <FormControl mb={4}>
+        <FormLabel color={themeFx.textColor}>Classificador Final (Head):</FormLabel>
+        <Select 
+          value={state.modelType} 
+          onChange={e => setters.setModelType(e.target.value)}
+          bg={themeFx.inputBg}
+          focusBorderColor="pink.400"
+        >
           <option value="xgboost">XGBoost (Gradient Boosting)</option>
           <option value="random_forest">Random Forest</option>
           <option value="decision_tree">Decision Tree</option>
-        </select>
-      </div>
+        </Select>
+      </FormControl>
 
-      <div style={{ marginTop: '15px', borderTop: '1px solid #333', paddingTop: '10px', marginBottom: '15px' }}>
-        <button
+      <Box my={6} borderTop="1px solid" borderColor={themeFx.cardBorder} pt={4}>
+        <Button
+          variant="ghost"
+          color={themeFx.accentColor}
+          size="sm"
+          w="full"
           onClick={() => setters.setShowAdvancedGA(!state.showAdvancedGA)}
-          style={{ background: 'none', border: 'none', color: '#e91e63', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', padding: 0 }}
         >
           {state.showAdvancedGA ? '▼ Ocultar Config Genética' : '▶ Configurar Algoritmo Genético'}
-        </button>
+        </Button>
 
         {state.showAdvancedGA && (
-          <div style={{ marginTop: '10px', background: '#252525', padding: '10px', borderRadius: '6px' }}>
-            <div className="form-group">
-              <label style={{ fontSize: '0.8rem' }}>Gerações: {state.generations}</label>
-              <input type="range" min="3" max="20" value={state.generations} onChange={e => setters.setGenerations(Number(e.target.value))} style={{ height: '4px' }} />
-            </div>
-            <div className="form-group">
-              <label style={{ fontSize: '0.8rem' }}>População: {state.popSize}</label>
-              <input type="range" min="5" max="50" value={state.popSize} onChange={e => setters.setPopSize(Number(e.target.value))} style={{ height: '4px' }} />
-            </div>
-            <div className="form-group">
-              <label style={{ fontSize: '0.8rem' }}>Taxa de Mutação: {Math.round(state.mutationRate * 100)}%</label>
-              <input type="range" min="0.01" max="0.5" step="0.01" value={state.mutationRate} onChange={e => setters.setMutationRate(Number(e.target.value))} style={{ height: '4px' }} />
-            </div>
-          </div>
-        )}
-      </div>
+          <VStack spacing={4} mt={4} bg={themeFx.innerBg} p={4} borderRadius="md" border="1px solid" borderColor={themeFx.cardBorder}>
+            <FormControl>
+              <FormLabel fontSize="sm" color={themeFx.textColor}>Gerações: {state.generations}</FormLabel>
+              <Slider min={3} max={20} value={state.generations} onChange={v => setters.setGenerations(v)}>
+                <SliderTrack><SliderFilledTrack bg="pink.500" /></SliderTrack>
+                <SliderThumb />
+              </Slider>
+            </FormControl>
 
-      {/* Resultados em ReadOnly */}
-      <div style={{ opacity: 0.6, pointerEvents: 'none' }}>
-        <div className="form-group">
-          <label>Profundidade Resultante: {state.maxDepth}</label>
-          <input type="range" value={state.maxDepth} readOnly />
-        </div>
+            <FormControl>
+              <FormLabel fontSize="sm" color={themeFx.textColor}>População: {state.popSize}</FormLabel>
+              <Slider min={5} max={50} value={state.popSize} onChange={v => setters.setPopSize(v)}>
+                <SliderTrack><SliderFilledTrack bg="pink.500" /></SliderTrack>
+                <SliderThumb />
+              </Slider>
+            </FormControl>
+
+            <FormControl>
+              <FormLabel fontSize="sm" color={themeFx.textColor}>Taxa de Mutação: {Math.round(state.mutationRate * 100)}%</FormLabel>
+              <Slider min={0.01} max={0.5} step={0.01} value={state.mutationRate} onChange={v => setters.setMutationRate(v)}>
+                <SliderTrack><SliderFilledTrack bg="pink.500" /></SliderTrack>
+                <SliderThumb />
+              </Slider>
+            </FormControl>
+          </VStack>
+        )}
+      </Box>
+
+      {/* Resultados em ReadOnly (Mostra o que a IA escolheu após evoluir) */}
+      <VStack spacing={5} align="stretch" opacity={0.7} pointerEvents="none">
+        <FormControl>
+          <FormLabel color={themeFx.textColor}>Profundidade Resultante: {state.maxDepth}</FormLabel>
+          <Slider value={state.maxDepth} min={1} max={50} isReadOnly>
+            <SliderTrack><SliderFilledTrack bg="gray.500" /></SliderTrack>
+            <SliderThumb />
+          </Slider>
+        </FormControl>
+
         {state.modelType !== 'decision_tree' && (
-          <div className="form-group">
-            <label>Estimadores Resultantes: {state.nEstimators}</label>
-            <input type="range" value={state.nEstimators} readOnly />
-          </div>
+          <FormControl>
+            <FormLabel color={themeFx.textColor}>Estimadores Resultantes: {state.nEstimators}</FormLabel>
+            <Slider value={state.nEstimators} min={10} max={1000} isReadOnly>
+              <SliderTrack><SliderFilledTrack bg="gray.500" /></SliderTrack>
+              <SliderThumb />
+            </Slider>
+          </FormControl>
         )}
-      </div>
+      </VStack>
 
-      <button
+      <Button
         onClick={actions.handleRunEvolution}
-        disabled={state.loading}
-        style={{
-          width: '100%', marginTop: '20px',
-          background: state.loading ? '#555' : 'linear-gradient(45deg, #e91e63, #9b59b6)',
-          color: '#fff', fontWeight: 'bold', padding: '12px', border: 'none', borderRadius: '6px', cursor: 'pointer'
-        }}
+        isLoading={state.loading}
+        loadingText="🧬 Evoluindo Rede..."
+        bgGradient="linear(to-r, pink.500, purple.500)"
+        color="white"
+        _hover={{ bgGradient: "linear(to-r, pink.600, purple.600)" }}
+        size="lg"
+        w="full"
+        mt={8}
       >
-        {state.loading ? '🧬 Evoluindo Rede...' : '🧬 Iniciar Algoritmo Genético'}
-      </button>
-    </div>
+        🧬 Iniciar Algoritmo Genético
+      </Button>
+    </Box>
   );
 };

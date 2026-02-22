@@ -20,3 +20,19 @@ export interface DiagnosisPayload {
   age: number;
   sex: string;
 }
+
+export interface FormProps {
+  textDescription: string;
+  setTextDescription: (val: string) => void;
+  age: number | '';
+  setAge: (val: number | '') => void;
+  sex: string;
+  setSex: (val: string) => void;
+  loading: boolean;
+  onSubmit: (e: React.FormEvent) => void;
+}
+
+export interface AlgorithmsChartProps {
+  data: any[];
+  winnerModel?: string;
+}

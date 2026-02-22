@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { type ReactNode } from 'react';
 
 export type ToastType = 'success' | 'error' | 'info';
 
@@ -14,4 +14,8 @@ export interface ToastStyleConfig {
   iconBg: string;
   iconColor: string;
   icon: ReactNode;
+}
+
+export interface CloseButtonProps {
+  onClick: () => void;
 }

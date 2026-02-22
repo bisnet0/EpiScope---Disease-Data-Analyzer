@@ -1,87 +1,83 @@
 import React from "react";
+import { Flex, Heading, HStack, Text, Select, IconButton, Icon } from "@chakra-ui/react";
 import { Activity, Filter, ArrowRepeat } from "react-bootstrap-icons";
-import { ACCENT_COLOR } from "../utils/constants";
+import { useDashboardThemeFx } from "../styles/theme-fx";
+import { type DashboardHeaderProps } from "../types";
 
-const selectStyle: React.CSSProperties = {
-  background: "#333",
-  color: "#fff",
-  border: "1px solid #555",
-  padding: "8px 12px",
-  borderRadius: "6px",
-  cursor: "pointer",
-  outline: "none",
-  fontSize: "0.9rem",
-};
 
-interface HeaderProps {
-  periodFilter: string;
-  setPeriodFilter: (v: string) => void;
-  modelFilter: string;
-  setModelFilter: (v: string) => void;
-  onRefresh: () => void;
-  loading: boolean;
-}
-
-export const DashboardHeader: React.FC<HeaderProps> = ({
-  periodFilter,
-  setPeriodFilter,
-  modelFilter,
-  setModelFilter,
-  onRefresh,
-  loading,
+export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
+  periodFilter, setPeriodFilter, modelFilter, setModelFilter, onRefresh, loading
 }) => {
+  const themeFx = useDashboardThemeFx();
+
   return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: "20px",
-        flexWrap: "wrap",
-        gap: "15px",
-      }}
-    >
-      <h2 style={{ margin: 0, display: "flex", alignItems: "center", gap: "10px" }}>
-        <Activity color={ACCENT_COLOR} /> Analytics em Tempo Real
-      </h2>
+    <Flex justify="space-between" align="center" mb={8} wrap="wrap" gap={4}>
+      <Heading size="lg" display="flex" alignItems="center" gap={3} color={themeFx.textColor}>
+        <Icon as={Activity} color={themeFx.accentColor} /> Analytics em Tempo Real
+      </Heading>
 
-      <div
-        style={{
-          display: "flex",
-          gap: "10px",
-          background: "#252525",
-          padding: "10px",
-          borderRadius: "8px",
-          border: "1px solid #333",
-        }}
+      <Flex 
+        bg={themeFx.filterPanelBg} 
+        p={2} 
+        borderRadius="xl" 
+        border="1px solid" 
+        borderColor={themeFx.cardBorder}
+        boxShadow="sm"
+        align="center"
+        gap={3}
+        wrap="wrap"
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "5px", color: "#aaa", fontSize: "0.9rem", marginRight: "10px" }}>
-          <Filter /> Filtros:
-        </div>
+        <HStack color={themeFx.mutedText} px={2} spacing={2}>
+          <Icon as={Filter} />
+          <Text fontSize="sm" fontWeight="bold">Filtros:</Text>
+        </HStack>
 
-        <select value={periodFilter} onChange={(e) => setPeriodFilter(e.target.value)} style={selectStyle}>
+        <Select 
+          value={periodFilter} 
+          onChange={(e) => setPeriodFilter(e.target.value)} 
+          variant="filled" 
+          bg={themeFx.inputBg}
+          _hover={{ bg: themeFx.inputBg }}
+          _focus={{ bg: themeFx.inputBg, borderColor: themeFx.accentColor }}
+          size="sm"
+          borderRadius="md"
+          w="auto"
+        >
           <option value="all">📅 Todo o Período</option>
           <option value="24h">🕒 Últimas 24 Horas</option>
           <option value="7d">📅 Últimos 7 Dias</option>
           <option value="30d">📅 Últimos 30 Dias</option>
-        </select>
+        </Select>
 
-        <select value={modelFilter} onChange={(e) => setModelFilter(e.target.value)} style={selectStyle}>
+        <Select 
+          value={modelFilter} 
+          onChange={(e) => setModelFilter(e.target.value)} 
+          variant="filled" 
+          bg={themeFx.inputBg}
+          _hover={{ bg: themeFx.inputBg }}
+          _focus={{ bg: themeFx.inputBg, borderColor: themeFx.accentColor }}
+          size="sm"
+          borderRadius="md"
+          w="auto"
+        >
           <option value="all">🤖 Todos os Modelos</option>
           <option value="xgboost">🚀 XGBoost</option>
           <option value="random_forest">🌲 Random Forest</option>
           <option value="decision_tree">🌳 Decision Tree</option>
           <option value="glaucoma">🚀🌲 Híbrido</option>
-        </select>
+        </Select>
 
-        <button
+        <IconButton
+          aria-label="Atualizar Agora"
+          icon={<ArrowRepeat size={20} />}
           onClick={onRefresh}
-          title="Atualizar Agora"
-          style={{ background: "transparent", border: "none", color: "#fff", cursor: "pointer", padding: "0 5px" }}
-        >
-          <ArrowRepeat size={20} className={loading ? "spin" : ""} />
-        </button>
-      </div>
-    </div>
+          isLoading={loading}
+          variant="ghost"
+          colorScheme="blue"
+          size="sm"
+          isRound
+        />
+      </Flex>
+    </Flex>
   );
 };

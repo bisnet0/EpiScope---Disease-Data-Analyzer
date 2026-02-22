@@ -5,7 +5,7 @@ export const useToastAnimation = (duration: number, onClose: () => void) => {
 
   const triggerClose = useCallback(() => {
     setIsVisible(false);
-    setTimeout(onClose, 400); // Tempo da transição de opacidade/escala
+    setTimeout(onClose, 400); // Tempo da transição de saída
   }, [onClose]);
 
   useEffect(() => {

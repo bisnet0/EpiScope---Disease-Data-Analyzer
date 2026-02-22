@@ -5,7 +5,7 @@ export interface EvolutionStep {
 }
 
 export interface ToastState {
-  type: 'success' | 'error' | 'info';
+  type: "success" | "error" | "info";
   title?: string;
   message: string;
 }
@@ -16,4 +16,15 @@ export interface GlaucomaGARunParams {
   population_size: number;
   mutation_rate: number;
   crossover_rate: number;
+}
+
+export interface GlaucomaControlsProps {
+  state: any;
+  setters: any;
+  actions: any;
+}
+
+export interface GlaucomaEvolutionChartProps {
+  history: EvolutionStep[];
+  modelType: string;
 }
