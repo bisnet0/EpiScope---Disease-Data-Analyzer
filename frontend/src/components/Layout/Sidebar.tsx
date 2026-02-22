@@ -1,10 +1,19 @@
-import React from 'react';
-import { 
-  Box, Flex, Text, Icon, VStack, Drawer, DrawerBody, 
-  DrawerHeader, DrawerOverlay, DrawerContent, DrawerCloseButton 
-} from '@chakra-ui/react';
-import { NAV_ITEMS, type AppMode } from './nav-config';
-import { useAppThemeFx } from '../../styles/app-theme-fx';
+import React from "react";
+import {
+  Box,
+  Flex,
+  Text,
+  Icon,
+  VStack,
+  Drawer,
+  DrawerBody,
+  DrawerHeader,
+  DrawerOverlay,
+  DrawerContent,
+  DrawerCloseButton,
+} from "@chakra-ui/react";
+import { NAV_ITEMS, type AppMode } from "./nav-config";
+import { useAppThemeFx } from "../../styles/app-theme-fx";
 
 interface Props {
   mode: AppMode;
@@ -13,15 +22,17 @@ interface Props {
   onClose: () => void;
 }
 
-export const Sidebar: React.FC<Props> = ({ mode, setMode, isOpen, onClose }) => {
+export const Sidebar: React.FC<Props> = ({
+  mode,
+  setMode,
+  isOpen,
+  onClose,
+}) => {
   const themeFx = useAppThemeFx();
 
-  // O conteúdo dos botões, isolado para reutilizarmos no Desktop e Mobile
   const SidebarContent = () => (
     <VStack spacing={2} align="stretch" w="100%">
-      <Text fontSize="xs" fontWeight="bold" color={themeFx.mutedText} textTransform="uppercase" mb={2} px={4}>
-        Módulos
-      </Text>
+      
       {NAV_ITEMS.map((item) => {
         const isActive = mode === item.id;
         return (
@@ -33,14 +44,14 @@ export const Sidebar: React.FC<Props> = ({ mode, setMode, isOpen, onClose }) => 
             mx={2}
             borderRadius="lg"
             cursor="pointer"
-            bg={isActive ? themeFx.navActiveBg : 'transparent'}
+            bg={isActive ? themeFx.navActiveBg : "transparent"}
             color={isActive ? themeFx.navActiveColor : themeFx.mutedText}
             fontWeight={isActive ? "bold" : "medium"}
             transition="all 0.2s"
             _hover={{ bg: isActive ? themeFx.navActiveBg : themeFx.navHoverBg }}
             onClick={() => {
               setMode(item.id);
-              onClose(); // Fecha o drawer no mobile ao clicar
+              onClose();
             }}
           >
             <Icon as={item.icon} boxSize={5} mr={4} />
@@ -55,10 +66,10 @@ export const Sidebar: React.FC<Props> = ({ mode, setMode, isOpen, onClose }) => 
     <>
       {/* SIDEBAR DESKTOP (Fixa na esquerda, abaixo do Header de 70px) */}
       <Box
-        display={{ base: 'none', md: 'block' }}
+        display={{ base: "none", md: "block" }}
         position="fixed"
         left={0}
-        top="70px" 
+        top="70px"
         w="250px"
         h="calc(100vh - 70px)"
         bg={themeFx.sidebarBg}
@@ -72,10 +83,17 @@ export const Sidebar: React.FC<Props> = ({ mode, setMode, isOpen, onClose }) => 
 
       {/* DRAWER MOBILE (Aparece ao clicar no Hamburger) */}
       <Drawer isOpen={isOpen} placement="left" onClose={onClose}>
-        <DrawerOverlay display={{ base: 'block', md: 'none' }} />
-        <DrawerContent bg={themeFx.sidebarBg} display={{ base: 'block', md: 'none' }}>
+        <DrawerOverlay display={{ base: "block", md: "none" }} />
+        <DrawerContent
+          bg={themeFx.sidebarBg}
+          display={{ base: "block", md: "none" }}
+        >
           <DrawerCloseButton color={themeFx.textColor} />
-          <DrawerHeader borderBottomWidth="1px" borderColor={themeFx.headerBorder} color={themeFx.textColor}>
+          <DrawerHeader
+            borderBottomWidth="1px"
+            borderColor={themeFx.headerBorder}
+            color={themeFx.textColor}
+          >
             Menu de Navegação
           </DrawerHeader>
           <DrawerBody pt={6} px={0}>

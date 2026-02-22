@@ -2,7 +2,7 @@ import { useColorModeValue } from '@chakra-ui/react';
 
 export const useAppThemeFx = () => {
   // Fundo principal
-  const appBg = useColorModeValue('gray.50', '#121212');
+  const appBg = useColorModeValue('gray.50', '#1519224a');
   
   // Navbar (Liquid Glass)
   const headerBg = useColorModeValue('rgba(255, 255, 255, 0.85)', 'rgba(26, 32, 44, 0.85)');

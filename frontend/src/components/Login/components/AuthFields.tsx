@@ -7,14 +7,11 @@ import {
   Input, 
   VStack 
 } from '@chakra-ui/react';
+import type { AuthFieldsProps } from '../types';
 
-interface Props {
-  state: any;
-  setters: any;
-  actions: any;
-}
 
-export const AuthFields: React.FC<Props> = ({ state, setters, actions }) => {
+
+export const AuthFields: React.FC<AuthFieldsProps> = ({ state, setters, actions }) => {
   return (
     <Box as="form" onSubmit={actions.handleSubmit} w="100%">
       <VStack spacing={4} align="flex-start">

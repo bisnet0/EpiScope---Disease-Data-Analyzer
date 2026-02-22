@@ -9,7 +9,7 @@ export const DiagnosisGlaucomaForm: React.FC = () => {
   const { state, actions, charts } = useGlaucoma();
 
   return (
-    <Box w="full" maxW="1200px" mx="auto" pb={10}>
+    <Box w="full" maxW="1800px" mx="auto" pb={10}>
       <VStack spacing={8} align="stretch">
         
         {/* Formulário */}

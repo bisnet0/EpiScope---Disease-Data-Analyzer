@@ -8,5 +8,5 @@ export const NAV_ITEMS = [
   { id: "dashboard" as AppMode, label: "Dashboard", icon: Activity },
   { id: "web2" as AppMode, label: "Arboviroses", icon: FaMosquito },
   { id: "image" as AppMode, label: "Glaucoma", icon: FaRegEye },
-  { id: "web3" as AppMode, label: "Ledger Web3", icon: PiSignatureLight },
+  { id: "web3" as AppMode, label: "Assinatura", icon: PiSignatureLight },
 ];

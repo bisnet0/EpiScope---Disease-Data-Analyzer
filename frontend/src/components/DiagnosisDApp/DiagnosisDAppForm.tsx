@@ -1,6 +1,6 @@
 import React from "react";
 import { Box, Text, VStack } from "@chakra-ui/react";
-import Toast from "../Toast/Toast";
+import Toast from "../../components/Toast/Toast";
 import { useDAppLedger } from "./hooks/useDAppLedger";
 import { DAppHeader } from "./components/DAppHeader";
 import { HistoryTable } from "./components/HistoryTable";
@@ -11,28 +11,33 @@ export const DiagnosisDAppForm: React.FC = () => {
   const themeFx = useDAppThemeFx();
 
   return (
-    <Box w="full" maxW="1000px" mx="auto" pb={10}>
-      <VStack spacing={6} align="stretch">
-        
-        <Box 
-          bg={themeFx.cardBg} 
-          p={{ base: 5, md: 8 }} 
-          borderRadius="xl" 
-          border="1px solid" 
+    <Box w="full" maxW="1800px" mx="auto" pb={10}>
+      <VStack spacing={6} align="stretch" w="full">
+        <Box
+          bg={themeFx.cardBg}
+          p={{ base: 4, md: 8 }}
+          borderRadius="xl"
+          border="1px solid"
           borderColor={themeFx.cardBorder}
           backdropFilter="blur(16px)"
           boxShadow="lg"
+          w="full"
+          overflow="hidden"
         >
-          
-          <DAppHeader 
-            walletAddress={auth.walletAddress} 
-            connectWallet={auth.connectWallet} 
+          <DAppHeader
+            walletAddress={auth.walletAddress}
+            connectWallet={auth.connectWallet}
           />
 
-          <Text color={themeFx.mutedText} mb={8} lineHeight="1.6">
-            Selecione um diagnóstico do seu histórico Web2 para enviar para a camada 
-            de execução verificável (Cartesi Machine). Isso cria uma prova 
-            criptográfica imutável do resultado.
+          <Text
+            color={themeFx.mutedText}
+            fontSize={{ base: "sm", md: "md" }}
+            mb={8}
+            lineHeight="1.6"
+          >
+            Selecione um diagnóstico do seu histórico Web2 para enviar para a
+            camada de execução verificável (Cartesi Machine). Isso cria uma
+            prova criptográfica imutável do resultado.
           </Text>
 
           {state.loading ? (
@@ -40,7 +45,8 @@ export const DiagnosisDAppForm: React.FC = () => {
               Carregando histórico...
             </Text>
           ) : (
-            <Box animation="fade-in 0.5s">
+            <Box animation="fade-in 0.5s" w="full">
+              {/* O HistoryTable com seus 2 Boxes aninhados continua sendo essencial aqui! */}
               <HistoryTable
                 history={state.history}
                 walletAddress={auth.walletAddress}
@@ -49,17 +55,15 @@ export const DiagnosisDAppForm: React.FC = () => {
               />
             </Box>
           )}
-
         </Box>
-        
       </VStack>
 
       {state.toast && (
-        <Toast 
-          type={state.toast.type} 
-          message={state.toast.message} 
-          onClose={actions.closeToast} 
-          title={state.toast.title} 
+        <Toast
+          type={state.toast.type}
+          message={state.toast.message}
+          onClose={actions.closeToast}
+          title={state.toast.title}
         />
       )}
     </Box>

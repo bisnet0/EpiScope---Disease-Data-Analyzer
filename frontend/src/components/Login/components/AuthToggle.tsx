@@ -1,13 +1,10 @@
 import React from 'react';
 import { Text, Link } from '@chakra-ui/react';
 import { useLoginThemeFx } from '../styles/theme-fx';
+import type { AuthToggleProps } from '../types';
 
-interface Props {
-  isLogin: boolean;
-  onToggle: () => void;
-}
 
-export const AuthToggle: React.FC<Props> = ({ isLogin, onToggle }) => {
+export const AuthToggle: React.FC<AuthToggleProps> = ({ isLogin, onToggle }) => {
   const { textMuted, linkColor } = useLoginThemeFx();
 
   return (

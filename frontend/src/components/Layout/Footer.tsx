@@ -15,12 +15,12 @@ export const Footer: React.FC = () => {
       py={6} 
       px={{ base: 4, md: 8 }} 
       align="center" 
-      justify="space-between"
-      wrap="wrap"
-      gap={4}
-      mt="auto" // Empurra pro final da tela
+      justify="center" 
+      direction="column" // 🚀 O segredo aqui: força o texto pra cima e os ícones pra baixo
+      gap={3} // 🚀 Espaçamento vertical sutil entre o texto e as redes sociais
+      mt="auto" 
     >
-      <Text color={themeFx.mutedText} fontSize="sm">
+      <Text color={themeFx.mutedText} fontSize="sm" textAlign="center">
         Desenvolvido por <Text as="span" fontWeight="bold" color={themeFx.textColor}>Henrique Bisneto</Text>
       </Text>
       

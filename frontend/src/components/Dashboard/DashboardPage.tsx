@@ -29,7 +29,7 @@ export const DashboardPage: React.FC = () => {
   if (!stats) return null;
 
   return (
-    <Box w="full" maxW="1400px" mx="auto" pb={10} animation="fade-in 0.4s">
+    <Box w="full" pb={10} animation="fade-in 0.4s">
       
       <DashboardHeader
         periodFilter={periodFilter}

@@ -8,6 +8,8 @@ import React, {
 import { ethers } from "ethers";
 import api from "../middleware/api";
 import { useNavigate } from "react-router-dom";
+import Toast from "../components/Toast/Toast";
+import type { ToastState } from "../components/DiagnosisDApp/types";
 
 declare global {
   interface Window {
@@ -44,6 +46,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [signer, setSigner] = useState<ethers.JsonRpcSigner | null>(null);
+   const [toast, setToast] = useState<ToastState | null>(null);
 
   useEffect(() => {
     const checkSession = async () => {
@@ -79,7 +82,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   const connectWallet = async () => {
-    if (!window.ethereum) return alert("MetaMask não encontrada!");
+    if (!window.ethereum) return setToast({ type: "error", message: "MetaMask não detectado!"});
     try {
       const provider = new ethers.BrowserProvider(window.ethereum);
       await provider.send("eth_requestAccounts", []);

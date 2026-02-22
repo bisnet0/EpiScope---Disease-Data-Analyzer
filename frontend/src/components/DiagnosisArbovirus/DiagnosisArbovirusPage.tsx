@@ -13,7 +13,7 @@ export const DiagnosisArbovirusForm: React.FC = () => {
   const themeFx = useDiagnosisThemeFx();
 
   return (
-    <Box w="full" maxW="1200px" mx="auto" pb={10}>
+    <Box w="full" maxW="1800px" mx="auto" pb={10}>
       <VStack spacing={8} align="stretch">
         
         {/* Formulário Principal */}

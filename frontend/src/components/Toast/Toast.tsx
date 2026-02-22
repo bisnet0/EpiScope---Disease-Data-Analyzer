@@ -1,12 +1,18 @@
-import React from 'react';
-import { Box, Flex, Heading, Text } from '@chakra-ui/react';
-import { type ToastProps } from './types';
-import { TOAST_CONFIG } from './utils/constants';
-import { useToastThemeFx } from './styles/theme-fx';
-import { useToastAnimation } from './hooks/useToastAnimation';
-import { CloseButton } from './components/CloseButton';
+import React from "react";
+import { Box, Flex, Heading, Text } from "@chakra-ui/react";
+import { type ToastProps } from "./types";
+import { TOAST_CONFIG } from "./utils/constants";
+import { useToastThemeFx } from "./styles/theme-fx";
+import { useToastAnimation } from "./hooks/useToastAnimation";
+import { CloseButton } from "./components/CloseButton";
 
-const Toast: React.FC<ToastProps> = ({ title, message, type = 'info', onClose, duration = 4000 }) => {
+const Toast: React.FC<ToastProps> = ({
+  title,
+  message,
+  type = "info",
+  onClose,
+  duration = 4000,
+}) => {
   const { isVisible, triggerClose } = useToastAnimation(duration, onClose);
   const themeFx = useToastThemeFx();
   const styleConfig = TOAST_CONFIG[type] || TOAST_CONFIG.info;
@@ -15,9 +21,10 @@ const Toast: React.FC<ToastProps> = ({ title, message, type = 'info', onClose, d
     <Box
       position="fixed"
       top="24px"
-      right="24px"
+      left="50%"
+      transform="translateX(-50%)"
       zIndex={9999}
-      pointerEvents={isVisible ? 'auto' : 'none'}
+      pointerEvents={isVisible ? "auto" : "none"}
     >
       <Flex
         align="flex-start"
@@ -31,12 +38,12 @@ const Toast: React.FC<ToastProps> = ({ title, message, type = 'info', onClose, d
         border="1px solid"
         borderColor={themeFx.cardBorder}
         boxShadow={themeFx.cardShadow}
-        // Animações nativas substituindo o CSS
-        transform={isVisible ? 'translateY(0) scale(1)' : 'translateY(-20px) scale(0.95)'}
+        transform={
+          isVisible ? "translateY(0) scale(1)" : "translateY(-20px) scale(0.95)"
+        }
         opacity={isVisible ? 1 : 0}
         transition="all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)"
       >
-        
         {/* Ícone com brilho Neon */}
         <Flex
           bg={styleConfig.iconBg}
@@ -50,11 +57,16 @@ const Toast: React.FC<ToastProps> = ({ title, message, type = 'info', onClose, d
         >
           {styleConfig.icon}
         </Flex>
-        
+
         {/* Conteúdo de Texto */}
         <Flex flex={1} direction="column" justify="center" pt="2px">
           {title && (
-            <Heading size="sm" mb={1} color={themeFx.titleColor} letterSpacing="0.02em">
+            <Heading
+              size="sm"
+              mb={1}
+              color={themeFx.titleColor}
+              letterSpacing="0.02em"
+            >
               {title}
             </Heading>
           )}
@@ -65,7 +77,6 @@ const Toast: React.FC<ToastProps> = ({ title, message, type = 'info', onClose, d
 
         {/* Botão Fechar Chakra UI */}
         <CloseButton onClick={triggerClose} />
-        
       </Flex>
     </Box>
   );
