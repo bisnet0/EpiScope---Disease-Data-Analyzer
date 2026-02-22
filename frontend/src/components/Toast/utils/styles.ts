@@ -1,5 +1,5 @@
-import { CSSProperties } from 'react';
-import { ToastStyleConfig } from '../types';
+import { type CSSProperties } from 'react';
+import { type ToastStyleConfig } from '../types';
 
 export const getToastStyles = (isVisible: boolean, config: ToastStyleConfig): Record<string, CSSProperties> => ({
   overlay: {

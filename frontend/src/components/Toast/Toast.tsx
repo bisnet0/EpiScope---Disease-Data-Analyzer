@@ -1,5 +1,5 @@
 import React from 'react';
-import { ToastProps } from './types';
+import { type ToastProps } from './types';
 import { TOAST_CONFIG } from './utils/constants';
 import { getToastStyles } from './utils/styles';
 import { useToastAnimation } from './hooks/useToastAnimation';
