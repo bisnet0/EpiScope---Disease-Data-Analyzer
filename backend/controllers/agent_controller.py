@@ -1,11 +1,17 @@
+import os
+import uuid
+import base64
+
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from backend.agents.graph import app_graph
 from backend.models.chat_model import ChatMessage
 from backend.models.user_model import db
 
 agent_bp = Blueprint("agent", __name__)
+TEMP_DIR = os.path.join(os.getcwd(), "temp_uploads")
+os.makedirs(TEMP_DIR, exist_ok=True)
 
 
 @agent_bp.route("/chat", methods=["POST"])
@@ -14,13 +20,31 @@ def chat_agent():
     user_id = get_jwt_identity()
     data = request.get_json()
 
-    user_message = data.get("message", "")
+    user_message = data.get("message", "").strip()
     attachment_b64 = data.get("attachment")
 
     if not user_message and not attachment_b64:
         return jsonify({"error": "Mensagem vazia"}), 400
 
+    if not user_message and attachment_b64:
+        user_message = "Por favor, analise a imagem em anexo."
+
     try:
+        past_msgs = (
+            ChatMessage.query.filter_by(user_id=user_id)
+            .order_by(ChatMessage.created_at.desc())
+            .limit(8)
+            .all()
+        )
+        past_msgs.reverse()
+
+        langchain_history = []
+        for m in past_msgs:
+            if m.role == "user":
+                langchain_history.append(HumanMessage(content=m.content))
+            else:
+                langchain_history.append(AIMessage(content=m.content))
+
         audit_user_msg = ChatMessage(
             user_id=user_id,
             role="user",
@@ -32,9 +56,33 @@ def chat_agent():
 
         agent_input = user_message
         if attachment_b64:
-            agent_input += f"\n\n[IMAGEM ANEXADA]: {attachment_b64}"
+            try:
+                if "," in attachment_b64:
+                    base64_data = attachment_b64.split(",")[1]
+                else:
+                    base64_data = attachment_b64
 
-        inputs = {"messages": [HumanMessage(content=agent_input)]}
+                temp_path = os.path.join(TEMP_DIR, f"img_{uuid.uuid4().hex}.png")
+                with open(temp_path, "wb") as fh:
+                    fh.write(base64.b64decode(base64_data))
+
+                agent_input += f"\n\n[CAMINHO DO ARQUIVO PARA ANÁLISE]: {temp_path}"
+            except Exception as e:
+                print(f"Erro ao processar imagem: {e}")
+
+        system_prompt = """Você é o Dr. EpiScope, um Supervisor Médico de IA.
+Regras de ouro:
+1. CONTEXTO: Use SEMPRE o histórico da conversa para não repetir perguntas. Se o paciente já falou a idade e sexo antes, não pergunte novamente.
+2. BLOCKCHAIN E CARTESI: Você NÃO tem capacidade de registrar diagnósticos na blockchain diretamente. O registro na blockchain Cartesi exige a assinatura criptográfica da carteira Web3 do usuário (ex: MetaMask).
+3. INSTRUÇÃO AO USUÁRIO: Se o usuário pedir para registrar na blockchain, avise que o laudo está salvo no sistema web2, mas que para gerar a prova criptográfica, ele deve ir até a aba "Assinatura" no menu lateral e clicar no botão "Registrar" usando a própria carteira conectada. NUNCA invente ou simule que você fez o registro na blockchain."""
+
+        messages_to_send = (
+            [SystemMessage(content=system_prompt)]
+            + langchain_history
+            + [HumanMessage(content=agent_input)]
+        )
+
+        inputs = {"messages": messages_to_send}
         final_state = app_graph.invoke(inputs, config={"recursion_limit": 10})
 
         raw_content = final_state["messages"][-1].content
@@ -51,9 +99,7 @@ def chat_agent():
             ai_response = str(raw_content)
 
         audit_agent_msg = ChatMessage(
-            user_id=user_id,
-            role="agent",
-            content=ai_response,
+            user_id=user_id, role="agent", content=ai_response
         )
         db.session.add(audit_agent_msg)
         db.session.commit()
@@ -64,8 +110,28 @@ def chat_agent():
 
     except Exception as e:
         db.session.rollback()
-        print(f"Erro no Agente: {e}")
-        return jsonify({"error": "Erro interno no Dr. EpiScope"}), 500
+        error_msg = str(e)
+
+        import traceback
+
+        error_trace = traceback.format_exc()
+        print(f"\n[ERRO FATAL NO AGENTE]:\n{error_trace}\n")
+
+        if (
+            "RESOURCE_EXHAUSTED" in error_msg
+            or "429" in error_msg
+            or "quota" in error_msg.lower()
+        ):
+            return jsonify(
+                {
+                    "error": "QUOTA_EXCEEDED",
+                    "detalhes": "O limite de requisições da API do Google Gemini foi atingido.",
+                }
+            ), 429
+
+        return jsonify(
+            {"error": "Erro interno no Dr. EpiScope", "detalhes": str(e)}
+        ), 500
 
 
 @agent_bp.route("/history", methods=["GET"])

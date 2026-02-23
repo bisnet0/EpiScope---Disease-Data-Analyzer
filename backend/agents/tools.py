@@ -108,7 +108,7 @@ def glaucoma_tool(image_data: str):
 
 @tool("lab_manager")
 def lab_manager_tool(
-    target_disease: str,
+    target_disease: str = "não_informado",
     model_type: str = "xgboost",
     generations: int = 3,
     population_size: int = 5,
@@ -122,6 +122,10 @@ def lab_manager_tool(
     - population_size: tamanho da população (padrão 5)
     Retorna o histórico de otimização e os melhores parâmetros encontrados.
     """
+
+    if target_disease not in ["arbovirus", "glaucoma"]:
+        return "INSTRUÇÃO PARA O AGENTE: Você precisa perguntar ao usuário qual doença ele deseja otimizar (Arboviroses ou Glaucoma) antes de prosseguir."
+
     print(
         f"\n[DEBUG TOOL] Iniciando Laboratório Genético para {target_disease} | Modelo: {model_type}..."
     )
