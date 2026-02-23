@@ -1,24 +1,53 @@
-import React from "react";
+import React, { useState, useEffect, useTransition } from "react";
 import { Flex, Input, IconButton } from "@chakra-ui/react";
 import { FiPaperclip, FiSend } from "react-icons/fi";
 import { useChatThemeFx } from "../styles/theme-fx";
 import { type ChatInputAreaProps } from "../types";
 
-
 export const ChatInputArea: React.FC<ChatInputAreaProps> = ({
-  inputValue, attachment, isLoading, onInputChange, onFileChange, onSendMessage, onKeyPress
+  inputValue,
+  attachment,
+  isLoading,
+  onInputChange,
+  onFileChange,
+  onSendMessage,
+  onKeyPress,
 }) => {
   const themeFx = useChatThemeFx();
 
+  const [isPending, startTransition] = useTransition();
+
+  const [localValue, setLocalValue] = useState(inputValue);
+
+  useEffect(() => {
+    setLocalValue(inputValue);
+  }, [inputValue]);
+
+  const handleType = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const text = e.target.value;
+
+    setLocalValue(text);
+
+    startTransition(() => {
+      onInputChange(text);
+    });
+  };
+
   return (
-    <Flex 
-      p={4} 
-      bg={themeFx.inputAreaBg} 
-      borderTop="1px solid" 
-      borderColor={themeFx.borderColor} 
+    <Flex
+      p={4}
+      bg={themeFx.inputAreaBg}
+      borderTop="1px solid"
+      borderColor={themeFx.borderColor}
       align="center"
     >
-      <input type="file" id="file-upload" style={{ display: "none" }} onChange={onFileChange} accept="image/*" />
+      <input
+        type="file"
+        id="file-upload"
+        style={{ display: "none" }}
+        onChange={onFileChange}
+        accept="image/*"
+      />
       <IconButton
         as="label"
         htmlFor="file-upload"
@@ -34,8 +63,8 @@ export const ChatInputArea: React.FC<ChatInputAreaProps> = ({
         flex={1}
         placeholder="Descreva os sintomas ou envie arquivo..."
         color={themeFx.agentMsgText}
-        value={inputValue}
-        onChange={(e) => onInputChange(e.target.value)}
+        value={localValue}
+        onChange={handleType}
         onKeyDown={onKeyPress}
         variant="filled"
         bg={themeFx.inputBg}

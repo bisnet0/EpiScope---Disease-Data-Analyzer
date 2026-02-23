@@ -42,7 +42,7 @@ const AgentChat: React.FC = () => {
           inputValue={state.inputValue}
           attachment={state.attachment}
           isLoading={state.isLoading}
-          onInputChange={setters.setInputValue}
+          onInputChange={actions.handleInputChange}
           onFileChange={actions.handleFileChange}
           onSendMessage={actions.handleSendMessage}
           onKeyPress={actions.handleKeyPress}

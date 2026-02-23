@@ -1,7 +1,16 @@
-import { useState, useEffect, useRef, type ChangeEvent, type KeyboardEvent } from "react";
-import { useToast } from "@chakra-ui/react";
-import { fetchChatHistory, sendChatMessageApi } from "../services/agent-service";
+import {
+  useState,
+  useEffect,
+  useRef,
+  type ChangeEvent,
+  type KeyboardEvent,
+} from "react";
+import {
+  fetchChatHistory,
+  sendChatMessageApi,
+} from "../services/agent-service";
 import { type Message } from "../types";
+import { useToast } from "../../Toast/components/ToastContext";
 
 export const useAgentChat = () => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
@@ -9,9 +18,9 @@ export const useAgentChat = () => {
   const [inputValue, setInputValue] = useState<string>("");
   const [attachment, setAttachment] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const { showToast } = useToast();
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-  const toast = useToast();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -42,16 +51,19 @@ export const useAgentChat = () => {
       const reader = new FileReader();
       reader.onloadend = () => {
         setAttachment(reader.result as string);
-        toast({
-          title: "Arquivo anexado",
-          description: file.name,
-          status: "success",
-          duration: 2000,
-          isClosable: true,
+        showToast({
+          type: "success",
+          message: "Arquivo anexado",
+          title: "Sucesso",
+          duration: 3000,
         });
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleInputChange = (value: string) => {
+    setInputValue(value);
   };
 
   const handleSendMessage = async () => {
@@ -65,10 +77,10 @@ export const useAgentChat = () => {
     };
 
     setMessages((prev) => [...prev, newMsg]);
-    
+
     const currentInput = inputValue;
     const currentAttachment = attachment;
-    
+
     setInputValue("");
     setAttachment(null);
     setIsLoading(true);
@@ -85,13 +97,27 @@ export const useAgentChat = () => {
         content: data.response,
       };
       setMessages((prev) => [...prev, agentMsg]);
-    } catch (error) {
-      toast({
-        title: "Erro de comunicação",
-        description: "O Dr. EpiScope está indisponível.",
-        status: "error",
-        duration: 3000,
-      });
+    } catch (error: any) {
+      if (
+        error.response?.status === 429 ||
+        error.response?.data?.error === "QUOTA_EXCEEDED"
+      ) {
+        showToast({
+          title: "Doutor descansando 💤",
+          message:
+            "O limite gratuito da API do Google Gemini foi atingido. O Dr. EpiScope volta a atender assim que a cota resetar.",
+          type: "info",
+          duration: 6000,
+        });
+      } else {
+        // Erro genérico (500, etc)
+        showToast({
+          title: "Erro de comunicação",
+          message: "O Dr. EpiScope está indisponível no momento.",
+          type: "error",
+          duration: 3000,
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -105,17 +131,30 @@ export const useAgentChat = () => {
 
   const handleSoftDelete = (msgId: string) => {
     setMessages((prev) => prev.filter((msg) => msg.id !== msgId));
-    toast({
+    showToast({
       title: "Mensagem ocultada",
-      description: "Ela ainda está salva no histórico do sistema.",
-      status: "info",
+      message: "Ela ainda está salva no histórico do sistema.",
+      type: "info",
       duration: 3000,
     });
   };
 
   return {
-    state: { isOpen, messages, inputValue, attachment, isLoading, messagesEndRef },
-    setters: { setIsOpen, setInputValue },
-    actions: { handleFileChange, handleSendMessage, handleKeyPress, handleSoftDelete }
+    state: {
+      isOpen,
+      messages,
+      inputValue,
+      attachment,
+      isLoading,
+      messagesEndRef,
+    },
+    setters: { setIsOpen },
+    actions: {
+      handleFileChange,
+      handleSendMessage,
+      handleKeyPress,
+      handleSoftDelete,
+      handleInputChange,
+    },
   };
 };

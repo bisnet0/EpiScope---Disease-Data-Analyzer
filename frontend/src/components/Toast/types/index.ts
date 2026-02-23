@@ -6,7 +6,7 @@ export interface ToastProps {
   title?: string;
   message: string;
   type?: ToastType;
-  onClose: () => void;
+  onClose?: () => void;
   duration?: number;
 }
 
@@ -18,4 +18,8 @@ export interface ToastStyleConfig {
 
 export interface CloseButtonProps {
   onClick: () => void;
+}
+
+export interface ToastContextData {
+  showToast: (props: Omit<ToastProps, "onClose">) => void;
 }

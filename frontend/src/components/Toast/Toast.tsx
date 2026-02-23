@@ -10,7 +10,7 @@ const Toast: React.FC<ToastProps> = ({
   title,
   message,
   type = "info",
-  onClose,
+  onClose = () => {},
   duration = 4000,
 }) => {
   const { isVisible, triggerClose } = useToastAnimation(duration, onClose);
