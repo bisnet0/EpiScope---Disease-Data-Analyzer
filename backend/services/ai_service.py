@@ -32,7 +32,7 @@ print("--- Inicializando AI Service (Multi-Model) ---")
 
 try:
     genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-    model_gemini = genai.GenerativeModel("gemini-3-flash-preview")
+    model_gemini = genai.GenerativeModel("gemini-2.5-flash-lite")
 except Exception as e:
     print(f"Erro Gemini: {e}")
     model_gemini = None

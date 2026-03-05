@@ -6,6 +6,7 @@ export interface ToastProps {
   title?: string;
   message: string;
   type?: ToastType;
+  isCloseable?: boolean;
   onClose?: () => void;
   duration?: number;
 }

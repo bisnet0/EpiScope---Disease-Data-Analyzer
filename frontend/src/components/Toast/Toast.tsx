@@ -12,8 +12,14 @@ const Toast: React.FC<ToastProps> = ({
   type = "info",
   onClose = () => {},
   duration = 4000,
+  isCloseable = true,
 }) => {
-  const { isVisible, triggerClose } = useToastAnimation(duration, onClose);
+  const effectiveDuration = isCloseable ? duration : 0;
+
+  const { isVisible, triggerClose } = useToastAnimation(
+    effectiveDuration,
+    onClose,
+  );
   const themeFx = useToastThemeFx();
   const styleConfig = TOAST_CONFIG[type] || TOAST_CONFIG.info;
 
@@ -75,8 +81,8 @@ const Toast: React.FC<ToastProps> = ({
           </Text>
         </Flex>
 
-        {/* Botão Fechar Chakra UI */}
-        <CloseButton onClick={triggerClose} />
+        {/* Botão Fechar - Só renderiza se for closeable */}
+        {isCloseable && <CloseButton onClick={triggerClose} />}
       </Flex>
     </Box>
   );

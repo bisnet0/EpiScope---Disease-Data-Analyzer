@@ -43,7 +43,7 @@ export const useAuthForm = () => {
 
   return {
     state: { isLogin, email, password, username, error, loading },
-    setters: { setEmail, setPassword, setUsername },
+    setters: { setEmail, setPassword, setUsername, setError, setLoading },
     actions: { handleSubmit, toggleMode }
   };
 };

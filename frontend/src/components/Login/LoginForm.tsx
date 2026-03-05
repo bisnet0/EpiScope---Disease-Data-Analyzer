@@ -4,6 +4,7 @@ import { useAuthForm } from "./hooks/useAuthForm";
 import { AuthFields } from "./components/AuthFields";
 import { AuthToggle } from "./components/AuthToggle";
 import { useLoginThemeFx } from "./styles/theme-fx";
+import Toast from "../Toast/Toast";
 
 export const LoginForm: React.FC = () => {
   const { state, setters, actions } = useAuthForm();
@@ -35,10 +36,15 @@ export const LoginForm: React.FC = () => {
       </Box>
 
       {state.error && (
-        <Alert status="error" mb={6} borderRadius="md">
-          <AlertIcon />
-          {state.error}
-        </Alert>
+        <Toast
+          type="error"
+          title={state.isLogin ? "Erro ao fazer login" : "Erro ao criar conta"}
+          message="Usuário ou senha incorretos"
+          duration={4000}
+          onClose={() => {
+            setters.setError(null);
+          }}
+        />
       )}
 
       <AuthFields state={state} setters={setters} actions={actions} />

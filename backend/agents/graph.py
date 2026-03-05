@@ -11,7 +11,7 @@ from backend.agents.tools import MEDICAL_TOOLS
 # 1. Configuração do LLM (O Cérebro)
 # O Gemini precisa saber que ferramentas ele tem à disposição.
 llm = ChatGoogleGenerativeAI(
-    model="gemini-2.0-flash",
+    model="gemini-2.5-flash-lite",
     google_api_key=os.getenv("GEMINI_API_KEY"),
     temperature=0.2, # Baixa temperatura para ser mais preciso/médico
     max_retries=2
