@@ -1,11 +1,14 @@
 import json
 from flask import has_request_context
-from flask_jwt_extended import get_jwt_identity  # <--- O SEGREDO
+from flask_jwt_extended import get_jwt_identity
 from langchain_core.tools import tool
 from backend.models.user_model import User
 from backend.services.ai_service import run_arbovirus_pipeline, run_glaucoma_pipeline
 import os
 import base64
+
+from langchain.tools import tool
+from backend.services.rag_service import search_knowledge_base
 
 
 def get_safe_user_id():
@@ -15,7 +18,7 @@ def get_safe_user_id():
             return get_jwt_identity()
         except:
             pass
-    # Fallback para testes no terminal
+
     admin = User.query.first()
     return admin.id if admin else None
 
@@ -27,13 +30,11 @@ def arbovirus_tool(symptoms: str, age: int, sex: str):
     Retorna diagnóstico e hash da blockchain.
     """
     try:
-        # Pega o ID do usuário logado via JWT (Automático pelo Flask)
         current_user_id = get_safe_user_id()
 
         if not current_user_id:
             return {"error": "Usuário não autenticado. Faça login novamente."}
 
-        # Chama o Pipeline Real
         result, status = run_arbovirus_pipeline(
             symptoms, age, sex, user_id=current_user_id
         )
@@ -41,7 +42,6 @@ def arbovirus_tool(symptoms: str, age: int, sex: str):
         if status != 200:
             return {"error": f"Falha interna no pipeline (Status {status})."}
 
-        # Formata a resposta para o Agente entender e falar bonito
         if isinstance(result, list) and len(result) > 0:
             data = result[0]
             texto = data.get("text", "Sem texto")
@@ -59,7 +59,6 @@ def arbovirus_tool(symptoms: str, age: int, sex: str):
         return {"error": f"Erro crítico na ferramenta: {str(e)}"}
 
 
-# Mocks para as outras (por enquanto)
 @tool("glaucoma_specialist")
 def glaucoma_tool(image_data: str):
     """
@@ -68,12 +67,10 @@ def glaucoma_tool(image_data: str):
     """
     print("\n[DEBUG TOOL] Iniciando análise Híbrida de Glaucoma...")
     try:
-        # A MÁGICA ACONTECE AQUI:
         current_user_id = get_safe_user_id()
         if not current_user_id:
             return {"error": "Nenhum usuário encontrado no sistema."}
 
-        # Lógica inteligente: Aceita arquivo local (teste) ou Base64 (API React)
         if os.path.exists(image_data):
             with open(image_data, "rb") as f:
                 image_bytes = f.read()
@@ -82,7 +79,6 @@ def glaucoma_tool(image_data: str):
                 image_data = image_data.split(",")[1]
             image_bytes = base64.b64decode(image_data)
 
-        # Chama o pipeline com Visão e CNN
         result, status = run_glaucoma_pipeline(image_bytes, user_id=current_user_id)
 
         print(f"[DEBUG TOOL] Status Glaucoma: {status}")
@@ -130,7 +126,6 @@ def lab_manager_tool(
         f"\n[DEBUG TOOL] Iniciando Laboratório Genético para {target_disease} | Modelo: {model_type}..."
     )
     try:
-        # Usa a mesma função segura que criamos para o Glaucoma
         current_user_id = get_safe_user_id()
         if not current_user_id:
             return {
@@ -144,7 +139,6 @@ def lab_manager_tool(
             "crossover_rate": 0.7,
         }
 
-        # Importa as funções dinamicamente para evitar loop de importação
         if target_disease.lower() == "arbovirus":
             from backend.services.ai_service import run_genetic_pipeline
 
@@ -168,7 +162,6 @@ def lab_manager_tool(
         best_acc = result.get("best_individual", {}).get("accuracy", 0) * 100
         best_params = result.get("best_individual", {}).get("params", {})
 
-        # Resposta formatada para o Agente interpretar
         return f"""
         [LABORATÓRIO AUTÔNOMO CONCLUÍDO]
         Doença Alvo: {target_disease.upper()}
@@ -185,6 +178,26 @@ def lab_manager_tool(
     except Exception as e:
         print(f"[DEBUG TOOL] ERRO CRÍTICO LAB: {e}")
         return {"error": f"Erro fatal na otimização: {str(e)}"}
+
+
+@tool("rag_clinical_tool")
+def rag_clinical_tool(query: str):
+    """
+    Busca na base de conhecimento (PDFs médicos, protocolos do Ministério da Saúde, artigos científicos).
+    USE ESTA FERRAMENTA SEMPRE que o paciente pedir explicações aprofundadas sobre Dengue, Zika, Chikungunya ou Glaucoma,
+    ou quando precisar recomendar procedimentos, laudos estruturados e diretrizes clínicas oficiais.
+    """
+    print(f"\n[AGENTE] 📚 Consultando a biblioteca médica para: '{query}'...")
+
+    # Busca os 4 fragmentos mais relevantes nos PDFs
+    resultado_busca = search_knowledge_base(query=query, k=4)
+
+    return f"""
+    RESULTADOS DA BUSCA NA LITERATURA CLÍNICA:
+    {resultado_busca}
+    
+    INSTRUÇÃO AO AGENTE: Use os trechos acima para embasar sua resposta. Cite a fonte de forma natural se aplicável.
+    """
 
 
 MEDICAL_TOOLS = [arbovirus_tool, glaucoma_tool, lab_manager_tool]

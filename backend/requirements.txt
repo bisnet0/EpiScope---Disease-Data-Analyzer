@@ -10,6 +10,9 @@ langchain>=0.2.17
 langchain-community>=0.2.19
 langgraph>=0.0.40
 langchain-google-genai>=1.0.0
+faiss-cpu
+pypdf
+sentence-transformers
 
 # Infra
 python-dotenv
