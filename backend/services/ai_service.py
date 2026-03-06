@@ -498,6 +498,7 @@ def run_glaucoma_genetic_pipeline(model_type, user_id, ga_config=None):
         }
 
         log_entry = ModelTrainingLog(
+            user_id=user_id,
             model_name=log_name,
             version="GA_Hybrid_v1",
             parameters=json.dumps(final_params),
@@ -775,6 +776,7 @@ def run_genetic_pipeline(model_type, user_id, ga_config=None):
         }
 
         log = ModelTrainingLog(
+            user_id=user_id,
             model_name=log_name,
             version="GA_Arbo_v1",
             accuracy=float(best["accuracy"]),
