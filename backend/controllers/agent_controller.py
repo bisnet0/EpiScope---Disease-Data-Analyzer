@@ -140,16 +140,32 @@ Regras de ouro:
 @agent_bp.route("/history", methods=["GET"])
 @jwt_required()
 def get_chat_history():
-    """Retorna o histórico para popular o chat ao abrir o botão flutuante"""
     user_id = get_jwt_identity()
+
     try:
-        messages = (
+        past_msgs = (
             ChatMessage.query.filter_by(user_id=user_id)
-            .order_by(ChatMessage.created_at.asc())
+            .order_by(ChatMessage.created_at.desc())
             .limit(50)
             .all()
         )
 
-        return jsonify([msg.to_dict() for msg in messages]), 200
+        past_msgs.reverse()
+
+        history = []
+        for m in past_msgs:
+            history.append(
+                {
+                    "id": str(m.id),
+                    "role": m.role,
+                    "content": m.content,
+                    "has_attachment": m.has_attachment,
+                    "created_at": m.created_at.isoformat() if m.created_at else None,
+                }
+            )
+
+        return jsonify(history), 200
+
     except Exception as e:
-        return jsonify({"error": "Falha ao carregar histórico"}), 500
+        print(f"Erro ao carregar histórico: {e}")
+        return (jsonify({"error": "Erro ao carregar histórico do Dr. EpiScope"}),)
