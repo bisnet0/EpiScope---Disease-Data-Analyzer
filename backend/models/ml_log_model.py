@@ -6,6 +6,8 @@ class ModelTrainingLog(db.Model):
     __tablename__ = "model_training_logs"
 
     id = db.Column(db.Integer, primary_key=True)
+    
+    user_id = db.Column(db.String(50), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     model_name = db.Column(db.String(50), nullable=False)

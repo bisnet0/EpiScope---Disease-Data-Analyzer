@@ -1,5 +1,5 @@
 from flask import request, jsonify
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from sqlalchemy import func, text
 from datetime import datetime, timedelta, timezone
 import json
@@ -10,6 +10,8 @@ from backend.models.ml_log_model import ModelTrainingLog
 
 def get_dashboard_stats():
     try:
+        current_user_id = get_jwt_identity()
+
         period = request.args.get("period", "all")
         model_filter = request.args.get("model", "all")
 
@@ -21,9 +23,10 @@ def get_dashboard_stats():
         elif period == "30d":
             start_date = datetime.utcnow() - timedelta(days=30)
 
-        query_arbo = ArbovirusDiagnosis.query
-        query_glaucoma = GlaucomaDiagnosis.query
-        query_logs = ModelTrainingLog.query
+        query_arbo = ArbovirusDiagnosis.query.filter_by(user_id=current_user_id)
+        query_glaucoma = GlaucomaDiagnosis.query.filter_by(user_id=current_user_id)
+
+        query_logs = ModelTrainingLog.query.filter_by(user_id=current_user_id)
 
         if start_date:
             query_arbo = query_arbo.filter(ArbovirusDiagnosis.created_at >= start_date)
@@ -109,7 +112,6 @@ def get_dashboard_stats():
         model_performance = []
         for m in model_stats:
             raw_name = m[0] if m[0] else "Unknown"
-
             raw_acc = m[1] if m[1] is not None else 0.0
 
             model_performance.append(

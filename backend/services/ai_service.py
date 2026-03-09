@@ -32,7 +32,7 @@ print("--- Inicializando AI Service (Multi-Model) ---")
 
 try:
     genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-    model_gemini = genai.GenerativeModel("gemini-2.5-flash")
+    model_gemini = genai.GenerativeModel("gemini-2.5-flash-lite")
 except Exception as e:
     print(f"Erro Gemini: {e}")
     model_gemini = None
@@ -250,6 +250,7 @@ def run_arbovirus_pipeline(text_description, age, sex, user_id, model_choice="al
                 df.loc[0, s] = 1
         df.loc[0, "idade"] = age
         df.loc[0, "sexo_encoded"] = 1 if sex.upper() == "F" else 0
+        df = df.apply(pd.to_numeric, errors="coerce").fillna(0)
 
         input_features_log = convert_numpy_floats(df.to_dict(orient="records")[0])
     except Exception as e:
@@ -324,8 +325,9 @@ def run_arbovirus_pipeline(text_description, age, sex, user_id, model_choice="al
 
     try:
         res_txt = "\n".join([f"{k}: {v:.1%}" for k, v in final_probs.items()])
-        prompt_friendly = f"Explique para paciente ({age} anos): Sintomas: {text_description}. Probabilidades: {res_txt}. Mais provável: {top_diagnosis_winner}. USE DISCLAIMER: NÃO É DIAGNÓSTICO."
-        friendly = model_gemini.generate_content(prompt_friendly).text
+        # prompt_friendly = f"Explique para paciente ({age} anos): Sintomas: {text_description}. Probabilidades: {res_txt}. Mais provável: {top_diagnosis_winner}. USE DISCLAIMER: NÃO É DIAGNÓSTICO."
+        # friendly = model_gemini.generate_content(prompt_friendly).text
+        friendly = "Explicação desativada para economia de cota."
     except Exception:
         friendly = "Erro ao gerar explicação amigável."
 
@@ -358,14 +360,15 @@ def run_symptom_structure(text_description):
 
 
 def run_glaucoma_pipeline(image_bytes, user_id):
-    if not glaucoma_cnn_model:
-        return {"error": "Modelo CNN off"}, 503
+    if not glaucoma_cnn_model or not model_gemini:
+        return {"error": "Modelo CNN ou VLM offline"}, 503
 
+    # 1. PREDIÇÃO DA CNN (O Instinto Matemático)
     img_batch = preprocess_glaucoma_image(
         image_bytes, (GLAUCOMA_IMG_SIZE, GLAUCOMA_IMG_SIZE)
     )
     if img_batch is None:
-        return {"error": "Imagem inválida"}, 400
+        return {"error": "Imagem inválida ou corrompida"}, 400
 
     try:
         pred = glaucoma_cnn_model.predict(img_batch)[0][0]
@@ -383,6 +386,26 @@ def run_glaucoma_pipeline(image_bytes, user_id):
             predicted_class = "Glaucomatous"
             confidence = prob_glaucoma
 
+        # 2. ANÁLISE DO VLM (O Raciocínio Clínico)
+        # Preparamos a imagem no formato que o Gemini exige
+        image_parts = [{"mime_type": "image/jpeg", "data": image_bytes}]
+
+        vlm_prompt = f"""
+        Você é o Dr. EpiScope, um oftalmologista especialista em IA.
+        Um modelo de Rede Neural (CNN) analisou esta imagem de fundo de olho e 
+        previu com {confidence * 100:.1f}% de confiança que a classe é: {predicted_class}.
+        
+        Sua tarefa:
+        1. Analise visualmente a imagem anexada.
+        2. Verifique se há sinais de glaucoma (aumento da escavação do disco óptico, palidez, hemorragias).
+        3. Escreva um laudo técnico curto confirmando ou discordando da CNN, explicando o PORQUÊ com base no que você vê na imagem.
+        """
+
+        # Enviamos o texto E a imagem juntos
+        vlm_response = model_gemini.generate_content([vlm_prompt, image_parts[0]])
+        laudo_vlm = vlm_response.text
+
+        # 3. SALVAR NO BANCO DE DADOS
         user = User.query.get(user_id)
         if not user:
             return {"error": "Usuário não encontrado para log"}, 404
@@ -394,22 +417,23 @@ def run_glaucoma_pipeline(image_bytes, user_id):
             prediction_result=convert_numpy_floats(results),
             predicted_class=predicted_class,
             confidence=float(confidence),
-            model_version="MobileNetV2_FineTuned",
+            model_version="Hybrid_CNN_VLM_v1",
         )
         db.session.add(new_diag)
         db.session.commit()
 
-        friendly = model_gemini.generate_content(
-            f"Analise Glaucoma. Prob: {results}. Explique PRELIMINAR. Consulte oftalmo."
-        ).text
+        return {
+            "friendly_response": laudo_vlm,
+            "analysis_details": {
+                "probabilities": results,
+                "diagnosis_id": new_diag.id,
+                "cnn_prediction": predicted_class,
+            },
+        }, 200
+
     except Exception as e:
         db.session.rollback()
-        return {"error": f"Erro no processamento/persistência: {e}"}, 500
-
-    return {
-        "friendly_response": friendly,
-        "analysis_details": {"probabilities": results, "diagnosis_id": new_diag.id},
-    }, 200
+        return {"error": f"Erro no processamento Híbrido: {e}"}, 500
 
 
 def run_glaucoma_genetic_pipeline(model_type, user_id, ga_config=None):
@@ -474,6 +498,7 @@ def run_glaucoma_genetic_pipeline(model_type, user_id, ga_config=None):
         }
 
         log_entry = ModelTrainingLog(
+            user_id=user_id,
             model_name=log_name,
             version="GA_Hybrid_v1",
             parameters=json.dumps(final_params),
@@ -751,6 +776,7 @@ def run_genetic_pipeline(model_type, user_id, ga_config=None):
         }
 
         log = ModelTrainingLog(
+            user_id=user_id,
             model_name=log_name,
             version="GA_Arbo_v1",
             accuracy=float(best["accuracy"]),

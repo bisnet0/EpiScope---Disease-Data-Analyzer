@@ -1,10 +1,20 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.tsx'
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import {
+  ChakraProvider,
+  ColorModeScript,
+} from "@chakra-ui/react";
+import theme from "./theme"; // Nosso novo tema!
+import App from "./components/App";
+import { ToastProvider } from "./components/Toast/components/ToastContext";
 
-createRoot(document.getElementById('root')!).render(
+createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <App />
+    <ColorModeScript initialColorMode={theme.config.initialColorMode} />
+    <ChakraProvider theme={theme}>
+      <ToastProvider>
+        <App />
+      </ToastProvider>
+    </ChakraProvider>
   </StrictMode>,
-)
+);
