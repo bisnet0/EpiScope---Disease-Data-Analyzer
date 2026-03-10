@@ -18,7 +18,7 @@ def create_user(client):
 
 def login(client, email, password):
     return client.post(
-        "/auth/login",
+        "/api/auth/login",
         data=json.dumps({"email": email, "password": password}),
         content_type="application/json",
     )
@@ -36,12 +36,12 @@ def test_login_flow(client, create_user):
 def test_dashboard_access(client, create_user):
     """Prova que o cookie de login permite acessar áreas restritas."""
 
-    resp_anon = client.get("/dashboard/stats")
+    resp_anon = client.get("/api/dashboard/stats")
     assert resp_anon.status_code == 401
 
     login(client, "tester@epi.com", "123456")
 
-    resp_auth = client.get("/dashboard/stats?period=all&model=all")
+    resp_auth = client.get("/api/dashboard/stats?period=all&model=all")
 
     if resp_auth.status_code != 200:
         print(f"\n❌ Erro Dash: {resp_auth.data}")
@@ -65,12 +65,12 @@ def test_diagnosis_flow(client, create_user):
     }
 
     response = client.post(
-        "/diagnose", data=json.dumps(payload), content_type="application/json"
+        "/api/diagnose", data=json.dumps(payload), content_type="application/json"
     )
 
     if response.status_code == 404:
         response = client.post(
-            "/diagnose/arbovirus",
+            "/api/diagnose/arbovirus",
             data=json.dumps(payload),
             content_type="application/json",
         )

@@ -136,78 +136,44 @@ JWT_SECRET_KEY=suasecretaqui
 
 ## 🧠 Geração e Aprendizado de Modelos
 
+<<<<<<< HEAD
 Suba o ambiente Docker:
+=======
+## 📄 Analisador de Documentos (📦 removido)
+
+O antigo analisador de documentos e o fluxo multi-agente foram utilizados nas fases
+iniciais do projeto para experimentação. Eles **foram removidos** nesta versão para
+reduzir a complexidade e manter o foco no backend Flask + RAG integrado ao agente.
+
+O código e testes relacionados (`episcope_analyzer.py` e `tests/test_episcope.py`) foram
+eliminados. Se precisar recuperá‑los, consulte um commit anterior.
+- O grafo multi-agente devolvendo exatamente 3 temas e gerando o relatório.
+
+Para rodar os testes, execute:
 
 ```bash
-docker-compose up -d --build
+python -m pytest backend/tests -q
 ```
 
-### 🔹 Ingestão de Dados da API
+Se o `pytest` não estiver instalado, use `pip install pytest pytest-flask`.
 
-```bash
-docker-compose exec backend python backend/ml-workflow/arbovirus/ml_ingestion_data.py
-```
-
-### 🔹 Ingestão de Dados Externos (Volume `new_data`)
-
-Crie o diretório `new_data/` (adicionado ao `.dockerignore` para evitar sobrecarga)  
-e adicione arquivos `.csv` ou `.json` do [OpenDataSUS](https://opendatasus.saude.gov.br/).
-
-Renomeie os arquivos seguindo o padrão:
-
-```
-chikungunya_2025.json
-zika_2024.json
-dengue_2023.json
-```
-
-Execute:
-
-```bash
-docker-compose exec backend python backend/ml-workflow/arbovirus/ml_ingest_new_data.py
-```
-
-### 🔹 Limpeza e Diagnóstico
-
-```bash
-docker-compose exec backend python backend/ml-workflow/arbovirus/ml_clean_data.py
-docker-compose exec backend python backend/ml-workflow/arbovirus/ml_diagnose_data.py
-```
-
-### 🔹 Treinamento e Exportação
-
-```bash
-docker-compose exec backend python backend/ml-workflow/arbovirus/ml_train_model.py
-docker-compose exec backend python backend/ml-workflow/arbovirus/ml_train_multimodels.py
-```
-
-O arquivo exportado será usado pelo DApp da Cartesi Machine.
-Ou se for o caso de apenas assinar com o Nonodo basta rodar o DApp da Instalação e Configuração.
-
-### 🔹 Otimização do Algoritmo Genético
-
-```bash
-docker-compose exec backend python backend/ml-workflow/arbovirus/ml_optimize_ga.py
-```
+A suíte atual foca nas rotas e serviços expostos pelo backend; ela garante que
+alterações não quebrem a API antes de ir para produção.
 
 ---
 
-## 🧩 CNN - Diagnóstico de Glaucoma
+### 🧠 (❌ Descontinuado) Geração e Aprendizado de Modelos
+>>>>>>> 8edbf68 (Clean up unused code, fix test routes and add env override for DB)
 
-Para ativar a CNN, mude para a branch dedicada (`Opcional, pois todas as branchs estão mergeadas na branch Main`)
+As rotinas de treinamento e ingestão de dados faziam parte de um
+subprojeto experimental e foram **removidas** nesta versão para simplificar
+o repositório. Se precisar de scripts históricos, consulte o histórico de
+commits ou branches anteriores.
 
-```bash
-git checkout CNN-branch
-```
+> ✅ A aplicação atual mantém apenas o serviço de inferência em tempo real e
+o mecanismo RAG; todo o código de "ml-workflow" foi deletado.
 
-Execute:
-
-```bash
-docker-compose exec backend python backend/ml-workflow/glaucoma/ml_train_cnn.py
-```
-
-O volume `drishti_gs/` contém os dados de treinamento e teste.  
-Dentro dele há um arquivo Excel supervisionado para aprendizado do modelo.
+---
 
 ---
 

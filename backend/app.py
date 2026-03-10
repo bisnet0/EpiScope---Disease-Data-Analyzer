@@ -19,7 +19,13 @@ app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": ["http://localhost:5173"]}}, supports_credentials=True)
 
 # Configurações
-app.config["SQLALCHEMY_DATABASE_URI"] = f"postgresql://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}@db:5432/{os.getenv('POSTGRES_DB')}"
+# permite sobrescrever diretamente via variável de ambiente (útil para testes)
+if os.getenv("SQLALCHEMY_DATABASE_URI"):
+    app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("SQLALCHEMY_DATABASE_URI")
+else:
+    app.config["SQLALCHEMY_DATABASE_URI"] = (
+        f"postgresql://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}@db:5432/{os.getenv('POSTGRES_DB')}"
+    )
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 # JWT Cookies
