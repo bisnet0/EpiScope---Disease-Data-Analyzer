@@ -29,9 +29,19 @@ export const DiagnosisXRayForm: React.FC = () => {
   };
 
   return (
-    <Box p={6} w="100%" maxW="1200px" mx="auto">
+    <Box
+      bg={themeFx.cardBg}
+      p={{ base: 4, md: 8 }}
+      borderRadius="xl"
+      border="1px solid"
+      borderColor={themeFx.cardBorder}
+      backdropFilter="blur(16px)"
+      boxShadow="lg"
+      w="full"
+      overflow="hidden"
+    >
       <Heading
-        size="lg"
+        size="md"
         mb={2}
         color={themeFx.textColor}
         display="flex"
@@ -58,19 +68,11 @@ export const DiagnosisXRayForm: React.FC = () => {
 
       <Flex gap={8} direction={{ base: "column", lg: "row" }}>
         {/* --- COLUNA ESQUERDA: UPLOAD --- */}
-        <Box
-          flex="1"
-          bg={themeFx.cardBg}
-          p={6}
-          borderRadius="xl"
-          border="1px solid"
-          borderColor={themeFx.cardBorder}
-          shadow="lg"
-        >
+        <Box flex="1" bg={themeFx.cardSoftBg} borderRadius={16} p={6}>
           <VStack spacing={6}>
             <Box
               w="100%"
-              h="280px"
+              h="380px"
               border="2px dashed"
               borderColor={state.previewUrl ? themeFx.accentColor : "gray.500"}
               borderRadius="xl"
@@ -138,15 +140,7 @@ export const DiagnosisXRayForm: React.FC = () => {
         </Box>
 
         {/* --- COLUNA DIREITA: RESULTADOS --- */}
-        <Box
-          flex="1"
-          bg={themeFx.cardBg}
-          p={6}
-          borderRadius="xl"
-          border="1px solid"
-          borderColor={themeFx.cardBorder}
-          shadow="lg"
-        >
+        <Box flex="1" bg={themeFx.cardSoftBg} borderRadius={16} p={6}>
           <Heading size="md" mb={4} color={themeFx.textColor}>
             Laudo Preditivo
           </Heading>
