@@ -10,6 +10,7 @@ from backend.services.ai_service import (
     run_experiment_pipeline,
     get_best_optimization_suggestion,
     run_genetic_pipeline,
+    run_xray_pipeline,
 )
 
 
@@ -28,6 +29,20 @@ def analyze_arbovirus():
         return jsonify({"error": "Faltando dados (text_description, age, sex)"}), 400
 
     result, status = run_arbovirus_pipeline(desc, age, sex, current_user_id)
+    return jsonify(result), status
+
+
+def analyze_xray():
+    current_user_id = get_jwt_identity()
+
+    if "image" not in request.files:
+        return jsonify({"error": "Nenhuma imagem de Raio-X enviada"}), 400
+
+    file = request.files["image"]
+    if file.filename == "":
+        return jsonify({"error": "Arquivo vazio"}), 400
+
+    result, status = run_xray_pipeline(file.read(), current_user_id)
     return jsonify(result), status
 
 

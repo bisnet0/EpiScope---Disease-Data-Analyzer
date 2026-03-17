@@ -16,7 +16,8 @@ from backend.controllers.diagnose_controller import (
     get_ai_suggestion,
     get_user_history,
     run_evolutionary_optimization,
-    run_glaucoma_evolution
+    run_glaucoma_evolution,
+    analyze_xray
 )
 from backend.controllers.agent_controller import agent_bp
 
@@ -41,6 +42,7 @@ api_bp.route("/diagnose/advisor", methods=["GET"])(jwt_required()(get_ai_suggest
 api_bp.route("/diagnose/history", methods=["GET"])(jwt_required()(get_user_history))
 api_bp.route("/diagnose/optimize-ga", methods=["POST"])(jwt_required()(run_evolutionary_optimization))
 api_bp.route("/diagnose/glaucoma/optimize-ga", methods=["POST"])(jwt_required()(run_glaucoma_evolution))
+api_bp.route("/diagnose-xray", methods=["POST"])(jwt_required()(analyze_xray))
 
 # Rota do Dashboard
 api_bp.route("/dashboard/stats", methods=["GET"])(jwt_required()(get_dashboard_stats))

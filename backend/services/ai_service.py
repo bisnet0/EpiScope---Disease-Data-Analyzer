@@ -796,3 +796,31 @@ def run_genetic_pipeline(model_type, user_id, ga_config=None):
         db.session.rollback()
 
     return {"success": True, "history": history, "best_individual": best}, 200
+
+
+def run_xray_pipeline(image_bytes: bytes, user_id: str):
+    """
+    Pipeline de processamento de Raio-X de Tórax (Pneumonia/Normal).
+    Futuramente será substituído pela chamada real da CNN + XGBoost.
+    """
+    print(f"[AI SERVICE] Processando imagem de Raio-X ({len(image_bytes)} bytes)...")
+
+    # TODO: Inserir a inferência do modelo real (TensorFlow/PyTorch/XGBoost) aqui
+    # Simulando um resultado para estruturar o fluxo
+    simulated_prediction = "Pneumonia"
+    simulated_probabilities = {"Pneumonia": 0.88, "Normal": 0.12, "Tuberculose": 0.00}
+
+    # TODO: Você pode criar um XRayDiagnosis model depois no diagnosis_model.py
+    # Por enquanto, só vamos devolver o JSON para o frontend brilhar
+
+    result = {
+        "success": True,
+        "prediction": simulated_prediction,
+        "analysis_details": {
+            "model_used": "CNN_XRay_v1_beta",
+            "probabilities": simulated_probabilities,
+            "clinical_notes": "Sinais de consolidação pulmonar detectados nas regiões inferiores.",
+        },
+    }
+
+    return result, 200

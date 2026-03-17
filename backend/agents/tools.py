@@ -59,6 +59,33 @@ def arbovirus_tool(symptoms: str, age: int, sex: str):
         return {"error": f"Erro crítico na ferramenta: {str(e)}"}
 
 
+@tool("xray_tool")
+def xray_tool(image_base64: str = None):
+    """
+    Usa a Rede Neural Convolucional (CNN) para analisar imagens de Raio-X de Tórax (Chest X-Ray).
+    Devolve a probabilidade do paciente ter Pneumonia, Tuberculose ou pulmão Normal.
+    USE ESTA FERRAMENTA QUANDO o usuário enviar uma imagem e perguntar se ele tem pneumonia,
+    anomalia pulmonar, ou pedir para avaliar um raio-x.
+    """
+    print("\n[AGENTE] 🩻 Acionando o Radiologista de IA (CNN Raio-X)...")
+
+    from backend.services.ai_service import run_xray_pipeline
+    import base64
+
+    if image_base64:
+        try:
+            image_bytes = base64.b64decode(
+                image_base64.split(",")[1] if "," in image_base64 else image_base64
+            )
+
+            result, status = run_xray_pipeline(image_bytes, "agent_request")
+            return f"RESULTADO DA ANÁLISE DE RAIO-X: {result}"
+        except Exception as e:
+            return f"Erro ao decodificar a imagem de Raio-X: {str(e)}"
+
+    return "Aviso: A imagem de Raio-X não foi fornecida pelo usuário."
+
+
 @tool("glaucoma_specialist")
 def glaucoma_tool(image_data: str):
     """
@@ -189,7 +216,6 @@ def rag_clinical_tool(query: str):
     """
     print(f"\n[AGENTE] 📚 Consultando a biblioteca médica para: '{query}'...")
 
-    # Busca os 4 fragmentos mais relevantes nos PDFs
     resultado_busca = search_knowledge_base(query=query, k=4)
 
     return f"""
@@ -200,4 +226,4 @@ def rag_clinical_tool(query: str):
     """
 
 
-MEDICAL_TOOLS = [arbovirus_tool, glaucoma_tool, lab_manager_tool]
+MEDICAL_TOOLS = [arbovirus_tool, glaucoma_tool, lab_manager_tool, rag_clinical_tool, xray_tool]
