@@ -35,6 +35,14 @@ class StravaActivity(db.Model):
     
     start_date = db.Column(db.DateTime)
     
+    average_watts = db.Column(db.Float, nullable=True)
+    max_watts = db.Column(db.Float, nullable=True)
+    average_temp = db.Column(db.Float, nullable=True)
+    elev_high = db.Column(db.Float, nullable=True) # Altimetria máxima
+    
+    # Campo para identificar se houve uso de sensor cardíaco
+    has_heartrate = db.Column(db.Boolean, default=False)
+    
     # Guardamos o JSON bruto caso o Agente de IA precise de algo ultra específico no futuro (ex: altimetria)
     raw_data = db.Column(db.JSON) 
     

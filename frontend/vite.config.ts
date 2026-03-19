@@ -11,7 +11,7 @@ export default defineConfig({
         target: 'http://localhost:5000', // O Vite vai jogar tudo pro Python aqui
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path.replace(/^\/api/, '') // Remove o '/api' antes de mandar pro back
+        // rewrite: (path) => path.replace(/^\/api/, '') // Remove o '/api' antes de mandar pro back
       }
     }
   }

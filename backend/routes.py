@@ -54,3 +54,5 @@ api_bp.register_blueprint(agent_bp, url_prefix='/agent')
 
 # 👇 ROTAS DO STRAVA (HealthStats) 👇
 api_bp.register_blueprint(strava_bp, url_prefix='/strava')
+
+

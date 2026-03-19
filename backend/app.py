@@ -35,7 +35,7 @@ db.init_app(app)
 jwt = JWTManager(app)
 
 # Rotas
-app.register_blueprint(api_bp)
+app.register_blueprint(api_bp, url_prefix='/api')
 
 with app.app_context():
     db.create_all()
