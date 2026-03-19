@@ -20,8 +20,10 @@ from backend.controllers.diagnose_controller import (
     analyze_xray
 )
 from backend.controllers.agent_controller import agent_bp
-
 from backend.controllers.dashboard_controller import get_dashboard_stats
+
+# 👇 IMPORTA O BLUEPRINT DO STRAVA 👇
+from backend.controllers.strava_controller import strava_bp
 
 api_bp = Blueprint('api', __name__)
 
@@ -50,3 +52,5 @@ api_bp.route("/dashboard/stats", methods=["GET"])(jwt_required()(get_dashboard_s
 # Rotas do Agente Dr. EpiScope
 api_bp.register_blueprint(agent_bp, url_prefix='/agent')
 
+# 👇 ROTAS DO STRAVA (HealthStats) 👇
+api_bp.register_blueprint(strava_bp, url_prefix='/strava')
