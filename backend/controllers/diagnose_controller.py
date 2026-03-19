@@ -1,5 +1,9 @@
 from datetime import timezone
-from backend.models.diagnosis_model import ArbovirusDiagnosis, GlaucomaDiagnosis
+from backend.models.diagnosis_model import (
+    ArbovirusDiagnosis,
+    GlaucomaDiagnosis,
+    XRayDiagnosis,
+)
 from flask import request, jsonify
 from flask_jwt_extended import get_jwt_identity
 from backend.services.ai_service import (
@@ -94,7 +98,7 @@ def get_user_history():
 
     arbovirus = ArbovirusDiagnosis.query.filter_by(user_id=current_user_id).all()
     glaucoma = GlaucomaDiagnosis.query.filter_by(user_id=current_user_id).all()
-
+    xray = XRayDiagnosis.query.filter_by(user_id=current_user_id).all()
     history = []
 
     for item in arbovirus:
@@ -122,6 +126,18 @@ def get_user_history():
                 "type": "Glaucoma",
                 "date": item.created_at.replace(tzinfo=timezone.utc).isoformat(),
                 "details": "Imagem de Fundo de Olho (Processada)",
+                "result": item.prediction_result,
+                "signature": tx_hash,
+            }
+        )
+    for item in xray:
+        tx_hash = getattr(item, "blockchain_hash", None)
+        history.append(
+            {
+                "id": item.id,
+                "type": "RAIO-X (TÓRAX)",  # Maiúsculo pra ficar bonitão na Badge do front
+                "date": item.created_at.replace(tzinfo=timezone.utc).isoformat(),
+                "details": "Radiografia Pulmonar (Processada via CNN)",
                 "result": item.prediction_result,
                 "signature": tx_hash,
             }

@@ -60,30 +60,43 @@ def arbovirus_tool(symptoms: str, age: int, sex: str):
 
 
 @tool("xray_tool")
-def xray_tool(image_base64: str = None):
+def xray_tool(image_data: str = None):
     """
     Usa a Rede Neural Convolucional (CNN) para analisar imagens de Raio-X de Tórax (Chest X-Ray).
-    Devolve a probabilidade do paciente ter Pneumonia, Tuberculose ou pulmão Normal.
-    USE ESTA FERRAMENTA QUANDO o usuário enviar uma imagem e perguntar se ele tem pneumonia,
+    A entrada 'image_data' DEVE ser o caminho do arquivo local ou uma string base64.
+    USE ESTA FERRAMENTA SEMPRE que o usuário enviar uma imagem e perguntar se tem pneumonia,
     anomalia pulmonar, ou pedir para avaliar um raio-x.
     """
     print("\n[AGENTE] 🩻 Acionando o Radiologista de IA (CNN Raio-X)...")
 
     from backend.services.ai_service import run_xray_pipeline
     import base64
+    import os
 
-    if image_base64:
+    if image_data:
         try:
-            image_bytes = base64.b64decode(
-                image_base64.split(",")[1] if "," in image_base64 else image_base64
-            )
+            # Puxa o ID real do paciente logado
+            current_user_id = get_safe_user_id()
+            if not current_user_id:
+                return "Erro: Usuário não autenticado."
 
-            result, status = run_xray_pipeline(image_bytes, "agent_request")
-            return f"RESULTADO DA ANÁLISE DE RAIO-X: {result}"
+            if os.path.exists(image_data):
+                with open(image_data, "rb") as f:
+                    image_bytes = f.read()
+            else:
+                if "," in image_data:
+                    image_data = image_data.split(",")[1]
+                image_bytes = base64.b64decode(image_data)
+
+            # 👇 A MÁGICA AQUI: Passamos o ID real do usuário em vez de "agent_request"
+            result, status = run_xray_pipeline(image_bytes, current_user_id)
+            return f"RESULTADO DA ANÁLISE DA CNN DE RAIO-X: {result}"
+
         except Exception as e:
-            return f"Erro ao decodificar a imagem de Raio-X: {str(e)}"
+            print(f"[DEBUG TOOL] ERRO CRÍTICO RAIO-X: {e}")
+            return f"Erro ao processar a imagem de Raio-X: {str(e)}"
 
-    return "Aviso: A imagem de Raio-X não foi fornecida pelo usuário."
+    return "Aviso: A imagem de Raio-X não foi fornecida."
 
 
 @tool("glaucoma_specialist")
@@ -226,4 +239,10 @@ def rag_clinical_tool(query: str):
     """
 
 
-MEDICAL_TOOLS = [arbovirus_tool, glaucoma_tool, lab_manager_tool, rag_clinical_tool, xray_tool]
+MEDICAL_TOOLS = [
+    arbovirus_tool,
+    glaucoma_tool,
+    lab_manager_tool,
+    rag_clinical_tool,
+    xray_tool,
+]

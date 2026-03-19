@@ -3,15 +3,25 @@ import os
 import random
 import traceback
 
+import hashlib
 import numpy as np
 import joblib
 import json
+
 import pandas as pd
 import tensorflow as tf
+from tensorflow.keras.preprocessing.image import img_to_array
+
+import io
 import google.generativeai as genai
+from PIL import Image
 from backend.models.user_model import db, User
 from backend.models.ml_log_model import ModelTrainingLog
-from backend.models.diagnosis_model import ArbovirusDiagnosis, GlaucomaDiagnosis
+from backend.models.diagnosis_model import (
+    ArbovirusDiagnosis,
+    GlaucomaDiagnosis,
+    XRayDiagnosis,
+)
 from backend.utils.data_helpers import (
     parse_json_from_gemini_response,
     get_symptom_list_from_cols,
@@ -27,6 +37,15 @@ from sqlalchemy import create_engine, text
 
 ARTIFACTS_DIR = "/app/model_artifacts"
 CACHED_TRAIN_DATA = None
+MODEL_PATH = os.path.join(
+    os.path.dirname(__file__), "../ml-workflow/chest_xray/xray_cnn.h5"
+)
+
+xray_model = None
+if os.path.exists(MODEL_PATH):
+    xray_model = tf.keras.models.load_model(MODEL_PATH)
+    print("[AI SERVICE] 🧠 Modelo CNN de Raio-X carregado com sucesso!")
+
 print("--- Inicializando AI Service (Multi-Model) ---")
 
 
@@ -325,8 +344,7 @@ def run_arbovirus_pipeline(text_description, age, sex, user_id, model_choice="al
 
     try:
         res_txt = "\n".join([f"{k}: {v:.1%}" for k, v in final_probs.items()])
-        # prompt_friendly = f"Explique para paciente ({age} anos): Sintomas: {text_description}. Probabilidades: {res_txt}. Mais provável: {top_diagnosis_winner}. USE DISCLAIMER: NÃO É DIAGNÓSTICO."
-        # friendly = model_gemini.generate_content(prompt_friendly).text
+
         friendly = "Explicação desativada para economia de cota."
     except Exception:
         friendly = "Erro ao gerar explicação amigável."
@@ -363,7 +381,6 @@ def run_glaucoma_pipeline(image_bytes, user_id):
     if not glaucoma_cnn_model or not model_gemini:
         return {"error": "Modelo CNN ou VLM offline"}, 503
 
-    # 1. PREDIÇÃO DA CNN (O Instinto Matemático)
     img_batch = preprocess_glaucoma_image(
         image_bytes, (GLAUCOMA_IMG_SIZE, GLAUCOMA_IMG_SIZE)
     )
@@ -386,8 +403,6 @@ def run_glaucoma_pipeline(image_bytes, user_id):
             predicted_class = "Glaucomatous"
             confidence = prob_glaucoma
 
-        # 2. ANÁLISE DO VLM (O Raciocínio Clínico)
-        # Preparamos a imagem no formato que o Gemini exige
         image_parts = [{"mime_type": "image/jpeg", "data": image_bytes}]
 
         vlm_prompt = f"""
@@ -401,11 +416,9 @@ def run_glaucoma_pipeline(image_bytes, user_id):
         3. Escreva um laudo técnico curto confirmando ou discordando da CNN, explicando o PORQUÊ com base no que você vê na imagem.
         """
 
-        # Enviamos o texto E a imagem juntos
         vlm_response = model_gemini.generate_content([vlm_prompt, image_parts[0]])
         laudo_vlm = vlm_response.text
 
-        # 3. SALVAR NO BANCO DE DADOS
         user = User.query.get(user_id)
         if not user:
             return {"error": "Usuário não encontrado para log"}, 404
@@ -799,27 +812,70 @@ def run_genetic_pipeline(model_type, user_id, ga_config=None):
 
 
 def run_xray_pipeline(image_bytes: bytes, user_id: str):
-    """
-    Pipeline de processamento de Raio-X de Tórax (Pneumonia/Normal).
-    Futuramente será substituído pela chamada real da CNN + XGBoost.
-    """
-    print(f"[AI SERVICE] Processando imagem de Raio-X ({len(image_bytes)} bytes)...")
+    if xray_model is None:
+        return {
+            "error": "Modelo de IA não treinado. Execute train_xray.py primeiro."
+        }, 500
 
-    # TODO: Inserir a inferência do modelo real (TensorFlow/PyTorch/XGBoost) aqui
-    # Simulando um resultado para estruturar o fluxo
-    simulated_prediction = "Pneumonia"
-    simulated_probabilities = {"Pneumonia": 0.88, "Normal": 0.12, "Tuberculose": 0.00}
+    print(f"[AI SERVICE] 🩻 Processando imagem de Raio-X ({len(image_bytes)} bytes)...")
+    img_hash = hashlib.sha256(image_bytes).hexdigest()
 
-    # TODO: Você pode criar um XRayDiagnosis model depois no diagnosis_model.py
-    # Por enquanto, só vamos devolver o JSON para o frontend brilhar
+    try:
+        # 1. REMOVEMOS O PIL! Usamos o motor nativo do TensorFlow para ler a imagem
+        img = tf.io.decode_image(image_bytes, channels=3, expand_animations=False)
+
+        # 2. Redimensiona usando o mesmo algoritmo bilinear do treinamento
+        img = tf.image.resize(img, [224, 224])
+
+        # 3. Expande a dimensão para criar o lote (Batch = 1)
+        img_tensor = tf.expand_dims(img, axis=0)
+    except Exception as e:
+        print(f"[AI ERROR] Falha no decodificador do TF: {e}")
+        return {"error": "Arquivo de imagem inválido."}, 400
+
+    # Extrai a predição crua
+    prediction_score = xray_model.predict(img_tensor)[0][0]
+
+    prob_pneumonia = float(prediction_score)
+    prob_normal = 1.0 - prob_pneumonia
+
+    # 4. Régua de corte agressiva (0.85) para combater o viés do Kaggle
+    if prob_pneumonia > 0.85:
+        final_prediction = "Pneumonia"
+        clinical_notes = "Sinais de consolidação pulmonar identificados pela rede neural. Sugestivo de Pneumonia."
+    else:
+        final_prediction = "Normal"
+        clinical_notes = (
+            "Campos pulmonares transparentes. Padrão radiológico dentro da normalidade."
+        )
+
+    probabilities = {
+        "Normal": round(prob_normal, 4),
+        "Pneumonia": round(prob_pneumonia, 4),
+    }
+
+    if user_id != "agent_request":
+        try:
+            new_diagnosis = XRayDiagnosis(
+                user_id=user_id,
+                image_hash=img_hash,
+                prediction_result=final_prediction,
+                probabilities=probabilities,
+            )
+            db.session.add(new_diagnosis)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            print(f"[DB ERROR] Erro ao salvar Raio-X: {e}")
 
     result = {
         "success": True,
-        "prediction": simulated_prediction,
+        "prediction": final_prediction,
         "analysis_details": {
-            "model_used": "CNN_XRay_v1_beta",
-            "probabilities": simulated_probabilities,
-            "clinical_notes": "Sinais de consolidação pulmonar detectados nas regiões inferiores.",
+            "model_used": "CNN_XRay_Keras_V1",
+            "probabilities": probabilities,
+            "clinical_notes": clinical_notes,
+            "image_hash": img_hash,
         },
     }
 
