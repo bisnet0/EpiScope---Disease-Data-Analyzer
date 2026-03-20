@@ -57,7 +57,7 @@ export const DiagnosisXRayForm: React.FC = () => {
           px={2}
           py={0.5}
         >
-          BETA MOCK
+          BETA
         </Badge>
       </Heading>
 
