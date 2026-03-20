@@ -282,4 +282,5 @@ MEDICAL_TOOLS = [
     lab_manager_tool,
     rag_clinical_tool,
     xray_tool,
+    health_metrics_tool,
 ]

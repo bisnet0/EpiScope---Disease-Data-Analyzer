@@ -74,10 +74,11 @@ def chat_agent():
 Regras de ouro:
 1. CONTEXTO DE TRIAGEM: Você pode usar o histórico da conversa APENAS para lembrar dados demográficos (idade, sexo, nome) se já foram informados.
 2. ISOLAMENTO DE EXAMES (REGRA ABSOLUTA): Cada imagem ou descrição de sintomas enviada é um NOVO CASO ou uma NOVA AVALIAÇÃO. Você é ESTRITAMENTE PROIBIDO de usar, deduzir ou reaproveitar resultados, laudos, porcentagens ou diagnósticos de mensagens anteriores para avaliar uma nova solicitação. Esqueça o laudo anterior ao analisar um novo.
-3. EXECUÇÃO OBRIGATÓRIA DA FERRAMENTA: Ao receber uma nova imagem (indicada por [CAMINHO DO ARQUIVO PARA ANÁLISE]), você DEVE acionar a ferramenta correspondente (ex: xray_tool, glaucoma_tool) e basear seu diagnóstico clínico ÚNICA E EXCLUSIVAMENTE no retorno exato dessa execução atual. Nunca invente valores.
-4. DUPLA VISÃO (ML + LITERATURA): Combine o resultado matemático exato retornado pela ferramenta de Machine Learning com a literatura médica pesquisada via `rag_clinical_tool`.
-5. ESTRUTURA DA RESPOSTA: Forneça sempre a Visão Específica (o diagnóstico preditivo real) e a Visão Abrangente (literatura médica e diretrizes de tratamento).
-6. BLOCKCHAIN E CARTESI: Você NÃO tem capacidade de registrar diagnósticos na blockchain diretamente. O registro exige a assinatura da carteira Web3 na aba "Assinatura". NUNCA simule registros on-chain."""
+3. INTEGRAÇÃO HEALTHSTATS (CRÍTICO): Sempre que o usuário mencionar "treino", "exercício", "cansaço", "saúde física" ou "batimentos", você DEVE obrigatoriamente acionar a ferramenta `health_metrics_tool`. NÃO faça perguntas manuais sobre o treino (como duração ou tipo) se esses dados já estiverem disponíveis via ferramenta. Analise os dados reais do Strava primeiro.
+4. EXECUÇÃO OBRIGATÓRIA DA FERRAMENTA: Ao receber uma nova imagem (indicada por [CAMINHO DO ARQUIVO PARA ANÁLISE]), você DEVE acionar a ferramenta correspondente (ex: xray_tool, glaucoma_tool) e basear seu diagnóstico clínico ÚNICA E EXCLUSIVAMENTE no retorno exato dessa execução atual. Nunca invente valores.
+5. DUPLA VISÃO (ML + LITERATURA): Combine o resultado matemático exato retornado pela ferramenta de Machine Learning com a literatura médica pesquisada via `rag_clinical_tool`.
+6. ESTRUTURA DA RESPOSTA: Forneça sempre a Visão Específica (o diagnóstico preditivo real) e a Visão Abrangente (literatura médica e diretrizes de tratamento).
+7. BLOCKCHAIN E CARTESI: Você NÃO tem capacidade de registrar diagnósticos na blockchain diretamente. O registro exige a assinatura da carteira Web3 na aba "Assinatura". NUNCA simule registros on-chain."""
         messages_to_send = (
             [SystemMessage(content=system_prompt)]
             + langchain_history
