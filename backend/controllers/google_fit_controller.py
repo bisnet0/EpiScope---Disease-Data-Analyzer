@@ -7,6 +7,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from backend.models.user_model import db
 from backend.services.google_fit_service import get_google_fit_data
 from backend.models.health_model import GoogleFitData, GoogleFitCredentials
+from backend.services.google_fit_service import refresh_google_token
 
 google_fit_bp = Blueprint("google_fit", __name__)
 
@@ -106,27 +107,49 @@ def sync_google_data():
     creds = GoogleFitCredentials.query.filter_by(user_id=user_id).first()
 
     if not creds:
-        return jsonify({"error": "Google Fit não conectado"}), 404
+        return jsonify({"error": "Não conectado"}), 404
 
-    # TODO: Implementar refresh_token logic aqui se o token expirar
+    import time
 
-    metrics = get_google_fit_data(creds.access_token)
+    if int(time.time()) >= (creds.expires_at - 60):
+        print("🔄 Token expirado! Renovando...")
+        new_tokens = refresh_google_token(creds.refresh_token)
+        if new_tokens:
+            creds.access_token = new_tokens["access_token"]
+            creds.expires_at = int(time.time()) + new_tokens["expires_in"]
+            db.session.commit()
+            print("✅ Token renovado com sucesso!")
+        else:
+            return jsonify(
+                {"error": "Falha ao renovar acesso. Faça login novamente."}
+            ), 401
 
-    if metrics:
-        today = datetime.now().date()
-        # Upsert no banco
-        entry = GoogleFitData.query.filter_by(user_id=user_id, date=today).first()
-        if not entry:
-            entry = GoogleFitData(user_id=user_id, date=today)
-            db.session.add(entry)
+    try:
+        metrics = get_google_fit_data(creds.access_token)
 
-        entry.steps = metrics["steps"]
-        entry.sleep_minutes = metrics["sleep_minutes"]
-        entry.resting_hr = metrics["resting_hr"]
-        entry.last_sync = datetime.utcnow()
+        if metrics:
+            now = datetime.now()
 
-        db.session.commit()
-        return jsonify({"message": "Sincronizado", "data": metrics}), 200
+            dates_to_update = [now.date(), (now - timedelta(days=1)).date()]
+
+            for target_date in dates_to_update:
+                entry = GoogleFitData.query.filter_by(
+                    user_id=user_id, date=target_date
+                ).first()
+                if not entry:
+                    entry = GoogleFitData(user_id=user_id, date=target_date)
+                    db.session.add(entry)
+
+                entry.steps = metrics["steps"]
+                entry.sleep_minutes = metrics["sleep_minutes"]
+                entry.resting_hr = metrics["resting_hr"]
+                entry.last_sync = datetime.utcnow()
+
+            db.session.commit()
+            return jsonify({"message": "Sincronizado", "data": metrics}), 200
+    except Exception as e:
+        print(f"❌ Erro no sync: {e}")
+        return jsonify({"error": str(e)}), 500
 
     return jsonify({"error": "Falha ao obter dados"}), 500
 
@@ -137,7 +160,6 @@ def get_metrics():
     user_id = get_jwt_identity()
     today = datetime.now().date()
 
-    # Busca o registro de hoje no banco
     data = GoogleFitData.query.filter_by(user_id=user_id, date=today).first()
 
     if data:
@@ -146,9 +168,8 @@ def get_metrics():
                 "steps": data.steps,
                 "sleep_minutes": data.sleep_minutes,
                 "resting_hr": data.resting_hr,
-                "bpm_min": data.resting_hr,  # Usando o repouso como min por enquanto
+                "bpm_min": data.resting_hr,
             }
         ), 200
 
-    # Se não tiver dados de hoje, retorna zerado para não quebrar o front
     return jsonify({"steps": 0, "sleep_minutes": 0, "resting_hr": 0, "bpm_min": 0}), 200

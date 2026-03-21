@@ -144,7 +144,7 @@ const HealthStatsPanel: React.FC = () => {
               onClick={handleConnectGoogle}
               size="md"
             >
-              Google Fit
+              Conectar Google Fit
             </Button>
           ) : (
             <Badge

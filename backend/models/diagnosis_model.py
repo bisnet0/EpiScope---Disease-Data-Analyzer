@@ -21,6 +21,7 @@ class ArbovirusDiagnosis(db.Model):
     prediction_result = db.Column(db.JSON, nullable=False)
     top_diagnosis = db.Column(db.String(50), nullable=False)
     model_version = db.Column(db.String(50), default="XGBoost_v5")
+    blockchain_hash = db.Column(db.String(100), nullable=True)
 
     def to_dict(self):
         return {
@@ -28,6 +29,7 @@ class ArbovirusDiagnosis(db.Model):
             "date": self.created_at.isoformat(),
             "diagnosis": self.top_diagnosis,
             "details": self.prediction_result,
+            "signature": self.blockchain_hash
         }
 
 
@@ -46,6 +48,7 @@ class GlaucomaDiagnosis(db.Model):
     predicted_class = db.Column(db.String(50), nullable=False)
     confidence = db.Column(db.Float, nullable=False)
     model_version = db.Column(db.String(50), default="MobileNetV2_FineTuned")
+    blockchain_hash = db.Column(db.String(100), nullable=True)
 
     def to_dict(self):
         return {
@@ -53,6 +56,7 @@ class GlaucomaDiagnosis(db.Model):
             "date": self.created_at.isoformat(),
             "diagnosis": self.predicted_class,
             "confidence": self.confidence,
+            "signature": self.blockchain_hash
         }
 
 
@@ -64,9 +68,7 @@ class XRayDiagnosis(db.Model):
     image_hash = db.Column(db.String(64), nullable=False)
     prediction_result = db.Column(db.String(50), nullable=False)
     probabilities = db.Column(db.JSON, nullable=False)
-    blockchain_hash = db.Column(
-        db.String(100), nullable=True
-    )  # Para a Cartesi no futuro
+    blockchain_hash = db.Column(db.String(100), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def to_dict(self):
@@ -74,6 +76,6 @@ class XRayDiagnosis(db.Model):
             "id": self.id,
             "prediction": self.prediction_result,
             "probabilities": self.probabilities,
-            "blockchain_hash": self.blockchain_hash,
             "date": self.created_at.isoformat(),
+            "signature": self.blockchain_hash
         }

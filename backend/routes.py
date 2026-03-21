@@ -22,6 +22,9 @@ from backend.controllers.diagnose_controller import (
 )
 from backend.controllers.agent_controller import agent_bp
 from backend.controllers.dashboard_controller import get_dashboard_stats
+from backend.controllers.blockchain_controller import (
+    register_blockchain_ledger,
+)
 
 # 👇 IMPORTA O BLUEPRINT DO STRAVA 👇
 from backend.controllers.strava_controller import strava_bp
@@ -55,12 +58,13 @@ api_bp.route("/diagnose/glaucoma/optimize-ga", methods=["POST"])(
 )
 api_bp.route("/diagnose-xray", methods=["POST"])(jwt_required()(analyze_xray))
 
-# Rota do Dashboard
 api_bp.route("/dashboard/stats", methods=["GET"])(jwt_required()(get_dashboard_stats))
 
-# Rotas do Agente Dr. EpiScope
 api_bp.register_blueprint(agent_bp, url_prefix="/agent")
 
-# 👇 ROTAS DO STRAVA (HealthStats) 👇
 api_bp.register_blueprint(strava_bp, url_prefix="/strava")
-api_bp.register_blueprint(google_fit_bp, url_prefix='/google_fit')
+api_bp.register_blueprint(google_fit_bp, url_prefix="/google_fit")
+
+api_bp.route("/blockchain/register", methods=["POST"])(
+    jwt_required()(register_blockchain_ledger)
+)

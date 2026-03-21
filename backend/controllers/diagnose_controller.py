@@ -102,7 +102,10 @@ def get_user_history():
     history = []
 
     for item in arbovirus:
-        tx_hash = getattr(item, "blockchain_hash", None)
+        # Tente buscar por blockchain_hash, se falhar, tente tx_hash (caso tenha mudado o nome)
+        tx_hash = getattr(item, "blockchain_hash", None) or getattr(
+            item, "tx_hash", None
+        )
 
         history.append(
             {
@@ -113,12 +116,14 @@ def get_user_history():
                 if item.text_description
                 else "Descrição não disponível",
                 "result": item.prediction_result,
-                "signature": tx_hash,
+                "signature": tx_hash,  # Aqui o front espera 'signature'
             }
         )
 
     for item in glaucoma:
-        tx_hash = getattr(item, "blockchain_hash", None)
+        tx_hash = getattr(item, "blockchain_hash", None) or getattr(
+            item, "tx_hash", None
+        )
 
         history.append(
             {
@@ -130,12 +135,16 @@ def get_user_history():
                 "signature": tx_hash,
             }
         )
+
     for item in xray:
-        tx_hash = getattr(item, "blockchain_hash", None)
+        tx_hash = getattr(item, "blockchain_hash", None) or getattr(
+            item, "tx_hash", None
+        )
+
         history.append(
             {
                 "id": item.id,
-                "type": "RAIO-X (TÓRAX)",  # Maiúsculo pra ficar bonitão na Badge do front
+                "type": "RAIO-X (TÓRAX)",
                 "date": item.created_at.replace(tzinfo=timezone.utc).isoformat(),
                 "details": "Radiografia Pulmonar (Processada via CNN)",
                 "result": item.prediction_result,
@@ -144,7 +153,6 @@ def get_user_history():
         )
 
     history.sort(key=lambda x: x["date"], reverse=True)
-
     return jsonify(history), 200
 
 
