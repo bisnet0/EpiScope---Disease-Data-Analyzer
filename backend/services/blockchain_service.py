@@ -1,28 +1,33 @@
 import json
-from backend.models.user_model import db
-from backend.models.blockchain_model import BlockchainLedger
+from sqlalchemy import text
+from backend.agents.hospital_workflow import engine
+
 
 def process_ledger_registration(user_id, diagnosis_id, tx_hash, payload):
     """
-    Valida e persiste o registro de auditoria.
+    Persiste o registro de auditoria na tabela blockchain_ledger usando SQL Puro.
     """
+    query = text("""
+        INSERT INTO blockchain_ledger 
+        (diagnosis_id, payload_hash, transaction_hash, status, timestamp)
+        VALUES (:diag_id, :p_hash, :tx_hash, 'confirmed', NOW())
+    """)
+
     try:
-        # Aqui, no futuro, você pode bater no endpoint do nonodo (localhost:8080)
-        # para verificar se a transação realmente existe lá.
-        
-        # Por hora, registramos a intenção confirmada pelo Front
-        new_entry = BlockchainLedger(
-            diagnosis_id=diagnosis_id,
-            user_id=user_id,
-            tx_hash=tx_hash,
-            payload_json=payload,
-            status='confirmed'
+        with engine.connect() as conn:
+            conn.execute(
+                query,
+                {
+                    "diag_id": diagnosis_id,
+                    "p_hash": tx_hash,
+                    "tx_hash": tx_hash,
+                },
+            )
+            conn.commit()
+        print(
+            f"✅ [LEDGER]: Registro inserido em blockchain_ledger para ID {diagnosis_id}"
         )
-        
-        db.session.add(new_entry)
-        db.session.commit()
         return True
     except Exception as e:
-        print(f"❌ Erro no Ledger Service: {e}")
-        db.session.rollback()
+        print(f"❌ [LEDGER ERROR]: {e}")
         return False

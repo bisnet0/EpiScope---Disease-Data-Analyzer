@@ -1,4 +1,9 @@
+from backend.services.blockchain_service import (
+    process_ledger_registration,
+)
 from flask import request, jsonify
+from backend.agents.hospital_workflow import engine
+from sqlalchemy import text
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from backend.models.user_model import db
 from backend.models.diagnosis_model import (
@@ -8,6 +13,7 @@ from backend.models.diagnosis_model import (
 )
 
 
+@jwt_required()
 def register_blockchain_ledger():
     user_id = get_jwt_identity()
     data = request.json
@@ -24,23 +30,46 @@ def register_blockchain_ledger():
         "GLAUCOMA": GlaucomaDiagnosis,
         "RAIO-X (TÓRAX)": XRayDiagnosis,
     }
-
     model = model_map.get(diag_type.upper())
-    if not model:
-        return jsonify({"error": "Tipo de diagnóstico inválido"}), 400
-
     item = model.query.filter_by(id=diag_id, user_id=user_id).first()
 
-    if not item:
-        return jsonify({"error": "Diagnóstico não encontrado"}), 404
+    if item:
+        item.blockchain_hash = tx_hash
+        db.session.commit()
 
-    item.blockchain_hash = tx_hash
-    db.session.commit()
+    query_audit = text("""
+        UPDATE clinical_decisions 
+        SET blockchain_ref = :tx
+        WHERE id = (
+            SELECT id FROM clinical_decisions 
+            WHERE blockchain_ref = 'PENDING_SIGNATURE' 
+            ORDER BY id DESC LIMIT 1
+        )
+    """)
 
-    return jsonify(
-        {
-            "status": "success",
-            "message": f"Assinatura {diag_type} registrada!",
-            "tx_hash": tx_hash,
-        }
-    ), 201
+    query_ledger = text("""
+        INSERT INTO blockchain_ledger 
+        (diagnosis_id, payload_hash, transaction_hash, status, timestamp)
+        VALUES (:d_id, :h, :tx, 'confirmed', NOW())
+    """)
+
+    try:
+        with engine.connect() as conn:
+            conn.execute(query_audit, {"tx": tx_hash})
+
+            conn.execute(query_ledger, {"d_id": diag_id, "h": tx_hash, "tx": tx_hash})
+            conn.commit()
+
+        print(f"🚀 [SUCESSO]: Tabelas clinical_decisions e ledger atualizadas via SQL!")
+
+        return jsonify(
+            {
+                "status": "success",
+                "message": "Assinatura registrada e auditoria finalizada!",
+                "tx_hash": tx_hash,
+            }
+        ), 201
+
+    except Exception as e:
+        print(f"❌ [ERRO SQL]: {e}")
+        return jsonify({"error": str(e)}), 500

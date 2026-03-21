@@ -5,14 +5,16 @@ export interface ComparativeStat {
 }
 
 export interface ArbovirusApiResponse {
+  prediction: string;
   friendly_response: string;
   analysis_details: {
     probabilities: { [key: string]: number };
     structured_symptoms: { [key: string]: boolean };
     diagnosis_id?: number;
     winner_model?: string;
-    comparative_stats?: { [key: string]: ComparativeStat };
+    comparative_stats: { [key: string]: ComparativeStat };
   };
+  audit?: AuditResult;
 }
 
 export interface DiagnosisPayload {
@@ -24,8 +26,8 @@ export interface DiagnosisPayload {
 export interface FormProps {
   textDescription: string;
   setTextDescription: (val: string) => void;
-  age: number | '';
-  setAge: (val: number | '') => void;
+  age: number | "";
+  setAge: (val: number | "") => void;
   sex: string;
   setSex: (val: string) => void;
   loading: boolean;
@@ -35,4 +37,11 @@ export interface FormProps {
 export interface AlgorithmsChartProps {
   data: any[];
   winnerModel?: string;
+}
+
+export interface AuditResult {
+  ai_protocol: string;
+  severity: "HIGH" | "LOW";
+  blockchain_ref: string;
+  needs_emergency: boolean;
 }
