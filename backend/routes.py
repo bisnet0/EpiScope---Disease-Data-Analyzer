@@ -8,6 +8,8 @@ from backend.controllers.auth_controller import (
     refresh_access_token,
     logout_user,
 )
+from backend.controllers.workflow_controller import run_hospital_workflow
+from backend.controllers.predict_controller import handle_prediction_request
 from backend.controllers.google_fit_controller import google_fit_bp
 from backend.controllers.diagnose_controller import (
     analyze_arbovirus,
@@ -67,4 +69,11 @@ api_bp.register_blueprint(google_fit_bp, url_prefix="/google_fit")
 
 api_bp.route("/blockchain/register", methods=["POST"])(
     jwt_required()(register_blockchain_ledger)
+)
+
+api_bp.route("/diagnose/workflow", methods=["POST"])(
+    jwt_required()(run_hospital_workflow)
+)
+api_bp.route("/diagnose/predict-audit", methods=["POST"])(
+    jwt_required()(handle_prediction_request)
 )
