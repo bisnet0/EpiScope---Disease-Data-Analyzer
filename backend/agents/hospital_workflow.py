@@ -17,17 +17,20 @@ engine = create_engine(DB_URL)
 
 
 def clinical_analysis_node(state: HospitalState):
-    """
-    Define o protocolo e a gravidade.
-    Aqui você pode usar sua LLM ou lógica de termos.
-    """
     diag = state["diagnosis"]
-    print(f"🧠 [AI AUDITOR]: Analisando {diag}...")
+    print(f"🧠 [AI AUDITOR]: Analisando protocolo para {diag}...")
 
-    keywords_grave = ["pneumonia", "dengue", "high", "grave", "glaucoma", "urgente"]
+    # Lógica de severidade expandida
+    keywords_grave = ["pneumonia", "glaucoma", "grave", "urgente", "high", "emergência"]
     severity = "HIGH" if any(w in diag.lower() for w in keywords_grave) else "LOW"
 
-    protocol = f"Protocolo EpiScope: Monitoramento de {diag}. Conduta padrão sugerida."
+    # Protocolos específicos
+    if "glaucoma" in diag.lower():
+        protocol = f"Protocolo EpiScope (Oftalmo): Análise de escavação do disco óptico. Encaminhar para tonometria e mapeamento de retina."
+    elif "raio-x" in diag.lower() or "pneumonia" in diag.lower():
+        protocol = f"Protocolo EpiScope (Pulmonar): Análise de infiltrado alveolar. Sugerido isolamento e início de antibioticoterapia se confirmado."
+    else:
+        protocol = f"Protocolo EpiScope Geral: Monitoramento de {diag}. Conduta padrão sugerida."
 
     return {
         "ai_protocol": protocol,

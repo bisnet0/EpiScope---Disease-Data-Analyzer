@@ -4,6 +4,7 @@ from backend.models.diagnosis_model import (
     GlaucomaDiagnosis,
     XRayDiagnosis,
 )
+from backend.controllers.workflow_controller import run_hospital_workflow_internal
 from flask import request, jsonify
 from flask_jwt_extended import get_jwt_identity
 from backend.services.ai_service import (
@@ -43,10 +44,24 @@ def analyze_xray():
         return jsonify({"error": "Nenhuma imagem de Raio-X enviada"}), 400
 
     file = request.files["image"]
-    if file.filename == "":
-        return jsonify({"error": "Arquivo vazio"}), 400
 
     result, status = run_xray_pipeline(file.read(), current_user_id)
+
+    if status in [200, 201]:
+        pred = result.get("prediction", "Normal")
+
+        maestro_payload = {
+            "diagnosis": f"Raio-X (Tórax) processado: {pred}",
+            "severity": "HIGH" if "Pneumonia" in pred or "Opacidade" in pred else "LOW",
+        }
+
+        print(f"🫁 [X-RAY]: Disparando Maestro para auditoria...")
+
+        maestro_res = run_hospital_workflow_internal(maestro_payload)
+
+        if maestro_res:
+            result["maestro_status"] = "PENDING_SIGNATURE"
+
     return jsonify(result), status
 
 
@@ -71,6 +86,25 @@ def analyze_glaucoma():
         return jsonify({"error": "Arquivo vazio"}), 400
 
     result, status = run_glaucoma_pipeline(file.read(), current_user_id)
+
+    if status == 200 or status == 201:
+        pred = result.get("prediction", "Análise de Glaucoma")
+        prob = result.get("probability", 0)
+
+        maestro_payload = {
+            "diagnosis": f"Glaucoma detectado via CNN. Probabilidade: {prob:.2f}% - {pred}",
+            "severity": "HIGH" if prob > 0.5 else "LOW",
+        }
+
+        print(f"👁️ [GLAUCOMA]: Disparando Maestro para auditoria...")
+        run_hospital_workflow_internal(maestro_payload)
+
+        if maestro_payload:
+            result["maestro_status"] = maestro_payload.get(
+                "blockchain_ref", "PENDING_SIGNATURE"
+            )
+            result["maestro_id"] = maestro_payload.get("id")
+
     return jsonify(result), status
 
 
@@ -102,7 +136,6 @@ def get_user_history():
     history = []
 
     for item in arbovirus:
-        # Tente buscar por blockchain_hash, se falhar, tente tx_hash (caso tenha mudado o nome)
         tx_hash = getattr(item, "blockchain_hash", None) or getattr(
             item, "tx_hash", None
         )
@@ -116,7 +149,7 @@ def get_user_history():
                 if item.text_description
                 else "Descrição não disponível",
                 "result": item.prediction_result,
-                "signature": tx_hash,  # Aqui o front espera 'signature'
+                "signature": tx_hash,
             }
         )
 

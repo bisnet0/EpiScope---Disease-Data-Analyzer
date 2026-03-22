@@ -12,6 +12,7 @@ import {
   Progress,
   Badge,
   Divider,
+  keyframes,
 } from "@chakra-ui/react";
 import { CloudUpload, Activity } from "react-bootstrap-icons";
 import { useXRay } from "../hooks/useXRay";
@@ -28,6 +29,11 @@ export const DiagnosisXRayForm: React.FC = () => {
     }
   };
 
+  const pulse = keyframes`
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+  `;
   return (
     <Box
       bg={themeFx.cardBg}
@@ -122,7 +128,7 @@ export const DiagnosisXRayForm: React.FC = () => {
               size="lg"
               onClick={actions.submitDiagnosis}
               isLoading={state.loading}
-              loadingText="Analisando Tensores Pulmonares..."
+              loadingText="Consultando Maestro e Auditoria..."
               isDisabled={!state.previewUrl}
               bgGradient="linear(to-r, cyan.500, blue.500)"
               color="white"
@@ -130,6 +136,17 @@ export const DiagnosisXRayForm: React.FC = () => {
             >
               Diagnosticar Imagem
             </Button>
+            {state.loading && (
+              <Text
+                fontSize="xs"
+                color="cyan.400"
+                textAlign="center"
+                mt={2}
+                animation={`${pulse} 1.5s infinite`}
+              >
+                ⚙️ Processando Maestro, avaliando severidade e registrando auditoria...
+              </Text>
+            )}
 
             {state.error && (
               <Text color="red.400" fontSize="sm" textAlign="center">
