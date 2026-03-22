@@ -115,6 +115,7 @@ graph LR
     class C,D,E,F,G agent;
     class J,K blockchain;
 ```
+
 ---
 
 ## 🛠️ Tecnologias Utilizadas
@@ -163,7 +164,7 @@ git clone https://github.com/bisnet0/EpiScope---Disease-Data-Analyzer.git
 
 # Clone o projeto do DApp (Web3)
 git clone https://github.com/bisnet0/EpiScope-dapp.git
-````
+```
 
 Crie o arquivo `.env` na raiz com o seguinte conteúdo:
 
@@ -231,6 +232,28 @@ Ou se for o caso de apenas assinar com o Nonodo basta rodar o DApp da Instalaç�
 
 ```bash
 docker-compose exec backend python backend/ml-workflow/arbovirus/ml_optimize_ga.py
+```
+
+### 🔹 Visão Computacional: Raio-X (Pneumonia)
+
+```bash
+
+docker-compose exec backend python backend/ml-workflow/chest_xray/ml_train_xray.py
+```
+
+### 🔹 Visão Computacional: Glaucoma
+
+```bash
+
+docker-compose exec backend python backend/ml-workflow/glaucoma/ml_train_glaucoma.py
+```
+
+### 🔹 LLM & Fine-Tuning (Medical Assistant)
+
+```bash
+docker-compose exec backend python backend/ml-workflow/llm/ml_generate_instruction_data.py
+docker-compose exec backend python backend/ml-workflow/llm/ml_train_medical_assistant.py
+docker-compose exec backend python backend/ml-workflow/llm/ml_validate_lora.py
 ```
 
 ---
