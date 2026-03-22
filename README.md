@@ -127,6 +127,10 @@ graph LR
 - TensorFlow / Keras (CNN Glaucoma)
 - PostgreSQL + PgAdmin
 - Docker & Docker Compose
+- LangChain
+- LangGraph
+- Strava API
+- Google Fit API
 
 ## Blockchain (Web3)
 
