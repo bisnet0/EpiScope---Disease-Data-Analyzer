@@ -78,6 +78,45 @@ graph LR
 
 ---
 
+### Fluxo 3: Ingestão e Orquestração
+
+```mermaid
+
+graph LR
+    %% Estilização
+    classDef tech fill:#1a202c,stroke:#3182ce,stroke-width:2px,color:#fff;
+    classDef agent fill:#2d3748,stroke:#e53e3e,stroke-width:2px,color:#fff;
+    classDef blockchain fill:#1a202c,stroke:#38b2ac,stroke-width:2px,color:#fff;
+
+    subgraph "Camada de Ingestao e IA Tecnica"
+        A[Entrada] --> B{Pipeline}
+        B --> B1[XGBoost]
+        B --> B2[CNN Eye]
+        B --> B3[CNN Lung]
+    end
+
+    subgraph "Orquestracao Maestro (LangGraph)"
+        B1 & B2 & B3 --> C[Analise Clinica]
+        C --> D{Severidade?}
+        D -- "HIGH" --> E[Emergency Protocol]
+        D -- "LOW" --> F[Standard Protocol]
+        E --> G[Agent Chat]
+        F --> H[Laudo Padrao]
+    end
+
+    subgraph "Persistencia e Auditoria"
+        G & H --> I[DB Node]
+        I --> J[Blockchain Gateway]
+        J --> K((Audit Trail))
+    end
+
+    %% Aplicando Classes
+    class B1,B2,B3 tech;
+    class C,D,E,F,G agent;
+    class J,K blockchain;
+```
+---
+
 ## 🛠️ Tecnologias Utilizadas
 
 ## Backend (Web2)
@@ -120,7 +159,7 @@ git clone https://github.com/bisnet0/EpiScope---Disease-Data-Analyzer.git
 
 # Clone o projeto do DApp (Web3)
 git clone https://github.com/bisnet0/EpiScope-dapp.git
-```
+````
 
 Crie o arquivo `.env` na raiz com o seguinte conteúdo:
 
@@ -337,7 +376,6 @@ Login: `admin@admin.com` / Senha: `admin`
 ```
 
 ---
-
 
 ## 🏥 Diagnóstico Clínico (Arboviroses & Glaucoma)
 
