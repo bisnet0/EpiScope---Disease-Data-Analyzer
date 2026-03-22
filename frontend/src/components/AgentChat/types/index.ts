@@ -43,3 +43,6 @@ export interface ChatInputAreaProps {
   onSendMessage: () => void;
   onKeyPress: (e: KeyboardEvent<HTMLInputElement>) => void;
 }
+export interface AgentChatProps {
+  forceOpen?: boolean;
+}

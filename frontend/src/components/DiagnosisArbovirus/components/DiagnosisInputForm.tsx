@@ -39,6 +39,7 @@ export const DiagnosisInputForm: React.FC<FormProps> = ({
       w="full"
     >
       <VStack spacing={5} align="stretch">
+        
         <Heading size="md" color={themeFx.textColor}>
           1. Análise Clínica (Arboviroses)
         </Heading>

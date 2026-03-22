@@ -20,13 +20,16 @@ def clinical_analysis_node(state: HospitalState):
     diag = state["diagnosis"]
     print(f"🧠 [AI AUDITOR]: Analisando protocolo para {diag}...")
 
-    # Lógica de severidade expandida
     keywords_grave = ["pneumonia", "glaucoma", "grave", "urgente", "high", "emergência"]
     severity = "HIGH" if any(w in diag.lower() for w in keywords_grave) else "LOW"
 
-    # Protocolos específicos
     if "glaucoma" in diag.lower():
-        protocol = f"Protocolo EpiScope (Oftalmo): Análise de escavação do disco óptico. Encaminhar para tonometria e mapeamento de retina."
+        protocol = (
+            "Protocolo EpiScope (Oftalmo): Identificada escavação acentuada. "
+            "Conduta sugerida: 1. Tonometria de aplanação imediata. "
+            "2. Paquimetria corneana. 3. Avaliação urgente de campo visual. "
+            "Evitar uso de corticoides sem supervisão."
+        )
     elif "raio-x" in diag.lower() or "pneumonia" in diag.lower():
         protocol = f"Protocolo EpiScope (Pulmonar): Análise de infiltrado alveolar. Sugerido isolamento e início de antibioticoterapia se confirmado."
     else:
@@ -80,16 +83,23 @@ def emergency_node(state: HospitalState):
 workflow = StateGraph(HospitalState)
 
 workflow.add_node("analyze", clinical_analysis_node)
-workflow.add_node("save", save_to_db_node)
 workflow.add_node("emergency", emergency_node)
+workflow.add_node("save", save_to_db_node)
 
 workflow.set_entry_point("analyze")
-workflow.add_edge("analyze", "save")
+
 
 workflow.add_conditional_edges(
-    "save", lambda x: x["severity"], {"HIGH": "emergency", "LOW": END}
+    "analyze",
+    lambda x: x["severity"],
+    {
+        "HIGH": "emergency",
+        "LOW": "save",
+    },
 )
-workflow.add_edge("emergency", END)
+
+workflow.add_edge("emergency", "save")
+workflow.add_edge("save", END)
 
 app = workflow.compile()
 

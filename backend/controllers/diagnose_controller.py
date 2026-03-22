@@ -21,8 +21,8 @@ from backend.services.ai_service import (
 
 def analyze_arbovirus():
     current_user_id = get_jwt_identity()
-
     data = request.get_json()
+
     if not data:
         return jsonify({"error": "JSON inválido"}), 400
 
@@ -31,9 +31,24 @@ def analyze_arbovirus():
     sex = data.get("sex")
 
     if not all([desc, age, sex]):
-        return jsonify({"error": "Faltando dados (text_description, age, sex)"}), 400
+        return jsonify({"error": "Faltando dados"}), 400
 
     result, status = run_arbovirus_pipeline(desc, age, sex, current_user_id)
+
+    if status in [200, 201]:
+        prediction_text = result.get("prediction", "Dengue")
+
+        maestro_payload = {
+            "diagnosis": f"Resultado IA: {prediction_text} | Relato do Paciente: {desc}"
+        }
+
+        print(f"🦟 [ARBO]: Enviando contexto real para o Maestro...")
+        maestro_res = run_hospital_workflow_internal(maestro_payload)
+
+        if maestro_res:
+            result["maestro_status"] = "PENDING_SIGNATURE"
+            result["needs_emergency"] = maestro_res.get("needs_emergency", False)
+
     return jsonify(result), status
 
 
@@ -49,18 +64,22 @@ def analyze_xray():
 
     if status in [200, 201]:
         pred = result.get("prediction", "Normal")
+        prob_pneumonia = result["analysis_details"]["probabilities"].get("Pneumonia", 0)
+
+        risk_label = (
+            "URGENTE - INFILTRADO ALVEOLAR" if pred == "Pneumonia" else "Normal"
+        )
 
         maestro_payload = {
-            "diagnosis": f"Raio-X (Tórax) processado: {pred}",
-            "severity": "HIGH" if "Pneumonia" in pred or "Opacidade" in pred else "LOW",
+            "diagnosis": f"Raio-X de Tórax: {pred} ({prob_pneumonia * 100:.1f}%). Status: {risk_label}."
         }
 
-        print(f"🫁 [X-RAY]: Disparando Maestro para auditoria...")
-
+        print(f"🫁 [X-RAY]: Maestro analisando pulmões...")
         maestro_res = run_hospital_workflow_internal(maestro_payload)
 
         if maestro_res:
             result["maestro_status"] = "PENDING_SIGNATURE"
+            result["needs_emergency"] = maestro_res.get("needs_emergency", False)
 
     return jsonify(result), status
 
@@ -87,23 +106,22 @@ def analyze_glaucoma():
 
     result, status = run_glaucoma_pipeline(file.read(), current_user_id)
 
-    if status == 200 or status == 201:
-        pred = result.get("prediction", "Análise de Glaucoma")
+    if status in [200, 201]:
+        pred = result.get("prediction", "Glaucoma")
         prob = result.get("probability", 0)
 
+        severity_label = "URGENTE/ALTA SEVERIDADE" if prob > 0.8 else "Monitoramento"
+
         maestro_payload = {
-            "diagnosis": f"Glaucoma detectado via CNN. Probabilidade: {prob:.2f}% - {pred}",
-            "severity": "HIGH" if prob > 0.5 else "LOW",
+            "diagnosis": f"Análise de Glaucoma via CNN: {pred} com {prob:.2f}% de confiança. {severity_label}."
         }
 
-        print(f"👁️ [GLAUCOMA]: Disparando Maestro para auditoria...")
-        run_hospital_workflow_internal(maestro_payload)
+        maestro_res = run_hospital_workflow_internal(maestro_payload)
 
-        if maestro_payload:
-            result["maestro_status"] = maestro_payload.get(
-                "blockchain_ref", "PENDING_SIGNATURE"
-            )
-            result["maestro_id"] = maestro_payload.get("id")
+        if maestro_res:
+            result["maestro_status"] = "PENDING_SIGNATURE"
+
+            result["needs_emergency"] = maestro_res.get("needs_emergency", False)
 
     return jsonify(result), status
 

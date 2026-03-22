@@ -1,4 +1,3 @@
-
 export interface XRayProbabilities {
   [key: string]: number;
 }
@@ -10,9 +9,18 @@ export interface XRayAnalysisDetails {
 }
 
 export interface XRayApiResponse {
-  success: boolean;
   prediction: string;
-  analysis_details: XRayAnalysisDetails;
+  success: boolean;
+  maestro_status?: string;
+  needs_emergency?: boolean;
+  analysis_details: {
+    clinical_notes: string;
+    model_used: string;
+    probabilities: {
+      Normal: number;
+      Pneumonia: number;
+    };
+  };
 }
 
 export interface XRayState {

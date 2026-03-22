@@ -3,6 +3,7 @@ import { fetchDiagnosis } from "../services/diagnosis-arbovirus-service";
 import { type ArbovirusApiResponse, type AuditResult } from "../types";
 import { DISEASE_COLORS, MODEL_COLORS } from "../utils/constants";
 import { processAuditAndDecision } from "../../../services/diagnosis-service";
+import { useToast } from "../../Toast/components/ToastContext";
 
 export const useDiagnosis = () => {
   const [textDescription, setTextDescription] = useState("");
@@ -13,6 +14,8 @@ export const useDiagnosis = () => {
   const [error, setError] = useState<string | null>(null);
   const [showLab, setShowLab] = useState(false);
   const [auditResult, setAuditResult] = useState<any>(null);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const { showToast } = useToast();
 
   const submitDiagnosis = async (event?: React.FormEvent) => {
     if (event) event.preventDefault();
@@ -36,9 +39,11 @@ export const useDiagnosis = () => {
           : "Não identificado";
 
       const modelName = winner.replace("_", " ");
-      const rawDiagnosis = `Paciente de ${age} anos, sexo ${sex}. Suspeita de ${technicalDiagnosis} confirmada pelo modelo ${modelName}.`;
 
-      console.log("🚀 Enviando para o Maestro:", rawDiagnosis);
+      const rawDiagnosis = `SINTOMAS: ${textDescription} | Diagnóstico Técnico: Suspeita de ${technicalDiagnosis} via ${modelName} (Idade: ${age}, Sexo: ${sex})`;
+
+      console.log("🚀 Enviando contexto real para o Maestro:", rawDiagnosis);
+
       const auditData = await processAuditAndDecision(rawDiagnosis);
       setAuditResult(auditData.data);
       setAuditResult(auditData.data as AuditResult);
@@ -78,12 +83,35 @@ export const useDiagnosis = () => {
   useEffect(() => {
     if (auditResult?.needs_emergency) {
       console.log("🚨 ALERTA GERAL: Acionando Agent de Emergência!");
+
+      showToast({
+        title: "Protocolo de Emergência!",
+        message:
+          "Maestro detectou alta severidade. O Agente de Emergência foi notificado.",
+        type: "info",
+        duration: 6000,
+        isCloseable: true,
+      });
+      const event = new CustomEvent("openMaestroChat", {
+        detail: { diagnosis: auditResult.diagnosis },
+      });
+      window.dispatchEvent(event);
+      setIsChatOpen(true);
     }
-  }, [auditResult]);
+  }, [auditResult, showToast]);
 
   return {
     form: { textDescription, setTextDescription, age, setAge, sex, setSex },
-    state: { result, auditResult, loading, error, showLab, setShowLab },
+    state: {
+      result,
+      auditResult,
+      loading,
+      error,
+      showLab,
+      setShowLab,
+      isChatOpen,
+      setIsChatOpen,
+    },
     actions: { submitDiagnosis },
     charts: { diseaseChartData, modelsChartData },
   };

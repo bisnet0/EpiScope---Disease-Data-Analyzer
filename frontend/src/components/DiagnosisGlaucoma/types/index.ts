@@ -2,6 +2,10 @@ import type { ChangeEvent } from "react";
 
 export interface GlaucomaApiResponse {
   friendly_response: string;
+  prediction: string;
+  probability: number;
+  maestro_status?: string;
+  needs_emergency?: boolean;
   analysis_details: {
     probabilities: { [key: string]: number };
     predicted_class: string;
