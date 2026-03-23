@@ -18,6 +18,16 @@ def prepare_medical_dataset():
             "context": "Modelo MobileNetV2_FT",
             "response": "Utilizamos transfer learning sobre MobileNetV2 com fine-tuning nas últimas 100 camadas para identificar escavação do disco óptico.",
         },
+        {
+            "instruction": "Como o EpiScope detecta Pneumonia em imagens de Raio-X?",
+            "context": "Pipeline Chest X-Ray v2 (CNN)",
+            "response": "O diagnóstico de Pneumonia é realizado através de uma Rede Neural Convolucional (CNN) otimizada para identificar infiltrados alveolares e opacidades pulmonares com alta sensibilidade.",
+        },
+        {
+            "instruction": "Qual a conduta do Maestro para exames de Raio-X com alta probabilidade de pneumonia?",
+            "context": "Protocolo de Emergência Pulmonar",
+            "response": "O Maestro aciona o protocolo de severidade HIGH, sugere avaliação imediata de sinais vitais (CURB-65) e abre o chat de suporte à decisão clínica.",
+        },
     ]
     return Dataset.from_list(data)
 
