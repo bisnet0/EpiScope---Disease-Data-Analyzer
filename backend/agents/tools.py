@@ -59,6 +59,83 @@ def arbovirus_tool(symptoms: str, age: int, sex: str):
         return {"error": f"Erro crítico na ferramenta: {str(e)}"}
 
 
+@tool("xray_tool")
+def xray_tool(image_data: str = None):
+    """
+    Usa a Rede Neural Convolucional (CNN) para analisar imagens de Raio-X de Tórax (Chest X-Ray).
+    A entrada 'image_data' DEVE ser o caminho do arquivo local ou uma string base64.
+    USE ESTA FERRAMENTA SEMPRE que o usuário enviar uma imagem e perguntar se tem pneumonia,
+    anomalia pulmonar, ou pedir para avaliar um raio-x.
+    """
+    print("\n[AGENTE] 🩻 Acionando o Radiologista de IA (CNN Raio-X)...")
+
+    from backend.services.ai_service import run_xray_pipeline
+    import base64
+    import os
+
+    if image_data:
+        try:
+            # Puxa o ID real do paciente logado
+            current_user_id = get_safe_user_id()
+            if not current_user_id:
+                return "Erro: Usuário não autenticado."
+
+            if os.path.exists(image_data):
+                with open(image_data, "rb") as f:
+                    image_bytes = f.read()
+            else:
+                if "," in image_data:
+                    image_data = image_data.split(",")[1]
+                image_bytes = base64.b64decode(image_data)
+
+            # 👇 A MÁGICA AQUI: Passamos o ID real do usuário em vez de "agent_request"
+            result, status = run_xray_pipeline(image_bytes, current_user_id)
+            return f"RESULTADO DA ANÁLISE DA CNN DE RAIO-X: {result}"
+
+        except Exception as e:
+            print(f"[DEBUG TOOL] ERRO CRÍTICO RAIO-X: {e}")
+            return f"Erro ao processar a imagem de Raio-X: {str(e)}"
+
+    return "Aviso: A imagem de Raio-X não foi fornecida."
+
+
+@tool("health_metrics_tool")
+def health_metrics_tool(query: str = None):
+    """
+    Busca o histórico de saúde, atividades físicas e frequência cardíaca do usuário no Strava.
+    Use esta ferramenta quando o usuário reclamar de cansaço, dor no corpo, palpitações,
+    ou quando quiser saber se a rotina física dele influencia no diagnóstico atual.
+    """
+    from backend.models.health_model import StravaActivity
+    from backend.agents.tools import get_safe_user_id
+
+    user_id = get_safe_user_id()
+    if not user_id:
+        return "Usuário não identificado."
+
+    # Pegamos as últimas 5 atividades para análise de tendência
+    activities = (
+        StravaActivity.query.filter_by(user_id=user_id)
+        .order_by(StravaActivity.start_date.desc())
+        .limit(5)
+        .all()
+    )
+
+    if not activities:
+        return "O usuário ainda não tem dados de atividades físicas sincronizados."
+
+    report = "[RELATÓRIO FISIOLÓGICO DO PACIENTE]\n"
+    for a in activities:
+        hr_status = (
+            f"{a.average_heartrate} BPM (Méd)"
+            if a.has_heartrate
+            else "Sem sensor de RH"
+        )
+        report += f"- {a.start_date.date()}: {a.name} ({a.activity_type}) | Esforço: {hr_status} | Duração: {a.moving_time_seconds // 60}min\n"
+
+    return report
+
+
 @tool("glaucoma_specialist")
 def glaucoma_tool(image_data: str):
     """
@@ -189,7 +266,6 @@ def rag_clinical_tool(query: str):
     """
     print(f"\n[AGENTE] 📚 Consultando a biblioteca médica para: '{query}'...")
 
-    # Busca os 4 fragmentos mais relevantes nos PDFs
     resultado_busca = search_knowledge_base(query=query, k=4)
 
     return f"""
@@ -200,4 +276,11 @@ def rag_clinical_tool(query: str):
     """
 
 
-MEDICAL_TOOLS = [arbovirus_tool, glaucoma_tool, lab_manager_tool]
+MEDICAL_TOOLS = [
+    arbovirus_tool,
+    glaucoma_tool,
+    lab_manager_tool,
+    rag_clinical_tool,
+    xray_tool,
+    health_metrics_tool,
+]

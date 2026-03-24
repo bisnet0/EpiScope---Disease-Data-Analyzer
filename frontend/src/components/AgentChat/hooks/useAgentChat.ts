@@ -2,6 +2,7 @@ import {
   useState,
   useEffect,
   useRef,
+  useCallback,
   type ChangeEvent,
   type KeyboardEvent,
 } from "react";
@@ -25,6 +26,42 @@ export const useAgentChat = () => {
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
+
+  useEffect(() => {
+    const handleEmergency = async (event: any) => {
+      const detail = event.detail;
+      if (!detail?.diagnosis) return;
+
+      setIsOpen(true);
+      setIsLoading(true);
+
+      try {
+        const emergencyContent = `🚨 **ALERTA DE EMERGÊNCIA ATIVADO** 🚨\n\nIdentifiquei um quadro de alta severidade: *"${detail.diagnosis}"*.\n\nJá preparei o protocolo de auditoria. Como posso auxiliar na conduta clínica agora?`;
+
+        await sendChatMessageApi({
+          message: emergencyContent,
+          attachment: null,
+        });
+        const history = await fetchChatHistory();
+        setMessages(history);
+      } catch (error) {
+        console.error("❌ Erro ao persistir alerta de emergência:", error);
+
+        const fallbackMsg: Message = {
+          id: `temp-${Date.now()}`,
+          role: "agent",
+          content: `🚨 **ALERTA (SESSÃO LOCAL)**: Erro ao salvar no banco, mas a severidade é ALTA para: ${detail.diagnosis}`,
+        };
+        setMessages((prev) => [...prev, fallbackMsg]);
+      } finally {
+        setIsLoading(false);
+        scrollToBottom();
+      }
+    };
+
+    window.addEventListener("openMaestroChat", handleEmergency);
+    return () => window.removeEventListener("openMaestroChat", handleEmergency);
+  }, [showToast]);
 
   useEffect(() => {
     scrollToBottom();
@@ -110,7 +147,6 @@ export const useAgentChat = () => {
           duration: 6000,
         });
       } else {
-        // Erro genérico (500, etc)
         showToast({
           title: "Erro de comunicação",
           message: "O Dr. EpiScope está indisponível no momento.",

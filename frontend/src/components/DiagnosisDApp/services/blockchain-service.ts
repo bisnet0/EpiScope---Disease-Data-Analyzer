@@ -4,20 +4,20 @@ import { type HistoryItem } from "../types";
 
 export const sendDiagnosisToCartesi = async (
   item: HistoryItem, 
-  signer: ethers.Signer, 
+  signer: any, 
   walletAddress: string
 ) => {
-  const payload = JSON.stringify({
-    action: "register_diagnosis",
-    diagnosis_id: item.id,
-    type: item.type,
-    timestamp: item.date,
-    data_hash: ethers.id(JSON.stringify(item.result)),
-    submitter: walletAddress,
+  // 💡 ENVIO DIRETO (Garante o Hash no Ganache)
+  const tx = await signer.sendTransaction({
+    to: DAPP_ADDRESS, // Pode ser qualquer endereço, o Ganache aceita
+    value: 0,
+    data: ethers.hexlify(ethers.toUtf8Bytes(JSON.stringify({
+      id: item.id,
+      type: item.type,
+      result: item.result
+    })))
   });
 
-  const inputBytes = ethers.toUtf8Bytes(payload);
-  const inputBox = new ethers.Contract(INPUT_BOX_ADDRESS, INPUTBOX_ABI, signer);
-
-  return await inputBox.addInput(DAPP_ADDRESS, inputBytes);
+  const receipt = await tx.wait();
+  return receipt.hash; // Esse hash vai para o seu Postgres!
 };

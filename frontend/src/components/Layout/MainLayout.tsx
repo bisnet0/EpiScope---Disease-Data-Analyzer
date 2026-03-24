@@ -22,6 +22,8 @@ import { DashboardPage } from "../Dashboard/DashboardPage";
 import { DiagnosisArbovirusForm } from "../DiagnosisArbovirus/DiagnosisArbovirusPage";
 import { DiagnosisGlaucomaForm } from "../DiagnosisGlaucoma/DiagnosisGlaucomaPage";
 import { DiagnosisDAppForm } from "../DiagnosisDApp/DiagnosisDAppForm";
+import { DiagnosisXRayForm } from "../DiagnosisXRay/components/DiagnosisXRay";
+import HealthStatsPanelPage from "../HealthStatsPanel/HealthStatsPanelPage"
 import { LoginForm } from "../Login/LoginForm";
 import AgentChat from "../AgentChat/AgentChat";
 
@@ -155,6 +157,10 @@ export const MainLayout: React.FC = () => {
           {mode === "web2" && <DiagnosisArbovirusForm />}
           {mode === "web3" && <DiagnosisDAppForm />}
           {mode === "image" && <DiagnosisGlaucomaForm />}
+          {mode === "x-ray" && <DiagnosisXRayForm />}
+          {mode === "health-stats-panel" && <HealthStatsPanelPage />}
+
+
         </Box>
 
         <Footer />

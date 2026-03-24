@@ -91,7 +91,7 @@ export const HistoryTable: React.FC<Props> = ({ history, walletAddress, sendingI
                 
                 <Td isNumeric>
                   {item.signature ? (
-                    <Badge colorScheme="green" variant="outline" display="inline-flex" alignItems="center" gap={1} px={2} py={1} fontSize={{ base: "2xs", md: "xs" }}>
+                    <Badge colorScheme="green" variant="outline" display="inline-flex" alignItems="center" gap={1} px={2} py={1.5} fontSize={{ base: "2xs", md: "xs" }} borderRadius={8}>
                       <Icon as={CheckCircle} /> Registrado
                     </Badge>
                   ) : (

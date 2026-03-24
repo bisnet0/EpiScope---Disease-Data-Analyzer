@@ -1,5 +1,10 @@
 from datetime import timezone
-from backend.models.diagnosis_model import ArbovirusDiagnosis, GlaucomaDiagnosis
+from backend.models.diagnosis_model import (
+    ArbovirusDiagnosis,
+    GlaucomaDiagnosis,
+    XRayDiagnosis,
+)
+from backend.controllers.workflow_controller import run_hospital_workflow_internal
 from flask import request, jsonify
 from flask_jwt_extended import get_jwt_identity
 from backend.services.ai_service import (
@@ -10,13 +15,14 @@ from backend.services.ai_service import (
     run_experiment_pipeline,
     get_best_optimization_suggestion,
     run_genetic_pipeline,
+    run_xray_pipeline,
 )
 
 
 def analyze_arbovirus():
     current_user_id = get_jwt_identity()
-
     data = request.get_json()
+
     if not data:
         return jsonify({"error": "JSON inválido"}), 400
 
@@ -25,9 +31,56 @@ def analyze_arbovirus():
     sex = data.get("sex")
 
     if not all([desc, age, sex]):
-        return jsonify({"error": "Faltando dados (text_description, age, sex)"}), 400
+        return jsonify({"error": "Faltando dados"}), 400
 
     result, status = run_arbovirus_pipeline(desc, age, sex, current_user_id)
+
+    if status in [200, 201]:
+        prediction_text = result.get("prediction", "Dengue")
+
+        maestro_payload = {
+            "diagnosis": f"Resultado IA: {prediction_text} | Relato do Paciente: {desc}"
+        }
+
+        print(f"🦟 [ARBO]: Enviando contexto real para o Maestro...")
+        maestro_res = run_hospital_workflow_internal(maestro_payload)
+
+        if maestro_res:
+            result["maestro_status"] = "PENDING_SIGNATURE"
+            result["needs_emergency"] = maestro_res.get("needs_emergency", False)
+
+    return jsonify(result), status
+
+
+def analyze_xray():
+    current_user_id = get_jwt_identity()
+
+    if "image" not in request.files:
+        return jsonify({"error": "Nenhuma imagem de Raio-X enviada"}), 400
+
+    file = request.files["image"]
+
+    result, status = run_xray_pipeline(file.read(), current_user_id)
+
+    if status in [200, 201]:
+        pred = result.get("prediction", "Normal")
+        prob_pneumonia = result["analysis_details"]["probabilities"].get("Pneumonia", 0)
+
+        risk_label = (
+            "URGENTE - INFILTRADO ALVEOLAR" if pred == "Pneumonia" else "Normal"
+        )
+
+        maestro_payload = {
+            "diagnosis": f"Raio-X de Tórax: {pred} ({prob_pneumonia * 100:.1f}%). Status: {risk_label}."
+        }
+
+        print(f"🫁 [X-RAY]: Maestro analisando pulmões...")
+        maestro_res = run_hospital_workflow_internal(maestro_payload)
+
+        if maestro_res:
+            result["maestro_status"] = "PENDING_SIGNATURE"
+            result["needs_emergency"] = maestro_res.get("needs_emergency", False)
+
     return jsonify(result), status
 
 
@@ -52,6 +105,24 @@ def analyze_glaucoma():
         return jsonify({"error": "Arquivo vazio"}), 400
 
     result, status = run_glaucoma_pipeline(file.read(), current_user_id)
+
+    if status in [200, 201]:
+        pred = result.get("prediction", "Glaucoma")
+        prob = result.get("probability", 0)
+
+        severity_label = "URGENTE/ALTA SEVERIDADE" if prob > 0.8 else "Monitoramento"
+
+        maestro_payload = {
+            "diagnosis": f"Análise de Glaucoma via CNN: {pred} com {prob:.2f}% de confiança. {severity_label}."
+        }
+
+        maestro_res = run_hospital_workflow_internal(maestro_payload)
+
+        if maestro_res:
+            result["maestro_status"] = "PENDING_SIGNATURE"
+
+            result["needs_emergency"] = maestro_res.get("needs_emergency", False)
+
     return jsonify(result), status
 
 
@@ -79,11 +150,13 @@ def get_user_history():
 
     arbovirus = ArbovirusDiagnosis.query.filter_by(user_id=current_user_id).all()
     glaucoma = GlaucomaDiagnosis.query.filter_by(user_id=current_user_id).all()
-
+    xray = XRayDiagnosis.query.filter_by(user_id=current_user_id).all()
     history = []
 
     for item in arbovirus:
-        tx_hash = getattr(item, "blockchain_hash", None)
+        tx_hash = getattr(item, "blockchain_hash", None) or getattr(
+            item, "tx_hash", None
+        )
 
         history.append(
             {
@@ -99,7 +172,9 @@ def get_user_history():
         )
 
     for item in glaucoma:
-        tx_hash = getattr(item, "blockchain_hash", None)
+        tx_hash = getattr(item, "blockchain_hash", None) or getattr(
+            item, "tx_hash", None
+        )
 
         history.append(
             {
@@ -112,8 +187,23 @@ def get_user_history():
             }
         )
 
-    history.sort(key=lambda x: x["date"], reverse=True)
+    for item in xray:
+        tx_hash = getattr(item, "blockchain_hash", None) or getattr(
+            item, "tx_hash", None
+        )
 
+        history.append(
+            {
+                "id": item.id,
+                "type": "RAIO-X (TÓRAX)",
+                "date": item.created_at.replace(tzinfo=timezone.utc).isoformat(),
+                "details": "Radiografia Pulmonar (Processada via CNN)",
+                "result": item.prediction_result,
+                "signature": tx_hash,
+            }
+        )
+
+    history.sort(key=lambda x: x["date"], reverse=True)
     return jsonify(history), 200
 
 

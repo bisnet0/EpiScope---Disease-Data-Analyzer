@@ -64,8 +64,7 @@ def preprocess_image(
 
 
 def load_data_from_excel(metadata_path, image_dir):
-    
-    
+
     print(f"Carregando metadados de: {metadata_path}")
     try:
         try:
@@ -223,14 +222,21 @@ try:
     print("\nSalvando log de treinamento no banco de dados...")
     try:
         log_entry_orm = {
-            "model_name": "Glaucoma_CNN",
-            "version": "MobileNetV2_FT",
-            "parameters": TRAIN_PARAMS,
-            "feature_importance": None,
+            "model_name": "Glaucoma_CNN_Specialist",
+            "version": "v3_MobileNetV2_FineTuned_100",
+            "parameters": {
+                **TRAIN_PARAMS,
+                "unfrozen_layers": 100,
+                "specialization_strategy": "Layer-wise Fine-Tuning",
+                "data_source": "Drishti-GS1 Dataset",
+                "preprocessing": "Normalization + Augmentation (Rotation, Zoom, Flip)",
+            },
+            "feature_importance": "Deep-Features (GAP Layer)",
             "metrics": report_dict,
             "accuracy": accuracy,
             "dataset_size": len(images),
             "created_at": pd.Timestamp.utcnow(),
+            "training_context": "Hospital Internal Protocol v1.0",
         }
 
         insert_query = text("""

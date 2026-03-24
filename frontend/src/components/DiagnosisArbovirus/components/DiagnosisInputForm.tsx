@@ -7,8 +7,10 @@ import {
   Input, 
   Select, 
   Textarea, 
-  VStack, 
-  Heading 
+  VStack,
+  keyframes,
+  Heading,
+  Text
 } from '@chakra-ui/react';
 import { useDiagnosisThemeFx } from '../styles/theme-fx';
 import { type FormProps } from '../types';
@@ -16,6 +18,11 @@ import { type FormProps } from '../types';
 export const DiagnosisInputForm: React.FC<FormProps> = ({
   textDescription, setTextDescription, age, setAge, sex, setSex, loading, onSubmit
 }) => {
+  const pulse = keyframes`
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+  `;
   const themeFx = useDiagnosisThemeFx();
 
   return (
@@ -32,6 +39,7 @@ export const DiagnosisInputForm: React.FC<FormProps> = ({
       w="full"
     >
       <VStack spacing={5} align="stretch">
+        
         <Heading size="md" color={themeFx.textColor}>
           1. Análise Clínica (Arboviroses)
         </Heading>
@@ -78,11 +86,16 @@ export const DiagnosisInputForm: React.FC<FormProps> = ({
           colorScheme="blue" 
           size="lg" 
           isLoading={loading} 
-          loadingText="Analisando..."
+          loadingText="Consultando Maestro e Auditoria..."
           mt={2}
         >
           Rodar Diagnóstico
         </Button>
+        {loading && (
+           <Text fontSize="xs" color="gray.500" textAlign="center" animation={`${pulse} 1.5s infinite`}>
+             ⚙️ Processando modelos técnicos e registrando na Blockchain...
+           </Text>
+        )}
       </VStack>
     </Box>
   );
