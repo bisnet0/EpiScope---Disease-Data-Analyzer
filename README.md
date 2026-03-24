@@ -292,6 +292,8 @@ docker-compose up -d
 cartesi run
 # Ou
 nonodo
+# Ou
+npx ganache --wallet.seed "episcope_dapp" --chain.chainId 31337 --port 8545 --wallet.totalAccounts 1 --wallet.defaultBalance 10000
 ```
 
 **Terminal 3 (Frontend):**
