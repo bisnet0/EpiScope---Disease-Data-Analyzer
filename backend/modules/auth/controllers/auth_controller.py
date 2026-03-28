@@ -7,7 +7,7 @@ from flask_jwt_extended import (
 )
 
 # 👇 Imports mantidos (apontando para o auth_service)
-from backend.services.auth_service import (
+from backend.modules.auth.services.auth_service import (
     register_user_service,
     login_user_service,
     get_user_by_id,

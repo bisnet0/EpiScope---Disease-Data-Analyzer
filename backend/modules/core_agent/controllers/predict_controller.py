@@ -2,7 +2,7 @@ import os
 from flask import request, jsonify
 
 # 👇 Mantido o import do serviço (ajustaremos isso depois)
-from backend.services.predict_service import predict_and_audit_service
+from backend.modules.core_agent.services.predict_service import predict_and_audit_service
 
 def handle_prediction_request():
     if 'file' not in request.files:

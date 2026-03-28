@@ -3,8 +3,8 @@ from flask_jwt_extended import get_jwt_identity
 from sqlalchemy import text
 
 # 👇 Imports mantidos (serão atualizados conforme as pastas mudarem)
-from backend.services.blockchain_service import process_ledger_registration
-from backend.agents.hospital_workflow import engine
+from backend.modules.blockchain.services.blockchain_service import process_ledger_registration
+from backend.modules.core_agent.agents.hospital_workflow import engine
 from backend.models.user_model import db
 from backend.models.diagnosis_model import (
     ArbovirusDiagnosis,

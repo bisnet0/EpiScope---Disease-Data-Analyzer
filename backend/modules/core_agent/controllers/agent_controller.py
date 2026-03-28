@@ -8,7 +8,7 @@ from flask_jwt_extended import get_jwt_identity
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 
 # 👇 Imports mantidos (serão atualizados quando fatiarmos o backend/agents/)
-from backend.agents.graph import app_graph
+from backend.modules.core_agent.agents.graph import app_graph
 from backend.models.chat_model import ChatMessage
 from backend.models.user_model import db
 

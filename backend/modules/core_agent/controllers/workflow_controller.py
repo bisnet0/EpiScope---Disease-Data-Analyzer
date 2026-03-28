@@ -1,7 +1,7 @@
 from flask import request, jsonify
 
 # 👇 Mantido o import do seu workflow (ajustaremos isso quando fatiarmos a pasta agents)
-from backend.agents.hospital_workflow import app as hospital_workflow_app
+from backend.modules.core_agent.agents.hospital_workflow import app as hospital_workflow_app
 
 def run_hospital_workflow_internal(data):
     """
