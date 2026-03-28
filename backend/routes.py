@@ -28,7 +28,11 @@ from backend.controllers.blockchain_controller import (
     register_blockchain_ledger,
 )
 
-# 👇 IMPORTA O BLUEPRINT DO STRAVA 👇
+from backend.controllers.womens_health_controller import (
+    analyze_womens_audio,
+    analyze_womens_video
+)
+
 from backend.controllers.strava_controller import strava_bp
 
 api_bp = Blueprint("api", __name__)
@@ -76,4 +80,11 @@ api_bp.route("/diagnose/workflow", methods=["POST"])(
 )
 api_bp.route("/diagnose/predict-audit", methods=["POST"])(
     jwt_required()(handle_prediction_request)
+)
+
+api_bp.route("/womens-health/analyze-audio", methods=["POST"])(
+    jwt_required()(analyze_womens_audio)
+)
+api_bp.route("/womens-health/analyze-video", methods=["POST"])(
+    jwt_required()(analyze_womens_video)
 )

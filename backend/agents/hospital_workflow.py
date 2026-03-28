@@ -4,6 +4,7 @@ from langgraph.graph import StateGraph, END
 from sqlalchemy import create_engine, text
 
 
+
 class HospitalState(TypedDict):
     diagnosis: str
     severity: str

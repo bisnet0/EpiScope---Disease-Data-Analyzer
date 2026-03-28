@@ -6,9 +6,9 @@ from backend.models.user_model import User
 from backend.services.ai_service import run_arbovirus_pipeline, run_glaucoma_pipeline
 import os
 import base64
-
 from langchain.tools import tool
 from backend.services.rag_service import search_knowledge_base
+from backend.agents.tools.audio_analysis_tool import audio_clinical_analysis_tool
 
 
 def get_safe_user_id():
@@ -283,4 +283,5 @@ MEDICAL_TOOLS = [
     rag_clinical_tool,
     xray_tool,
     health_metrics_tool,
+    audio_clinical_analysis_tool,
 ]
