@@ -6,7 +6,7 @@ from langchain.tools import tool
 
 # 👇 Atenção: O import do ai_service também vai mudar de lugar no futuro,
 # mas por enquanto mantemos o caminho antigo até refatorarmos o ai_service.py
-from backend.services.ai_service import run_arbovirus_pipeline
+from backend.modules.arbovirus.services.arbovirus_service import run_arbovirus_pipeline
 
 
 def get_safe_user_id():
@@ -17,7 +17,7 @@ def get_safe_user_id():
         except:
             pass
 
-    from backend.models.user_model import User
+    from backend.modules.auth.models.user_model import User
 
     admin = User.query.first()
     return admin.id if admin else None

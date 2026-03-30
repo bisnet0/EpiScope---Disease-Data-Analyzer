@@ -6,20 +6,27 @@ import traceback
 from flask import request, jsonify
 from flask_jwt_extended import get_jwt_identity
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+from typing import cast, Any
 
 # 👇 Imports mantidos (serão atualizados quando fatiarmos o backend/agents/)
 from backend.modules.core_agent.agents.graph import app_graph
-from backend.models.chat_model import ChatMessage
-from backend.models.user_model import db
+from backend.modules.core_agent.models.chat_model import ChatMessage
+from backend.modules.auth.models.user_model import db
 
 TEMP_DIR = os.path.join(os.getcwd(), "temp_uploads")
 os.makedirs(TEMP_DIR, exist_ok=True)
 
+
 def chat_agent():
-    user_id = get_jwt_identity()
+    user_id = str(get_jwt_identity())
     data = request.get_json()
 
-    user_message = data.get("message", "").strip()
+    # 👇 TYPE GUARD: Garante que data é um dicionário antes de usar .get()
+    if not isinstance(data, dict):
+        return jsonify({"error": "Formato de requisição inválido"}), 400
+
+    # Agora o Pylance sabe que 'data' tem o método get()
+    user_message = str(data.get("message", "")).strip()
     attachment_b64 = data.get("attachment")
 
     if not user_message and not attachment_b64:
@@ -27,7 +34,6 @@ def chat_agent():
 
     if not user_message and attachment_b64:
         user_message = "Por favor, analise a imagem em anexo."
-
     try:
         past_msgs = (
             ChatMessage.query.filter_by(user_id=user_id)
@@ -85,7 +91,7 @@ Regras de ouro:
             + [HumanMessage(content=agent_input)]
         )
 
-        inputs = {"messages": messages_to_send}
+        inputs = cast(Any, {"messages": messages_to_send})
         final_state = app_graph.invoke(inputs, config={"recursion_limit": 10})
 
         raw_content = final_state["messages"][-1].content

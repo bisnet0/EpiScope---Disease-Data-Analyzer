@@ -1,4 +1,4 @@
 {
-  "python.analysis.typeCheckingMode": "strict",
-  "python.analysis.extraPaths": ["./src"]
+  "python.analysis.typeCheckingMode": "basic",
+  "python.analysis.extraPaths": ["./backend", "."]
 }

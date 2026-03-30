@@ -10,7 +10,7 @@ def get_safe_user_id():
         except:
             pass
 
-    from backend.models.user_model import User
+    from backend.modules.auth.models.user_model import User
     admin = User.query.first()
     return admin.id if admin else None
 
@@ -53,13 +53,13 @@ def lab_manager_tool(
 
         # 👇 Imports temporários apontando para o ai_service antigo
         if target_disease.lower() == "arbovirus":
-            from backend.services.ai_service import run_genetic_pipeline
+            from backend.modules.arbovirus.services.arbovirus_service import run_genetic_pipeline
 
             result, status = run_genetic_pipeline(
                 model_type, current_user_id, ga_config
             )
         elif target_disease.lower() == "glaucoma":
-            from backend.services.ai_service import run_glaucoma_genetic_pipeline
+            from backend.modules.glaucoma.services.glaucoma_service import run_glaucoma_genetic_pipeline
 
             result, status = run_glaucoma_genetic_pipeline(
                 model_type, current_user_id, ga_config

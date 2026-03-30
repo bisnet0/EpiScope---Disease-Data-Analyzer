@@ -1,27 +1,31 @@
 import os
 import base64
+from typing import Optional
 from flask import has_request_context
 from flask_jwt_extended import get_jwt_identity
 from langchain.tools import tool
 
-# 👇 O import do ai_service temporário
-from backend.services.ai_service import run_xray_pipeline
+# 👇 O import do ai_service temporário apontando para a nova arquitetura
+from backend.modules.chest_xray.services.xray_service import run_xray_pipeline
 
-def get_safe_user_id():
+# 👇 Adicionamos a tipagem do retorno: Ou é String, ou é None
+def get_safe_user_id() -> Optional[str]:
     """Busca o usuário do Token (se API) ou o primeiro do banco (se Terminal)"""
     if has_request_context():
         try:
-            return get_jwt_identity()
-        except:
+            identity = get_jwt_identity()
+            if identity:
+                return str(identity) # Forçamos para string pro Pylance ficar calmo
+        except Exception:
             pass
 
-    from backend.models.user_model import User
-    admin = User.query.first()
-    return admin.id if admin else None
+    from backend.modules.auth.models.user_model import User
+    admin = User.query.first() # type: ignore
+    return str(admin.id) if admin else None
 
-
+# 👇 A correção principal: Optional[str]
 @tool("xray_tool")
-def xray_tool(image_data: str = None):
+def xray_tool(image_data: Optional[str] = None) -> str:
     """
     Usa a Rede Neural Convolucional (CNN) para analisar imagens de Raio-X de Tórax (Chest X-Ray).
     A entrada 'image_data' DEVE ser o caminho do arquivo local ou uma string base64.
@@ -45,7 +49,7 @@ def xray_tool(image_data: str = None):
                     image_data = image_data.split(",")[1]
                 image_bytes = base64.b64decode(image_data)
 
-            # 👇 A MÁGICA AQUI: Passamos o ID real do usuário em vez de "agent_request"
+            # A MÁGICA AQUI: Passamos o ID real do usuário
             result, status = run_xray_pipeline(image_bytes, current_user_id)
             return f"RESULTADO DA ANÁLISE DA CNN DE RAIO-X: {result}"
 

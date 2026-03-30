@@ -1,7 +1,7 @@
 import os
 import tensorflow as tf
 import numpy as np
-from tensorflow.keras.preprocessing import image
+from tensorflow.keras.preprocessing import image # type: ignore
 
 # O import do workflow já estava certinho com a nossa última refatoração!
 from backend.modules.core_agent.agents.hospital_workflow import app as hospital_workflow_app

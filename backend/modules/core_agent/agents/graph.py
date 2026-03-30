@@ -1,17 +1,18 @@
 import os
-from typing import Literal
+from typing import Literal, cast
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.graph import StateGraph, END
 from langgraph.prebuilt import ToolNode
-from langchain_core.messages import SystemMessage, HumanMessage
+from langchain_core.messages import SystemMessage, BaseMessage, AIMessage
 
+# 👇 Imports da nova arquitetura
 from backend.modules.core_agent.agents.state import AgentState
-from backend.agents.tools import MEDICAL_TOOLS
+from backend.modules.core_agent.agents.tools import MEDICAL_TOOLS
 
 
 llm = ChatGoogleGenerativeAI(
     model="gemini-2.5-flash-lite",
-    google_api_key=os.getenv("GEMINI_API_KEY"),
+    google_api_key=os.getenv("GEMINI_API_KEY") or "", # 👈 Evita erro se a chave não estiver carregada ainda
     temperature=0.2,
     max_retries=2,
 ).bind_tools(MEDICAL_TOOLS)
@@ -51,9 +52,14 @@ def supervisor_node(state: AgentState):
 
 
 def should_continue(state: AgentState) -> Literal["tools", "final"]:
-    last_message = state["messages"][-1]
+    messages = state.get("messages", [])
+    if not messages:
+        return "final"
+        
+    last_message = messages[-1]
 
-    if last_message.tool_calls:
+    # 👇 O PULO DO GATO: Ensinando ao Pylance que apenas AIMessage tem tool_calls!
+    if isinstance(last_message, AIMessage) and last_message.tool_calls:
         return "tools"
 
     return "final"
@@ -61,10 +67,8 @@ def should_continue(state: AgentState) -> Literal["tools", "final"]:
 
 workflow = StateGraph(AgentState)
 
-
 workflow.add_node("supervisor", supervisor_node)
 workflow.add_node("tools", ToolNode(MEDICAL_TOOLS))
-
 
 workflow.set_entry_point("supervisor")
 
@@ -72,8 +76,6 @@ workflow.add_conditional_edges(
     "supervisor", should_continue, {"tools": "tools", "final": END}
 )
 
-
 workflow.add_edge("tools", "supervisor")
-
 
 app_graph = workflow.compile()

@@ -4,8 +4,7 @@ from langgraph.graph import StateGraph, END
 from sqlalchemy import create_engine, text
 
 
-
-class HospitalState(TypedDict):
+class HospitalState(TypedDict, total=False):
     diagnosis: str
     severity: str
     ai_protocol: str
@@ -18,7 +17,8 @@ engine = create_engine(DB_URL)
 
 
 def clinical_analysis_node(state: HospitalState):
-    diag = state["diagnosis"]
+
+    diag = state.get("diagnosis", "Diagnóstico não informado")
     print(f"🧠 [AI AUDITOR]: Analisando protocolo para {diag}...")
 
     keywords_grave = ["pneumonia", "glaucoma", "grave", "urgente", "high", "emergência"]
@@ -57,18 +57,17 @@ def save_to_db_node(state: HospitalState):
     """)
 
     try:
-        with engine.connect() as conn:
+        with engine.begin() as conn:
             conn.execute(
                 query,
                 {
-                    "d": state["diagnosis"],
-                    "s": state["severity"],
-                    "p": state["ai_protocol"],
-                    "b": state["blockchain_ref"],
+                    "d": state.get("diagnosis", "Desconhecido"),
+                    "s": state.get("severity", "LOW"),
+                    "p": state.get("ai_protocol", "Sem protocolo"),
+                    "b": state.get("blockchain_ref", "PENDING_SIGNATURE"),
                     "e": state.get("needs_emergency", False),
                 },
             )
-            conn.commit()
         print("✅ [DATABASE]: Registro salvo. Aguardando assinatura no Ledger.")
     except Exception as e:
         print(f"❌ [DATABASE] Erro ao salvar: {e}")
@@ -89,10 +88,9 @@ workflow.add_node("save", save_to_db_node)
 
 workflow.set_entry_point("analyze")
 
-
 workflow.add_conditional_edges(
     "analyze",
-    lambda x: x["severity"],
+    lambda x: x.get("severity", "LOW"),
     {
         "HIGH": "emergency",
         "LOW": "save",

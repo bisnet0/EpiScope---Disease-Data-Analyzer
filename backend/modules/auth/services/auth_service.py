@@ -3,8 +3,9 @@ from flask_jwt_extended import (
     create_refresh_token,
     get_jwt_identity,
 )
-from backend.models.user_model import db, User
 
+# 👇 O IMPORT CORRIGIDO APONTANDO PARA A NOVA CASA
+from backend.modules.auth.models.user_model import db, User
 
 def register_user_service(username, email, password):
     if (

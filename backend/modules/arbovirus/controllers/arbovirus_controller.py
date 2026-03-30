@@ -1,32 +1,48 @@
 from flask import request, jsonify
 from flask_jwt_extended import get_jwt_identity
+from typing import Dict, Any, cast
 
-# 👇 Imports mantidos apontando para os serviços antigos até refatorarmos a camada de service
-from backend.controllers.workflow_controller import run_hospital_workflow_internal
-from backend.services.ai_service import (
+
+from backend.modules.core_agent.controllers.workflow_controller import (
+    run_hospital_workflow_internal,
+)
+from backend.modules.arbovirus.services.arbovirus_service import (
     run_arbovirus_pipeline,
     run_symptom_structure,
-    run_genetic_pipeline,
 )
 
-def analyze_arbovirus():
-    current_user_id = get_jwt_identity()
-    data = request.get_json()
+from backend.modules.laboratory.services.laboratory_service import run_genetic_pipeline
 
-    if not data:
+
+def analyze_arbovirus():
+    current_user_id = str(get_jwt_identity())
+
+    data = request.get_json()
+    if not isinstance(data, dict):
         return jsonify({"error": "JSON inválido"}), 400
 
     desc = data.get("text_description")
     age = data.get("age")
     sex = data.get("sex")
 
-    if not all([desc, age, sex]):
+    if desc is None or age is None or sex is None:
         return jsonify({"error": "Faltando dados"}), 400
 
-    result, status = run_arbovirus_pipeline(desc, age, sex, current_user_id)
+    try:
+        age_int = int(age)
+    except (ValueError, TypeError):
+        return jsonify({"error": "Idade inválida"}), 400
 
-    if status in [200, 201]:
-        prediction_text = result.get("prediction", "Dengue")
+    result, status = run_arbovirus_pipeline(
+        str(desc), age_int, str(sex), current_user_id
+    )
+
+    if status in [200, 201] and isinstance(result, dict):
+        analysis_details = result.get("analysis_details")
+        if isinstance(analysis_details, dict):
+            prediction_text = analysis_details.get("winner_model", "Dengue")
+        else:
+            prediction_text = result.get("prediction", "Dengue")
 
         maestro_payload = {
             "diagnosis": f"Resultado IA: {prediction_text} | Relato do Paciente: {desc}"
@@ -35,7 +51,7 @@ def analyze_arbovirus():
         print(f"🦟 [ARBO]: Enviando contexto real para o Maestro...")
         maestro_res = run_hospital_workflow_internal(maestro_payload)
 
-        if maestro_res:
+        if isinstance(maestro_res, dict):
             result["maestro_status"] = "PENDING_SIGNATURE"
             result["needs_emergency"] = maestro_res.get("needs_emergency", False)
 
@@ -44,19 +60,25 @@ def analyze_arbovirus():
 
 def structure_symptoms_only():
     data = request.get_json()
+    if not isinstance(data, dict):
+        return jsonify({"error": "JSON inválido"}), 400
+
     desc = data.get("text_description")
     if not desc:
         return jsonify({"error": "Faltando text_description"}), 400
 
-    result, status = run_symptom_structure(desc)
+    result, status = run_symptom_structure(str(desc))
     return jsonify(result), status
 
 
 def run_evolutionary_optimization():
-    current_user_id = get_jwt_identity()
+    current_user_id = str(get_jwt_identity())
 
     data = request.get_json()
-    model_type = data.get("model_type", "xgboost")
+    if not isinstance(data, dict):
+        data = {}
+
+    model_type = str(data.get("model_type", "xgboost"))
 
     ga_config = {
         "generations": int(data.get("generations", 5)),

@@ -1,5 +1,5 @@
 from datetime import datetime
-from backend.models.user_model import db
+from backend.modules.auth.models.user_model import db
 
 class BlockchainLedger(db.Model):
     __tablename__ = "blockchain_ledger"
