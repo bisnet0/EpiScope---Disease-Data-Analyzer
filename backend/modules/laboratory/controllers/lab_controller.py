@@ -2,7 +2,7 @@ from flask import request, jsonify
 from flask_jwt_extended import get_jwt_identity
 
 # 👇 Imports temporários apontando para o ai_service raiz
-from backend.services.ai_service import (
+from backend.modules.laboratory.services.laboratory_service import (
     run_experiment_pipeline,
     get_best_optimization_suggestion,
 )

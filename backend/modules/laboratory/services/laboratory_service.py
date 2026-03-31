@@ -3,6 +3,7 @@ import json
 import random
 import traceback
 from datetime import datetime
+from typing import Any
 import numpy as np
 import pandas as pd
 
@@ -20,6 +21,7 @@ from backend.modules.laboratory.models.ml_log_model import ModelTrainingLog
 # Configurações de diretório para os artefatos base (ajuste se necessário)
 ARTIFACTS_DIR = "/app/model_artifacts"
 CACHED_TRAIN_DATA = None
+
 
 # ==========================================
 # 📊 CARREGAMENTO DE DADOS (COM CACHE)
@@ -62,7 +64,16 @@ def get_training_data_sample(limit=50000):
 # 🧬 CLASSE DE OTIMIZAÇÃO (ALGORITMO GENÉTICO)
 # ==========================================
 class GeneticOptimizer:
-    def __init__(self, model_type, X_train, y_train, X_test, y_test, mutation_rate=0.1, crossover_rate=0.7):
+    def __init__(
+        self,
+        model_type,
+        X_train,
+        y_train,
+        X_test,
+        y_test,
+        mutation_rate=0.1,
+        crossover_rate=0.7,
+    ):
         self.model_type = model_type
         self.X_train = X_train
         self.y_train = y_train
@@ -142,7 +153,9 @@ class GeneticOptimizer:
         history = []
         best_overall = {"accuracy": 0, "params": {}}
 
-        print(f"🧬 AG Iniciado: Mut={self.mutation_rate}, Cross={self.crossover_rate}, Pop={population_size}")
+        print(
+            f"🧬 AG Iniciado: Mut={self.mutation_rate}, Cross={self.crossover_rate}, Pop={population_size}"
+        )
 
         for gen in range(generations):
             scores = []
@@ -188,6 +201,7 @@ class GeneticOptimizer:
 # 🧪 SERVIÇOS DO LABORATÓRIO (EXPERIMENTOS)
 # ==========================================
 
+
 def run_experiment_pipeline(user_id, model_type, params):
     X, y = get_training_data_sample()
     if X is None:
@@ -217,7 +231,14 @@ def run_experiment_pipeline(user_id, model_type, params):
             lr = float(params.get("learning_rate", 0.1))
             depth = int(params.get("max_depth", 6))
 
-            num_classes = y.nunique()
+            # 👇 TYPE GUARD: Garante que 'y' não é None e calcula as classes com segurança
+            if y is None:
+                return {"error": "Dados alvo (y) não definidos ou vazios"}, 400
+
+            num_classes = int(
+                y.nunique() if hasattr(y, "nunique") else len(np.unique(y))
+            )
+
             model = XGBClassifier(
                 n_estimators=n_est,
                 learning_rate=lr,
@@ -364,13 +385,13 @@ def run_genetic_pipeline(model_type, user_id, ga_config=None):
 
         log_name = f"EXP_{model_type.upper()}_GA_{username}"
 
-        def clean_numpy(obj):
-            if isinstance(obj, (np.integer, np.int64)):
-                return int(obj)
-            elif isinstance(obj, (np.floating, np.float64, np.float32)):
-                return float(obj)
-            elif isinstance(obj, np.ndarray):
+        def clean_numpy(obj: Any) -> Any:
+            """Converte tipos do NumPy para tipos nativos do Python à prova de Pylance."""
+            if isinstance(obj, np.ndarray):
                 return obj.tolist()
+            # 👇 O Pulo do Gato: se for um número do NumPy, extraímos o valor nativo
+            elif hasattr(obj, "item") and callable(getattr(obj, "item")):
+                return obj.item()
             return obj
 
         clean_model_params = {k: clean_numpy(v) for k, v in best["params"].items()}

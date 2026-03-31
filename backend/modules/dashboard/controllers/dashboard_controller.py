@@ -6,12 +6,29 @@ from flask_jwt_extended import get_jwt_identity
 from sqlalchemy import func, text
 
 # 👇 Imports mantidos apontando para a raiz (serão ajustados quando fatiarmos os models)
-from backend.models.user_model import db
-from backend.models.diagnosis_model import ArbovirusDiagnosis, GlaucomaDiagnosis
-from backend.models.ml_log_model import ModelTrainingLog
+from backend.modules.auth.models.user_model import db
+from backend.modules.glaucoma.models.glaucoma_model import GlaucomaDiagnosis
+from backend.modules.arbovirus.models.arbovirus_model import ArbovirusDiagnosis
+from backend.modules.laboratory.models.ml_log_model import ModelTrainingLog
 
 
 def get_dashboard_stats():
+    """
+    Retorna as estatísticas do painel de dashboard.
+
+
+        period (str): Período de tempo para filtrar os diagnósticos. Pode ser "24h", "7d" ou "30d".
+        model_filter (str): Filtro para selecionar apenas diagnósticos de um modelo específico. Pode ser "glaucoma", "xgboost", "random_forest" ou "decision_tree".
+
+    Retorna:
+        Uma resposta em JSON com as seguintes informações:
+            - kpis: total_diagnoses, best_ai_accuracy, total_trainings, arbovirus_count e glaucoma_count
+            - charts: model_performance (gráfico de comparação de modelos), learning_curve (gráfico de evolução da IA) e ga_analysis (gráfico de análise do algoritmo genético)
+            - filters_applied: objeto com as informações dos filtros aplicados (period e model)
+
+    Erros:
+        Se ocorrer um erro interno, retorna uma resposta em JSON com a chave "error" e o valor do erro.
+    """
     try:
         current_user_id = get_jwt_identity()
 

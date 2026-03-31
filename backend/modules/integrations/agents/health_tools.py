@@ -2,8 +2,8 @@ from flask import has_request_context
 from flask_jwt_extended import get_jwt_identity
 from langchain.tools import tool
 
-# 👇 O import do modelo (temporário até refatorar a pasta models)
-from backend.models.health_model import StravaActivity
+
+from backend.modules.integrations.models.strava_model import StravaActivity
 
 
 def get_safe_user_id():
@@ -14,13 +14,14 @@ def get_safe_user_id():
         except:
             pass
 
-    from backend.models.user_model import User
+    from backend.modules.auth.models.user_model import User
+
     admin = User.query.first()
     return admin.id if admin else None
 
 
 @tool("health_metrics_tool")
-def health_metrics_tool(query: str = None):
+def health_metrics_tool(query: str = None):  # type: ignore
     """
     Busca o histórico de saúde, atividades físicas e frequência cardíaca do usuário no Strava.
     Use esta ferramenta quando o usuário reclamar de cansaço, dor no corpo, palpitações,
@@ -30,7 +31,6 @@ def health_metrics_tool(query: str = None):
     if not user_id:
         return "Usuário não identificado."
 
-    # Pegamos as últimas 5 atividades para análise de tendência
     activities = (
         StravaActivity.query.filter_by(user_id=user_id)
         .order_by(StravaActivity.start_date.desc())

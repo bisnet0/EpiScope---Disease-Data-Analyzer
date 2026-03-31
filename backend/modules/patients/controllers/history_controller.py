@@ -3,11 +3,16 @@ from flask import jsonify
 from flask_jwt_extended import get_jwt_identity
 
 # 👇 Imports temporários apontando para a pasta raiz de models
-from backend.models.diagnosis_model import (
+from backend.modules.arbovirus.models.arbovirus_model import (
     ArbovirusDiagnosis,
+)
+from backend.modules.glaucoma.models.glaucoma_model import (
     GlaucomaDiagnosis,
+)
+from backend.modules.chest_xray.models.xray_model import (
     XRayDiagnosis,
 )
+
 
 def get_user_history():
     """
@@ -19,7 +24,7 @@ def get_user_history():
     arbovirus = ArbovirusDiagnosis.query.filter_by(user_id=current_user_id).all()
     glaucoma = GlaucomaDiagnosis.query.filter_by(user_id=current_user_id).all()
     xray = XRayDiagnosis.query.filter_by(user_id=current_user_id).all()
-    
+
     history = []
 
     for item in arbovirus:
@@ -74,5 +79,5 @@ def get_user_history():
 
     # Ordena a timeline cronologicamente (do mais recente pro mais antigo)
     history.sort(key=lambda x: x["date"], reverse=True)
-    
+
     return jsonify(history), 200

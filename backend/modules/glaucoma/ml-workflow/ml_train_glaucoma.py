@@ -3,11 +3,11 @@ import numpy as np
 import pandas as pd
 import cv2
 import tensorflow as tf
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras.applications import MobileNetV2
-from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Dropout
-from tensorflow.keras.models import Model
-from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.preprocessing.image import ImageDataGenerator  # type: ignore
+from tensorflow.keras.applications import MobileNetV2  # type: ignore
+from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Dropout  # type: ignore
+from tensorflow.keras.models import Model  # type: ignore
+from tensorflow.keras.optimizers import Adam  # type: ignore
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import classification_report
@@ -15,27 +15,23 @@ from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
 import json
 import time
+from datetime import datetime
+from typing import cast, Any, List
 
 load_dotenv()
 
 # ==========================================
 # 📂 CONFIGURAÇÃO DE DIRETÓRIOS E CAMINHOS
 # ==========================================
-# SCRIPT_DIR = backend/modules/glaucoma/ml-workflow
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-# MODULE_DIR = backend/modules/glaucoma
 MODULE_DIR = os.path.dirname(SCRIPT_DIR)
-# MODULES_DIR = backend/modules
 MODULES_DIR = os.path.dirname(MODULE_DIR)
-# BACKEND_DIR = backend
 BACKEND_DIR = os.path.dirname(MODULES_DIR)
 
-# Caminho para o Dataset
 DATASET_DIR = os.path.join(BACKEND_DIR, "data", "drishti_gs")
 METADATA_FILE = os.path.join(DATASET_DIR, "Drishti-GS1_diagnosis.xlsx")
 IMAGE_DIR = os.path.join(DATASET_DIR, "Training", "Images")
 
-# 🎯 Pasta exclusiva para os resultados do modelo no próprio módulo
 TRAIN_RESULTS_DIR = os.path.join(MODULE_DIR, "train_results")
 os.makedirs(TRAIN_RESULTS_DIR, exist_ok=True)
 
@@ -56,11 +52,17 @@ TRAIN_PARAMS = {
     "architecture": "MobileNetV2",
 }
 
-DB_URL = f"postgresql://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}@db:5432/{os.getenv('POSTGRES_DB')}"
+user = os.getenv("POSTGRES_USER", "postgres")
+password = os.getenv("POSTGRES_PASSWORD", "postgres")
+db_name = os.getenv("POSTGRES_DB", "episcope")
+
+DB_URL = f"postgresql://{user}:{password}@db:5432/{db_name}"
 engine = create_engine(DB_URL)
 
+
 def preprocess_image(
-    image_path, target_size=(TRAIN_PARAMS["img_size"], TRAIN_PARAMS["img_size"])
+    image_path: str,
+    target_size: tuple[int, int] = (TRAIN_PARAMS["img_size"], TRAIN_PARAMS["img_size"]),  # type: ignore
 ):
     try:
         img = cv2.imread(image_path)
@@ -74,7 +76,8 @@ def preprocess_image(
         print(f"Erro processando {image_path}: {e}")
         return None
 
-def load_data_from_excel(metadata_path, image_dir):
+
+def load_data_from_excel(metadata_path: str, image_dir: str):
     print(f"Carregando metadados de: {metadata_path}")
     try:
         try:
@@ -82,14 +85,12 @@ def load_data_from_excel(metadata_path, image_dir):
         except ValueError:
             df = pd.read_csv(metadata_path)
     except FileNotFoundError:
-        raise FileNotFoundError(
-            f"Arquivo de metadados não encontrado em {metadata_path}."
-        )
+        raise FileNotFoundError(f"Arquivo não encontrado: {metadata_path}")
 
     filename_col = "Drishti-GS File"
     label_col = "Total"
     if filename_col not in df.columns or label_col not in df.columns:
-        raise ValueError(f"Colunas '{filename_col}' ou '{label_col}' não encontradas.")
+        raise ValueError(f"Colunas '{filename_col}' ou '{label_col}' ausentes.")
 
     images = []
     labels = []
@@ -115,6 +116,7 @@ def load_data_from_excel(metadata_path, image_dir):
     print(f"Total de imagens carregadas: {len(images)}")
     return np.array(images), np.array(labels), class_names
 
+
 def main():
     print("Iniciando script de treinamento da CNN (V3 - Com Logs)...")
     start_time = time.time()
@@ -125,16 +127,14 @@ def main():
         label_encoder = LabelEncoder()
         label_encoder.fit(labels)
         encoded_labels = label_encoder.transform(labels)
-        print(f"Labels codificados: {list(label_encoder.classes_)}")
 
         X_train, X_val, y_train, y_val = train_test_split(
             images,
             encoded_labels,
-            test_size=TRAIN_PARAMS["test_split"],
+            test_size=float(TRAIN_PARAMS["test_split"]),
             random_state=42,
             stratify=encoded_labels,
         )
-        print(f"Treino: {len(X_train)}, Validação: {len(X_val)}")
 
         train_datagen = ImageDataGenerator(
             rotation_range=30,
@@ -146,13 +146,10 @@ def main():
             fill_mode="nearest",
         )
         val_datagen = ImageDataGenerator()
-        
-        train_generator = train_datagen.flow(
-            X_train, y_train, batch_size=TRAIN_PARAMS["batch_size"]
-        )
-        val_generator = val_datagen.flow(
-            X_val, y_val, batch_size=TRAIN_PARAMS["batch_size"]
-        )
+
+        b_size = int(TRAIN_PARAMS["batch_size"])
+        train_generator = train_datagen.flow(X_train, y_train, batch_size=b_size)
+        val_generator = val_datagen.flow(X_val, y_val, batch_size=b_size)
 
         base_model = MobileNetV2(
             weights="imagenet",
@@ -167,8 +164,10 @@ def main():
         predictions = Dense(1, activation="sigmoid")(x)
         model = Model(inputs=base_model.input, outputs=predictions)
 
-        optimizer = Adam(learning_rate=TRAIN_PARAMS["learning_rate"])
-        model.compile(optimizer=optimizer, loss="binary_crossentropy", metrics=["accuracy"])
+        optimizer = Adam(learning_rate=float(TRAIN_PARAMS["learning_rate"]))
+        model.compile(
+            optimizer=optimizer, loss="binary_crossentropy", metrics=["accuracy"]
+        )
 
         early_stopping = tf.keras.callbacks.EarlyStopping(
             monitor="val_loss", patience=10, restore_best_weights=True
@@ -177,38 +176,45 @@ def main():
         print("Iniciando Fase 1...")
         history = model.fit(
             train_generator,
-            steps_per_epoch=max(1, len(X_train) // TRAIN_PARAMS["batch_size"]),
-            epochs=TRAIN_PARAMS["initial_epochs"],
+            steps_per_epoch=max(1, len(X_train) // b_size),
+            epochs=int(TRAIN_PARAMS["initial_epochs"]),
             validation_data=val_generator,
-            validation_steps=max(1, len(X_val) // TRAIN_PARAMS["batch_size"]),
+            validation_steps=max(1, len(X_val) // b_size),
             callbacks=[early_stopping],
         )
 
         print("Iniciando Fase 2 (Fine-Tuning)...")
         base_model.trainable = True
-        fine_tune_at = 100
-        for layer in base_model.layers[:fine_tune_at]:
+        for layer in base_model.layers[:100]:
             layer.trainable = False
 
-        optimizer_fine_tune = Adam(learning_rate=TRAIN_PARAMS["fine_tune_lr"])
+        optimizer_fine_tune = Adam(learning_rate=float(TRAIN_PARAMS["fine_tune_lr"]))
         model.compile(
-            optimizer=optimizer_fine_tune, loss="binary_crossentropy", metrics=["accuracy"]
+            optimizer=optimizer_fine_tune,
+            loss="binary_crossentropy",
+            metrics=["accuracy"],
         )
+
+        # 👇 Solução pro history.epoch
+        initial_epoch_value = getattr(history, "epoch", [0])[-1]
 
         history_fine_tune = model.fit(
             train_generator,
-            steps_per_epoch=max(1, len(X_train) // TRAIN_PARAMS["batch_size"]),
-            epochs=TRAIN_PARAMS["initial_epochs"] + TRAIN_PARAMS["fine_tune_epochs"],
-            initial_epoch=history.epoch[-1],
+            steps_per_epoch=max(1, len(X_train) // b_size),
+            epochs=int(TRAIN_PARAMS["initial_epochs"])
+            + int(TRAIN_PARAMS["fine_tune_epochs"]),
+            initial_epoch=initial_epoch_value,
             validation_data=val_generator,
-            validation_steps=max(1, len(X_val) // TRAIN_PARAMS["batch_size"]),
+            validation_steps=max(1, len(X_val) // b_size),
             callbacks=[early_stopping],
         )
 
         print("Avaliando modelo final...")
-        loss, accuracy = model.evaluate(
-            val_generator, steps=max(1, len(X_val) // TRAIN_PARAMS["batch_size"])
-        )
+
+        # 👇 Solução pro evaluate: Extraímos a lista manualmente
+        eval_result = model.evaluate(val_generator, steps=max(1, len(X_val) // b_size))
+        eval_list = cast(List[float], eval_result)
+        accuracy = eval_list[1] if len(eval_list) > 1 else 0.0
 
         y_pred_prob = model.predict(X_val)
         y_pred_class = (y_pred_prob > 0.5).astype(int).flatten()
@@ -217,12 +223,6 @@ def main():
             y_val, y_pred_class, target_names=label_encoder.classes_, output_dict=True
         )
 
-        print("\n--- Relatório (CNN): ---")
-        print(
-            classification_report(y_val, y_pred_class, target_names=label_encoder.classes_)
-        )
-
-        # Salvando na pasta /train_results recém-criada
         model.save(MODEL_SAVE_PATH)
 
         model_info = {
@@ -233,60 +233,43 @@ def main():
             json.dump(model_info, f)
 
         print("\nSalvando log de treinamento no banco de dados...")
-        
-        try:
-            log_entry_orm = {
-                "model_name": "Glaucoma_CNN_Specialist",
-                "version": "v3_MobileNetV2_FineTuned_100",
-                "parameters": {
-                    **TRAIN_PARAMS,
-                    "unfrozen_layers": 100,
-                    "specialization_strategy": "Layer-wise Fine-Tuning",
-                    "data_source": "Drishti-GS1 Dataset",
-                    "preprocessing": "Normalization + Augmentation (Rotation, Zoom, Flip)",
-                },
-                "feature_importance": "Deep-Features (GAP Layer)",
-                "metrics": report_dict,
-                "accuracy": accuracy,
-                "dataset_size": len(images),
-                "created_at": time.now(),
-                "training_context": "Hospital Internal Protocol v1.0",
-            }
 
+        try:
             insert_query = text("""
                 INSERT INTO model_training_logs 
                 (model_name, version, parameters, feature_importance, metrics, accuracy, dataset_size, created_at)
                 VALUES (:model_name, :version, :parameters, :feature_importance, :metrics, :accuracy, :dataset_size, :created_at)
             """)
 
-            with engine.connect() as conn:
+            with engine.begin() as conn:
                 conn.execute(
                     insert_query,
                     {
-                        "model_name": log_entry_orm["model_name"],
-                        "version": log_entry_orm["version"],
-                        "parameters": json.dumps(log_entry_orm["parameters"]),
-                        "feature_importance": log_entry_orm["feature_importance"],
-                        "metrics": json.dumps(log_entry_orm["metrics"]),
-                        "accuracy": float(log_entry_orm["accuracy"]),
-                        "dataset_size": log_entry_orm["dataset_size"],
-                        "created_at": log_entry_orm["created_at"],
+                        "model_name": "Glaucoma_CNN_Specialist",
+                        "version": "v3_MobileNetV2_FineTuned_100",
+                        "parameters": json.dumps(
+                            {**TRAIN_PARAMS, "unfrozen_layers": 100}
+                        ),
+                        "feature_importance": "Deep-Features (GAP Layer)",
+                        "metrics": json.dumps(report_dict),
+                        "accuracy": float(accuracy),
+                        "dataset_size": len(images),
+                        "created_at": datetime.utcnow(),  # 👇 Solução do datetime
                     },
                 )
-                conn.commit()
 
             print("Log CNN salvo com sucesso!")
-
         except Exception as e:
             print(f"AVISO: Falha ao salvar log no banco: {e}")
 
-        end_time = time.time()
-        print(f"Concluído em {end_time - start_time:.2f} s.")
+        print(f"Concluído em {time.time() - start_time:.2f} s.")
 
     except Exception as e:
         print(f"Erro Fatal: {e}")
         import traceback
+
         traceback.print_exc()
+
 
 if __name__ == "__main__":
     main()

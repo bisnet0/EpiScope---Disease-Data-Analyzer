@@ -1,8 +1,8 @@
 import requests
 import os
 from datetime import datetime
-from backend.models.user_model import db
-from backend.models.health_model import StravaCredentials, StravaActivity
+from backend.modules.auth.models.user_model import db
+from backend.modules.integrations.models.strava_model import StravaCredentials, StravaActivity
 
 
 def refresh_strava_token(cred):

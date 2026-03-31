@@ -3,6 +3,7 @@ import json
 import random
 import traceback
 from datetime import datetime
+from typing import cast, Dict, Any, Tuple
 import numpy as np
 import pandas as pd
 import tensorflow as tf
@@ -17,7 +18,9 @@ from xgboost import XGBClassifier
 # 👇 Imports ajustados para a nova arquitetura
 from backend.modules.auth.models.user_model import db, User
 from backend.modules.laboratory.models.ml_log_model import ModelTrainingLog
-from backend.modules.glaucoma.models.diagnosis_model import GlaucomaDiagnosis
+from backend.modules.glaucoma.models.glaucoma_model import (
+    GlaucomaDiagnosis,
+)  # 👈 Nome do arquivo atualizado
 from backend.utils.data_helpers import convert_numpy_floats, preprocess_glaucoma_image
 
 # ==========================================
@@ -29,8 +32,8 @@ TRAIN_RESULTS_DIR = os.path.join(MODULE_DIR, "train_results")
 
 # Configuração do Gemini VLM
 try:
-    genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-    model_gemini = genai.GenerativeModel("gemini-2.5-flash-lite")
+    genai.configure(api_key=os.getenv("GEMINI_API_KEY"))  # type: ignore
+    model_gemini = genai.GenerativeModel("gemini-2.5-flash-lite")  # type: ignore
 except Exception as e:
     print(f"Erro Gemini: {e}")
     model_gemini = None
@@ -51,11 +54,21 @@ except Exception as e:
     GLAUCOMA_CLASS_NAMES = ["Normal", "Glaucomatous"]
     GLAUCOMA_IMG_SIZE = 224
 
+
 # ==========================================
 # 🧠 CLASSE DE OTIMIZAÇÃO (ALGORITMO GENÉTICO)
 # ==========================================
 class GeneticOptimizer:
-    def __init__(self, model_type, X_train, y_train, X_test, y_test, mutation_rate=0.1, crossover_rate=0.7):
+    def __init__(
+        self,
+        model_type,
+        X_train,
+        y_train,
+        X_test,
+        y_test,
+        mutation_rate=0.1,
+        crossover_rate=0.7,
+    ):
         self.model_type = model_type
         self.X_train = X_train
         self.y_train = y_train
@@ -124,8 +137,8 @@ class GeneticOptimizer:
             elif self.model_type == "decision_tree":
                 model = DecisionTreeClassifier(**params, random_state=42)
 
-            model.fit(self.X_train, self.y_train)
-            acc = accuracy_score(self.y_test, model.predict(self.X_test))
+            model.fit(self.X_train, self.y_train)  # type: ignore
+            acc = accuracy_score(self.y_test, model.predict(self.X_test))  # type: ignore
             return acc
         except:
             return 0.0
@@ -135,14 +148,16 @@ class GeneticOptimizer:
         history = []
         best_overall = {"accuracy": 0, "params": {}}
 
-        print(f"🧬 AG Iniciado: Mut={self.mutation_rate}, Cross={self.crossover_rate}, Pop={population_size}")
+        print(
+            f"🧬 AG Iniciado: Mut={self.mutation_rate}, Cross={self.crossover_rate}, Pop={population_size}"
+        )
 
         for gen in range(generations):
             scores = []
             for indiv in population:
                 acc = self.evaluate(indiv)
                 scores.append((acc, indiv))
-                if acc > best_overall["accuracy"]:
+                if acc > best_overall["accuracy"]:  # type: ignore
                     best_overall = {"accuracy": acc, "params": indiv}
 
             scores.sort(key=lambda x: x[0], reverse=True)
@@ -176,9 +191,11 @@ class GeneticOptimizer:
 
         return history, best_overall
 
+
 # ==========================================
 # 👁️ SERVIÇOS PRINCIPAIS DE GLAUCOMA
 # ==========================================
+
 
 def get_glaucoma_embeddings_sample(limit=1000):
     """Gera dados sintéticos imitando embeddings da CNN."""
@@ -194,6 +211,7 @@ def get_glaucoma_embeddings_sample(limit=1000):
         print(f"Erro ao gerar embeddings: {e}")
         return None, None
 
+
 def run_glaucoma_pipeline(image_bytes, user_id):
     if not glaucoma_cnn_model or not model_gemini:
         return {"error": "Modelo CNN ou VLM offline"}, 503
@@ -205,7 +223,7 @@ def run_glaucoma_pipeline(image_bytes, user_id):
         return {"error": "Imagem inválida ou corrompida"}, 400
 
     try:
-        pred = glaucoma_cnn_model.predict(img_batch)[0][0]
+        pred = glaucoma_cnn_model.predict(img_batch)[0][0]  # type: ignore
         prob_normal = float(pred)
         prob_glaucoma = 1.0 - prob_normal
         results = {
@@ -233,18 +251,19 @@ def run_glaucoma_pipeline(image_bytes, user_id):
         3. Escreva um laudo técnico curto confirmando ou discordando da CNN, explicando o PORQUÊ com base no que você vê na imagem.
         """
 
-        vlm_response = model_gemini.generate_content([vlm_prompt, image_parts[0]])
+        vlm_response = model_gemini.generate_content([vlm_prompt, image_parts[0]])  # type: ignore
         laudo_vlm = vlm_response.text
 
-        user = User.query.get(user_id)
+        user = User.query.get(user_id)  # type: ignore
         if not user:
             return {"error": "Usuário não encontrado para log"}, 404
 
+        # 👇 PULO DO GATO: Prometendo pro Pylance que é um dicionário e validando as tipagens
         new_diag = GlaucomaDiagnosis(
             user_id=user_id,
-            user_email=user.email,
-            username=user.username,
-            prediction_result=convert_numpy_floats(results),
+            user_email=str(user.email),
+            username=str(user.username),
+            prediction_result=cast(Dict[str, Any], convert_numpy_floats(results)),
             predicted_class=predicted_class,
             confidence=float(confidence),
             model_version="Hybrid_CNN_VLM_v1",
@@ -265,6 +284,7 @@ def run_glaucoma_pipeline(image_bytes, user_id):
         db.session.rollback()
         return {"error": f"Erro no processamento Híbrido: {e}"}, 500
 
+
 def run_glaucoma_genetic_pipeline(model_type, user_id, ga_config=None):
     if ga_config is None:
         ga_config = {
@@ -276,7 +296,7 @@ def run_glaucoma_genetic_pipeline(model_type, user_id, ga_config=None):
 
     X, y = get_glaucoma_embeddings_sample(limit=2000)
 
-    if X is None:
+    if X is None or y is None:
         return {"error": "Falha ao carregar vetores de imagem"}, 500
 
     X_train, X_test, y_train, y_test = train_test_split(
@@ -300,21 +320,23 @@ def run_glaucoma_genetic_pipeline(model_type, user_id, ga_config=None):
     history, best = optimizer.run(generations=GENS, population_size=POP_SIZE)
 
     try:
-        user = User.query.get(user_id)
-        username = user.username if user else "unknown"
+        user = User.query.get(user_id)  # type: ignore
+        username = str(user.username) if user else "unknown"
 
         log_name = f"Glaucoma_EXP_{model_type.upper()}_HYBRID_{username}"
 
-        def clean_numpy(obj):
-            if isinstance(obj, (np.integer, np.int64)):
-                return int(obj)
-            elif isinstance(obj, (np.floating, np.float64, np.float32)):
-                return float(obj)
-            elif isinstance(obj, np.ndarray):
+        def clean_numpy(obj: Any) -> Any:
+            """Converte tipos do NumPy para tipos nativos do Python à prova de Pylance."""
+            if isinstance(obj, np.ndarray):
                 return obj.tolist()
+            # Se for um número do NumPy (np.int64, np.float32, etc), ele terá o método .item()
+            elif hasattr(obj, "item") and callable(getattr(obj, "item")):
+                return obj.item()
             return obj
 
-        clean_params = {k: clean_numpy(v) for k, v in best["params"].items()}
+        # Type guard para evitar o KeyError
+        best_params = best.get("params", {})
+        clean_params = {k: clean_numpy(v) for k, v in best_params.items()}  # type: ignore
 
         final_params = {
             "model_params": clean_params,
@@ -326,6 +348,9 @@ def run_glaucoma_genetic_pipeline(model_type, user_id, ga_config=None):
             },
         }
 
+        # Type guard para o accuracy que pode vir do dicionário vazio
+        best_acc = best.get("accuracy", 0.0)
+
         log_entry = ModelTrainingLog(
             user_id=user_id,
             model_name=log_name,
@@ -333,7 +358,7 @@ def run_glaucoma_genetic_pipeline(model_type, user_id, ga_config=None):
             parameters=json.dumps(final_params),
             feature_importance=None,
             metrics=json.dumps({"history": history}, default=clean_numpy),
-            accuracy=float(best["accuracy"]),
+            accuracy=float(best_acc),  # type: ignore
             dataset_size=len(X),
             created_at=datetime.utcnow(),
         )

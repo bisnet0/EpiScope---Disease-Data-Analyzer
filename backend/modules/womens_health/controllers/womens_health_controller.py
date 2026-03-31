@@ -1,5 +1,5 @@
 from flask import request, jsonify
-from backend.services.audio_analysis_service import process_consultation_audio
+# from backend.services.audio_analysis_service import process_consultation_audio
 # from backend.services.video_analysis_service import process_surgery_video (faremos depois)
 
 def analyze_womens_audio():
@@ -20,9 +20,9 @@ def analyze_womens_audio():
         audio_bytes = audio_file.read()
         
         # Chama o serviço pesado de ML
-        result, status_code = process_consultation_audio(audio_bytes, audio_file.filename)
+        # result, status_code = process_consultation_audio(audio_bytes, audio_file.filename)
         
-        return jsonify(result), status_code
+        # return jsonify(result), status_code
         
     except Exception as e:
         print(f"❌ [Audio Analysis Error]: {str(e)}")

@@ -3,26 +3,26 @@ import requests
 from flask import request, jsonify, redirect
 from flask_jwt_extended import get_jwt_identity
 
-# 👇 Imports mantidos (lembre-se de atualizar os caminhos depois se refatorar os models)
-from backend.models.user_model import db
+# 👇 Imports ajustados para os models que acabamos de refatorar
+from backend.modules.auth.models.user_model import db
 from backend.modules.integrations.services.strava_service import sync_user_activities
-from backend.models.health_model import StravaCredentials, StravaActivity
+from backend.modules.integrations.models.strava_model import StravaCredentials, StravaActivity
 
-CLIENT_ID = os.environ.get("STRAVA_CLIENT_ID")
-CLIENT_SECRET = os.environ.get("STRAVA_CLIENT_SECRET")
-REDIRECT_URI = os.environ.get("STRAVA_REDIRECT_URI")
+CLIENT_ID = os.environ.get("STRAVA_CLIENT_ID", "")
+CLIENT_SECRET = os.environ.get("STRAVA_CLIENT_SECRET", "")
+REDIRECT_URI = os.environ.get("STRAVA_REDIRECT_URI", "")
 
 def sync_strava():
-    user_id = get_jwt_identity()
+    user_id = str(get_jwt_identity())
     success = sync_user_activities(user_id)
     if success:
         return jsonify({"message": "Sincronização concluída"}), 200
     return jsonify({"error": "Falha na sincronização"}), 500
 
 def get_strava_activities():
-    user_id = get_jwt_identity()
+    user_id = str(get_jwt_identity())
     activities = (
-        StravaActivity.query.filter_by(user_id=user_id)
+        StravaActivity.query.filter_by(user_id=user_id) # type: ignore
         .order_by(StravaActivity.start_date.desc())
         .limit(10)
         .all()
@@ -31,7 +31,7 @@ def get_strava_activities():
 
 def strava_login():
     print(f"DEBUG STRAVA - CLIENT_ID: {CLIENT_ID}")
-    user_id = get_jwt_identity()
+    user_id = str(get_jwt_identity())
 
     # Escopo 'activity:read_all' é OBRIGATÓRIO para lermos batimentos e treinos completos
     auth_url = (
@@ -61,7 +61,7 @@ def strava_callback():
     payload = {
         "client_id": CLIENT_ID,
         "client_secret": CLIENT_SECRET,
-        "code": code,
+        "code": str(code),
         "grant_type": "authorization_code",
     }
 
@@ -72,14 +72,22 @@ def strava_callback():
 
         # Salva ou atualiza as chaves no cofre (PostgreSQL)
         try:
-            cred = StravaCredentials.query.filter_by(user_id=user_id).first()
-            if not cred:
-                cred = StravaCredentials(user_id=user_id)
+            cred = StravaCredentials.query.filter_by(user_id=user_id).first() # type: ignore
+            
+            if cred:
+                # Se já existe, apenas atualiza
+                cred.access_token = str(token_data["access_token"])
+                cred.refresh_token = str(token_data["refresh_token"])
+                cred.expires_at = int(token_data["expires_at"])
+            else:
+                # 👇 O PULO DO GATO: Se não existe, cria passando TUDO no construtor
+                cred = StravaCredentials(
+                    user_id=str(user_id),
+                    access_token=str(token_data["access_token"]),
+                    refresh_token=str(token_data["refresh_token"]),
+                    expires_at=int(token_data["expires_at"])
+                )
                 db.session.add(cred)
-
-            cred.access_token = token_data["access_token"]
-            cred.refresh_token = token_data["refresh_token"]
-            cred.expires_at = token_data["expires_at"]
 
             db.session.commit()
             print(f"[STRAVA] ✅ Conta conectada com sucesso para o usuário {user_id}")
@@ -94,8 +102,8 @@ def strava_callback():
         return redirect(f"{FRONTEND_URL}?strava_error=exchange_fail")
 
 def strava_status():
-    user_id = get_jwt_identity()
-    cred = StravaCredentials.query.filter_by(user_id=user_id).first()
+    user_id = str(get_jwt_identity())
+    cred = StravaCredentials.query.filter_by(user_id=user_id).first() # type: ignore
 
     if cred and cred.access_token:
         return jsonify({"connected": True}), 200

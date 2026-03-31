@@ -6,17 +6,17 @@ from flask import request, jsonify, redirect
 from flask_jwt_extended import get_jwt_identity
 
 # 👇 Imports mantidos
-from backend.models.user_model import db
+from backend.modules.auth.models.user_model import db
 from backend.modules.integrations.services.google_fit_service import get_google_fit_data, refresh_google_token
-from backend.models.health_model import GoogleFitData, GoogleFitCredentials
+from backend.modules.integrations.models.google_fit_model import GoogleFitData, GoogleFitCredentials
 
-CLIENT_ID = os.environ.get("GOOGLE_FIT_CLIENT_ID")
-CLIENT_SECRET = os.environ.get("GOOGLE_FIT_CLIENT_SECRET")
-REDIRECT_URI = os.environ.get("GOOGLE_FIT_REDIRECT_URI")
+CLIENT_ID = os.environ.get("GOOGLE_FIT_CLIENT_ID", "")
+CLIENT_SECRET = os.environ.get("GOOGLE_FIT_CLIENT_SECRET", "")
+REDIRECT_URI = os.environ.get("GOOGLE_FIT_REDIRECT_URI", "")
 
 
 def google_fit_login():
-    user_id = get_jwt_identity()
+    user_id = str(get_jwt_identity())
 
     scopes = [
         "https://www.googleapis.com/auth/fitness.activity.read",
@@ -38,7 +38,7 @@ def google_fit_callback():
     code = request.args.get("code")
     user_id = request.args.get("state")
 
-    if not code:
+    if not code or not user_id:
         return redirect("http://localhost:5173/dashboard/bem-estar?google_error=true")
 
     token_url = "https://oauth2.googleapis.com/token"
@@ -55,20 +55,27 @@ def google_fit_callback():
     if res.status_code == 200:
         token_data = res.json()
 
-        expires_at = int(time.time()) + token_data.get("expires_in", 3600)
+        expires_at = int(time.time()) + int(token_data.get("expires_in", 3600))
+        access_token = str(token_data.get("access_token", ""))
+        refresh_token = token_data.get("refresh_token")
 
-        creds = GoogleFitCredentials.query.filter_by(user_id=user_id).first()
-        if not creds:
-            creds = GoogleFitCredentials(user_id=user_id)
+        creds = GoogleFitCredentials.query.filter_by(user_id=user_id).first() # type: ignore
+        
+        if creds:
+            # Se já existe, apenas atualizamos
+            creds.access_token = access_token
+            creds.expires_at = expires_at
+            if refresh_token:
+                creds.refresh_token = str(refresh_token)
+        else:
+            # 👇 O PULO DO GATO: Passando os parâmetros obrigatórios no construtor
+            creds = GoogleFitCredentials(
+                user_id=str(user_id),
+                access_token=access_token,
+                expires_at=expires_at,
+                refresh_token=str(refresh_token) if refresh_token else None
+            )
             db.session.add(creds)
-
-        creds.access_token = token_data.get("access_token")
-
-        new_refresh = token_data.get("refresh_token")
-        if new_refresh:
-            creds.refresh_token = new_refresh
-
-        creds.expires_at = expires_at
 
         try:
             db.session.commit()
@@ -89,24 +96,24 @@ def google_fit_callback():
 
 
 def google_fit_status():
-    user_id = get_jwt_identity()
-    creds = GoogleFitCredentials.query.filter_by(user_id=user_id).first()
+    user_id = str(get_jwt_identity())
+    creds = GoogleFitCredentials.query.filter_by(user_id=user_id).first() # type: ignore
     return jsonify({"connected": creds is not None}), 200
 
 
 def sync_google_data():
-    user_id = get_jwt_identity()
-    creds = GoogleFitCredentials.query.filter_by(user_id=user_id).first()
+    user_id = str(get_jwt_identity())
+    creds = GoogleFitCredentials.query.filter_by(user_id=user_id).first() # type: ignore
 
     if not creds:
         return jsonify({"error": "Não conectado"}), 404
 
-    if int(time.time()) >= (creds.expires_at - 60):
+    if int(time.time()) >= (int(creds.expires_at) - 60):
         print("🔄 Token expirado! Renovando...")
-        new_tokens = refresh_google_token(creds.refresh_token)
+        new_tokens = refresh_google_token(str(creds.refresh_token))
         if new_tokens:
             creds.access_token = new_tokens["access_token"]
-            creds.expires_at = int(time.time()) + new_tokens["expires_in"]
+            creds.expires_at = int(time.time()) + int(new_tokens["expires_in"])
             db.session.commit()
             print("✅ Token renovado com sucesso!")
         else:
@@ -115,7 +122,7 @@ def sync_google_data():
             ), 401
 
     try:
-        metrics = get_google_fit_data(creds.access_token)
+        metrics = get_google_fit_data(str(creds.access_token))
 
         if metrics:
             now = datetime.now()
@@ -123,17 +130,24 @@ def sync_google_data():
             dates_to_update = [now.date(), (now - timedelta(days=1)).date()]
 
             for target_date in dates_to_update:
-                entry = GoogleFitData.query.filter_by(
-                    user_id=user_id, date=target_date
-                ).first()
-                if not entry:
-                    entry = GoogleFitData(user_id=user_id, date=target_date)
+                entry = GoogleFitData.query.filter_by(user_id=user_id, date=target_date).first() # type: ignore
+                
+                if entry:
+                    entry.steps = int(metrics.get("steps", 0))
+                    entry.sleep_minutes = int(metrics.get("sleep_minutes", 0))
+                    entry.resting_hr = metrics.get("resting_hr")
+                    entry.last_sync = datetime.utcnow()
+                else:
+                    # 👇 O PULO DO GATO: Passando tudo que é exigido pelo construtor do Data Model
+                    entry = GoogleFitData(
+                        user_id=user_id, 
+                        date=target_date,
+                        steps=int(metrics.get("steps", 0)),
+                        sleep_minutes=int(metrics.get("sleep_minutes", 0)),
+                        resting_hr=metrics.get("resting_hr"),
+                        last_sync=datetime.utcnow()
+                    )
                     db.session.add(entry)
-
-                entry.steps = metrics["steps"]
-                entry.sleep_minutes = metrics["sleep_minutes"]
-                entry.resting_hr = metrics["resting_hr"]
-                entry.last_sync = datetime.utcnow()
 
             db.session.commit()
             return jsonify({"message": "Sincronizado", "data": metrics}), 200
@@ -145,18 +159,18 @@ def sync_google_data():
 
 
 def get_metrics():
-    user_id = get_jwt_identity()
+    user_id = str(get_jwt_identity())
     today = datetime.now().date()
 
-    data = GoogleFitData.query.filter_by(user_id=user_id, date=today).first()
+    data = GoogleFitData.query.filter_by(user_id=user_id, date=today).first() # type: ignore
 
     if data:
         return jsonify(
             {
-                "steps": data.steps,
-                "sleep_minutes": data.sleep_minutes,
-                "resting_hr": data.resting_hr,
-                "bpm_min": data.resting_hr,
+                "steps": int(data.steps) if data.steps else 0,
+                "sleep_minutes": int(data.sleep_minutes) if data.sleep_minutes else 0,
+                "resting_hr": float(data.resting_hr) if data.resting_hr else 0,
+                "bpm_min": float(data.resting_hr) if data.resting_hr else 0,
             }
         ), 200
 

@@ -2,8 +2,8 @@ from flask import request, jsonify
 from flask_jwt_extended import get_jwt_identity
 
 # 👇 Imports temporários apontando para a estrutura antiga
-from backend.controllers.workflow_controller import run_hospital_workflow_internal
-from backend.services.ai_service import (
+from backend.modules.core_agent.controllers.workflow_controller import run_hospital_workflow_internal
+from backend.modules.glaucoma.services.glaucoma_service import (
     run_glaucoma_pipeline,
     run_glaucoma_genetic_pipeline,
 )
@@ -23,7 +23,7 @@ def analyze_glaucoma():
 
     if status in [200, 201]:
         pred = result.get("prediction", "Glaucoma")
-        prob = result.get("probability", 0)
+        prob = float(result.get("probability", 0))
 
         severity_label = "URGENTE/ALTA SEVERIDADE" if prob > 0.8 else "Monitoramento"
 
