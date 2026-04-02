@@ -86,12 +86,33 @@ export const useHealthStats = () => {
     }
   }, []);
 
+  const handleDisconnectStrava = async () => {
+    try {
+      await healthService.disconnectStrava();
+      setIsConnected(false);
+    } catch (err) {
+      console.error("Erro ao desconectar Strava", err);
+    }
+  };
+
+  const handleDisconnectGoogleFit = async () => {
+    try {
+      await healthService.disconnectGoogleFit();
+      setIsConnectedGoogle(false);
+    } catch (err) {
+      console.error("Erro ao desconectar Google Fit", err);
+    }
+  };
+
+
   return {
     isConnected,
     isConnectedGoogle,
     loading,
     handleConnect,
     handleConnectGoogle,
+    handleDisconnectStrava,
+    handleDisconnectGoogleFit,
     activities,
     handleSync,
     isSyncing,

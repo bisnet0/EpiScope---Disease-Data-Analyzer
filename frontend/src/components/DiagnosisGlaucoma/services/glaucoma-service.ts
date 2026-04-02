@@ -5,6 +5,6 @@ export const fetchGlaucomaDiagnosis = async (imageFile: File): Promise<GlaucomaA
   const formData = new FormData();
   formData.append("image", imageFile);
   
-  const response = await api.post("/diagnose-glaucoma", formData);
+  const response = await api.post("/glaucoma/diagnose-glaucoma", formData);
   return response.data;
 };
