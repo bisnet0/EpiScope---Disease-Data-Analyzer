@@ -7,17 +7,19 @@ from backend.modules.integrations.controllers.strava_controller import (
     get_strava_activities,
     strava_login,
     strava_callback,
-    strava_status
+    strava_status,
+    disconnect_strava,
 )
 
 # Criamos o Blueprint com o prefixo
-strava_bp = Blueprint("strava", __name__, url_prefix="/strava")
+strava_bp = Blueprint("strava", __name__)
 
 # Rotas do Strava mapeadas de forma explícita e elegante
 strava_bp.route("/sync", methods=["POST"])(jwt_required()(sync_strava))
 strava_bp.route("/activities", methods=["GET"])(jwt_required()(get_strava_activities))
 strava_bp.route("/login", methods=["GET"])(jwt_required()(strava_login))
 strava_bp.route("/status", methods=["GET"])(jwt_required()(strava_status))
+strava_bp.route("/disconnect", methods=["POST"])(jwt_required()(disconnect_strava))
 
 # O Callback fica SEM proteção JWT pois é um webhook redirecionado do Strava
 strava_bp.route("/callback", methods=["GET"])(strava_callback)

@@ -5,19 +5,27 @@ from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
 
 
-BASE_DIR = os.path.dirname(os.path.dirname(__file__))
-KB_DIR = os.path.join(BASE_DIR, "knowledge_base")
-FAISS_INDEX_PATH = os.path.join(BASE_DIR, "faiss_index")
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+KB_DIR = os.path.join(SCRIPT_DIR, "datasets")
 
+TRAIN_RESULTS_DIR = os.path.join(SCRIPT_DIR, "train_results")
+FAISS_INDEX_PATH = os.path.join(TRAIN_RESULTS_DIR, "faiss_index")
+
+os.makedirs(TRAIN_RESULTS_DIR, exist_ok=True)
 
 embeddings = HuggingFaceEmbeddings(
     model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 )
 
 
-def build_knowledge_base():
+def build_knowledge_base() -> bool:
     """Lê os PDFs, fatia o texto e constrói o banco vetorial FAISS."""
     print(f"\n[RAG] 📚 Iniciando leitura dos PDFs em {KB_DIR}...")
+
+    if not os.path.exists(KB_DIR):
+        print(f"[RAG] ❌ Erro: A pasta {KB_DIR} não foi encontrada.")
+        return False
+
     loader = PyPDFDirectoryLoader(KB_DIR)
     docs = loader.load()
 
@@ -42,7 +50,7 @@ def build_knowledge_base():
     return True
 
 
-def search_knowledge_base(query: str, k: int = 3):
+def search_knowledge_base(query: str, k: int = 3) -> str:
     """Busca no banco FAISS os k fragmentos mais relevantes para a pergunta."""
     if not os.path.exists(FAISS_INDEX_PATH):
         return "Aviso: Banco de conhecimento (FAISS) não encontrado. Inicialize o RAG primeiro."

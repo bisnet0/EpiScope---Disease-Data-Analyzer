@@ -14,6 +14,6 @@ glaucoma_bp = Blueprint("glaucoma", __name__)
 glaucoma_bp.route("/diagnose-glaucoma", methods=["POST"])(
     jwt_required()(analyze_glaucoma)
 )
-glaucoma_bp.route("/diagnose/glaucoma/optimize-ga", methods=["POST"])(
+glaucoma_bp.route("/diagnose/optimize-ga", methods=["POST"])(
     jwt_required()(run_glaucoma_evolution)
 )

@@ -8,6 +8,6 @@ from backend.modules.chest_xray.controllers.xray_controller import analyze_xray
 xray_bp = Blueprint("xray", __name__)
 
 # Rota protegida (Mantendo a URL exata /diagnose-xray)
-xray_bp.route("/diagnose-xray", methods=["POST"])(
+xray_bp.route("/diagnose", methods=["POST"])(
     jwt_required()(analyze_xray)
 )

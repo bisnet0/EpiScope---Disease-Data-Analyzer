@@ -9,6 +9,7 @@ venv/
 docker-backups/
 xray_cnn.h5
 
+
 # lixo
 *.psd
 backend/modules/arbovirus/datasets/

@@ -28,7 +28,7 @@ MODULE_DIR = os.path.dirname(SCRIPT_DIR)
 MODULES_DIR = os.path.dirname(MODULE_DIR)
 BACKEND_DIR = os.path.dirname(MODULES_DIR)
 
-DATASET_DIR = os.path.join(BACKEND_DIR, "data", "drishti_gs")
+DATASET_DIR = os.path.join(MODULE_DIR, "datasets", "drishti_gs")
 METADATA_FILE = os.path.join(DATASET_DIR, "Drishti-GS1_diagnosis.xlsx")
 IMAGE_DIR = os.path.join(DATASET_DIR, "Training", "Images")
 

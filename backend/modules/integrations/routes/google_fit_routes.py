@@ -7,7 +7,8 @@ from backend.modules.integrations.controllers.google_fit_controller import (
     google_fit_callback,
     google_fit_status,
     sync_google_data,
-    get_metrics
+    get_metrics,
+    disconnect_google_fit,
 )
 
 # Criamos o Blueprint com o prefixo
@@ -18,6 +19,8 @@ google_fit_bp.route("/login", methods=["GET"])(jwt_required()(google_fit_login))
 google_fit_bp.route("/status", methods=["GET"])(jwt_required()(google_fit_status))
 google_fit_bp.route("/sync", methods=["POST"])(jwt_required()(sync_google_data))
 google_fit_bp.route("/metrics", methods=["GET"])(jwt_required()(get_metrics))
+google_fit_bp.route("/disconnect", methods=["POST"])(jwt_required()(disconnect_google_fit))
+
 
 # O Callback fica SEM proteção JWT pois é um webhook redirecionado do Google
 google_fit_bp.route("/callback", methods=["GET"])(google_fit_callback)

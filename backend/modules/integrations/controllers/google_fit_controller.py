@@ -5,10 +5,16 @@ from datetime import datetime, timedelta
 from flask import request, jsonify, redirect
 from flask_jwt_extended import get_jwt_identity
 
-# 👇 Imports mantidos
+
 from backend.modules.auth.models.user_model import db
-from backend.modules.integrations.services.google_fit_service import get_google_fit_data, refresh_google_token
-from backend.modules.integrations.models.google_fit_model import GoogleFitData, GoogleFitCredentials
+from backend.modules.integrations.services.google_fit_service import (
+    get_google_fit_data,
+    refresh_google_token,
+)
+from backend.modules.integrations.models.google_fit_model import (
+    GoogleFitData,
+    GoogleFitCredentials,
+)
 
 CLIENT_ID = os.environ.get("GOOGLE_FIT_CLIENT_ID", "")
 CLIENT_SECRET = os.environ.get("GOOGLE_FIT_CLIENT_SECRET", "")
@@ -59,21 +65,19 @@ def google_fit_callback():
         access_token = str(token_data.get("access_token", ""))
         refresh_token = token_data.get("refresh_token")
 
-        creds = GoogleFitCredentials.query.filter_by(user_id=user_id).first() # type: ignore
-        
+        creds = GoogleFitCredentials.query.filter_by(user_id=user_id).first()
+
         if creds:
-            # Se já existe, apenas atualizamos
             creds.access_token = access_token
             creds.expires_at = expires_at
             if refresh_token:
                 creds.refresh_token = str(refresh_token)
         else:
-            # 👇 O PULO DO GATO: Passando os parâmetros obrigatórios no construtor
             creds = GoogleFitCredentials(
                 user_id=str(user_id),
                 access_token=access_token,
                 expires_at=expires_at,
-                refresh_token=str(refresh_token) if refresh_token else None
+                refresh_token=str(refresh_token) if refresh_token else None,
             )
             db.session.add(creds)
 
@@ -97,13 +101,13 @@ def google_fit_callback():
 
 def google_fit_status():
     user_id = str(get_jwt_identity())
-    creds = GoogleFitCredentials.query.filter_by(user_id=user_id).first() # type: ignore
+    creds = GoogleFitCredentials.query.filter_by(user_id=user_id).first()
     return jsonify({"connected": creds is not None}), 200
 
 
 def sync_google_data():
     user_id = str(get_jwt_identity())
-    creds = GoogleFitCredentials.query.filter_by(user_id=user_id).first() # type: ignore
+    creds = GoogleFitCredentials.query.filter_by(user_id=user_id).first()
 
     if not creds:
         return jsonify({"error": "Não conectado"}), 404
@@ -130,22 +134,23 @@ def sync_google_data():
             dates_to_update = [now.date(), (now - timedelta(days=1)).date()]
 
             for target_date in dates_to_update:
-                entry = GoogleFitData.query.filter_by(user_id=user_id, date=target_date).first() # type: ignore
-                
+                entry = GoogleFitData.query.filter_by(
+                    user_id=user_id, date=target_date
+                ).first()
+
                 if entry:
                     entry.steps = int(metrics.get("steps", 0))
                     entry.sleep_minutes = int(metrics.get("sleep_minutes", 0))
                     entry.resting_hr = metrics.get("resting_hr")
                     entry.last_sync = datetime.utcnow()
                 else:
-                    # 👇 O PULO DO GATO: Passando tudo que é exigido pelo construtor do Data Model
                     entry = GoogleFitData(
-                        user_id=user_id, 
+                        user_id=user_id,
                         date=target_date,
                         steps=int(metrics.get("steps", 0)),
                         sleep_minutes=int(metrics.get("sleep_minutes", 0)),
                         resting_hr=metrics.get("resting_hr"),
-                        last_sync=datetime.utcnow()
+                        last_sync=datetime.utcnow(),
                     )
                     db.session.add(entry)
 
@@ -162,7 +167,7 @@ def get_metrics():
     user_id = str(get_jwt_identity())
     today = datetime.now().date()
 
-    data = GoogleFitData.query.filter_by(user_id=user_id, date=today).first() # type: ignore
+    data = GoogleFitData.query.filter_by(user_id=user_id, date=today).first()
 
     if data:
         return jsonify(
@@ -175,3 +180,28 @@ def get_metrics():
         ), 200
 
     return jsonify({"steps": 0, "sleep_minutes": 0, "resting_hr": 0, "bpm_min": 0}), 200
+
+
+def disconnect_google_fit():
+    user_id = str(get_jwt_identity())
+    try:
+        creds = GoogleFitCredentials.query.filter_by(user_id=user_id).first()
+
+        if creds:
+            db.session.delete(creds)
+            db.session.commit()
+            print(
+                f"✅ Google Fit desconectado para o usuário {user_id}. Dados preservados."
+            )
+            return jsonify(
+                {
+                    "message": "Conexão com Google Fit removida. Seus dados históricos foram mantidos."
+                }
+            ), 200
+
+        return jsonify({"message": "Nenhuma conexão ativa encontrada."}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Erro ao desconectar: {str(e)}"}), 500
+        db.session.rollback()
+        return jsonify({"error": f"Erro ao desconectar: {str(e)}"}), 500
