@@ -5,31 +5,29 @@ from backend.modules.womens_health.services.audio_analysis_service import (
 
 
 def analyze_womens_audio():
-    """
-    Recebe um arquivo de áudio de uma consulta (ex: acompanhamento pós-parto)
-    e analisa sinais de hesitação, tom de voz e possível depressão/ansiedade.
-    """
-    if "file" not in request.files:
+    if 'file' not in request.files:
         return jsonify({"error": "Nenhum arquivo de áudio enviado"}), 400
-
-    audio_file = request.files["file"]
-
+        
+    audio_file = request.files['file']
     filename = audio_file.filename
+    
+    # Pegamos o tipo de consulta que o front vai mandar (ex: 'PRE_NATAL', 'POS_PARTO', 'GINECOLOGICA', 'TRIAGEM_VIOLENCIA')
+    consultation_type = request.form.get('consultation_type', 'GINECOLOGICA')
+
     if not filename:
         return jsonify({"error": "Nome de arquivo inválido ou ausente"}), 400
 
     try:
         audio_bytes = audio_file.read()
-
-        result, status_code = process_consultation_audio(audio_bytes, filename)
-
+        
+        # Passamos o tipo de consulta para o serviço focar a análise
+        result, status_code = process_consultation_audio(audio_bytes, filename, consultation_type)
+        
         return jsonify(result), status_code
-
+        
     except Exception as e:
         print(f"❌ [Audio Analysis Error]: {str(e)}")
-        return jsonify(
-            {"error": "Falha geral ao processar o áudio", "details": str(e)}
-        ), 500
+        return jsonify({"error": "Falha geral ao processar o áudio", "details": str(e)}), 500
 
 
 def analyze_womens_video():
