@@ -26,6 +26,9 @@ cryptography
 scikit-learn
 xgboost
 tensorflow
+datasets
+peft
+torch
 
 # Utilidades
 Pillow

@@ -1,8 +1,8 @@
 import os
 import json
 import torch
-from datasets import Dataset
-from peft import LoraConfig, get_peft_model
+from datasets import Dataset # type: ignore
+from peft import LoraConfig, get_peft_model # type: ignore
 from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, Trainer
 
 # ==========================================

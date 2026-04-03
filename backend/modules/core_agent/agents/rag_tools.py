@@ -1,7 +1,4 @@
 from langchain.tools import tool
-
-# O serviço de RAG pode continuar no local antigo até refatorarmos a pasta services,
-# ou já pode ir para modules/core_agent/services/rag_service.py futuramente.
 from backend.modules.core_agent.services.rag_service import search_knowledge_base
 
 @tool("rag_clinical_tool")

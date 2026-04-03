@@ -55,7 +55,7 @@ def strava_callback():
     user_id = request.args.get("state")
     error = request.args.get("error")
 
-    FRONTEND_URL = "http://localhost:5173/dashboard"
+    FRONTEND_URL = "http://localhost:5173/health-stats-panel"
 
     if error or not code or not user_id:
         print(f"[STRAVA] Erro na autorização ou dados ausentes: {error}")

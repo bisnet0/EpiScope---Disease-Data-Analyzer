@@ -45,8 +45,8 @@ def google_fit_callback():
     user_id = request.args.get("state")
 
     if not code or not user_id:
-        return redirect("http://localhost:5173/dashboard/bem-estar?google_error=true")
-
+        return redirect("http://localhost:5173/health-stats-panel?google_error=true")
+            
     token_url = "https://oauth2.googleapis.com/token"
     data = {
         "client_id": CLIENT_ID,
@@ -85,17 +85,17 @@ def google_fit_callback():
             db.session.commit()
             print(f"✅ Google Fit token salvo com sucesso para o usuário {user_id}")
             return redirect(
-                "http://localhost:5173/dashboard/bem-estar?google_success=true"
+               "http://localhost:5173/health-stats-panel?google_success=true"
             )
         except Exception as e:
             db.session.rollback()
             print(f"❌ Erro ao salvar tokens do Google Fit: {e}")
             return redirect(
-                "http://localhost:5173/dashboard/bem-estar?google_error=db_save"
+                "http://localhost:5173/health-stats-panel?google_error=db_save"
             )
 
     return redirect(
-        "http://localhost:5173/dashboard/bem-estar?google_error=token_exchange_fail"
+        "http://localhost:5173/health-stats-panel?google_error=token_exchange_fail"
     )
 
 
