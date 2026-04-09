@@ -154,6 +154,34 @@ def process_consultation_audio(
             "clinical_insights": [],
             "alerts": [],
         }
+        # 1. DEFINIMOS AS VARIÁVEIS PRIMEIRO (Para o Pylance não reclamar)
+        vol = features["mean_volume"]
+        hesitation = features["hesitation_ratio"]
+        pitch_var = features["pitch_variance"]
+
+        # 2. INTEGRAÇÃO COM O MAESTRO (Usando as variáveis já definidas)
+        from backend.modules.core_agent.controllers.workflow_controller import run_hospital_workflow_internal
+        
+        print(f"🧠 [WOMENS HEALTH]: Enviando transcrição e métricas para o Maestro...")
+        
+        maestro_payload = {
+            "context": "WOMENS_HEALTH_AUDIO_ANALYSIS",
+            "consultation_type": consultation_type,
+            "transcription": transcription,
+            "acoustic_metrics": {
+                "hesitation_level": "ALTA" if hesitation > 0.3 else "NORMAL",
+                "volume_level": "SUSSURRADO" if vol < 0.01 else "NORMAL",
+                "pitch_stability": "INSTÁVEL" if pitch_var > 1000 else "ESTÁVEL"
+            },
+            "raw_features": features
+        }
+
+        maestro_res = run_hospital_workflow_internal(maestro_payload)
+
+        if isinstance(maestro_res, dict):
+            diagnosis_result["maestro_analysis"] = maestro_res.get("clinical_report", "Análise indisponível")
+            diagnosis_result["recommended_actions"] = maestro_res.get("next_steps", [])
+            diagnosis_result["priority_score"] = maestro_res.get("priority", "MEDIUM")
 
         vol = features["mean_volume"]
         hesitation = features["hesitation_ratio"]

@@ -83,7 +83,8 @@ Regras de ouro:
 4. EXECUÇÃO OBRIGATÓRIA DA FERRAMENTA: Ao receber uma nova imagem [CAMINHO DO ARQUIVO...], DEVE acionar a ferramenta correspondente.
 5. DUPLA VISÃO (ML + LITERATURA): Combine o resultado matemático exato retornado pela ferramenta com a literatura médica.
 6. ESTRUTURA DA RESPOSTA: Forneça sempre a Visão Específica e a Visão Abrangente.
-7. BLOCKCHAIN E CARTESI: Você NÃO tem capacidade de registrar diagnósticos na blockchain diretamente. NUNCA simule registros on-chain."""
+7. BLOCKCHAIN E CARTESI: Você NÃO tem capacidade de registrar diagnósticos na blockchain diretamente. NUNCA simule registros on-chain.
+8. ANÁLISE ACÚSTICA: Ao receber dados de 'acoustic_metrics', não foque apenas no texto. Se 'volume_level' for SUSSURRADO e o contexto for VIOLÊNCIA, priorize o acolhimento psicológico sobre o diagnóstico clínico puramente técnico."""
 
         messages_to_send = (
             [SystemMessage(content=system_prompt)]

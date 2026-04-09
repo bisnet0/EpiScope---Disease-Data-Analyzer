@@ -7,7 +7,7 @@ from backend.modules.glaucoma.agents.glaucoma_tools import glaucoma_tool
 from backend.modules.laboratory.agents.lab_tools import lab_manager_tool
 from backend.modules.integrations.agents.health_tools import health_metrics_tool
 from backend.modules.core_agent.agents.rag_tools import rag_clinical_tool
-# from backend.modules.core_agent.agents.audio_analysis_tools import audio_analysis_tool
+from backend.modules.womens_health.agents.womens_tools import analyze_vocal_distress_tool
 
 # O Core Agent empacota todas elas aqui:
 MEDICAL_TOOLS = [
@@ -17,5 +17,5 @@ MEDICAL_TOOLS = [
     lab_manager_tool,
     health_metrics_tool,
     rag_clinical_tool,
-    # audio_analysis_tool
+    analyze_vocal_distress_tool
 ]
