@@ -13,6 +13,9 @@ langchain-google-genai>=1.0.0
 faiss-cpu
 pypdf
 sentence-transformers
+pydub
+librosa
+soundfile
 
 # Infra
 python-dotenv
