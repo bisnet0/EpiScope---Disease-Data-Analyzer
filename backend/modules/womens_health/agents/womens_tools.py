@@ -32,3 +32,24 @@ def analyze_vocal_distress_tool(acoustic_metrics: Dict[str, Any], consultation_t
         return "As métricas acústicas estão dentro dos parâmetros basais para este tipo de consulta."
 
     return " | ".join(report)
+
+@tool
+def analyze_facial_incongruence_tool(video_metrics: Dict[str, Any]) -> str:
+    """
+    Interpreta as emoções dominantes e detecta se a expressão facial 
+    condiz com o relato clínico da paciente.
+    Use quando 'video_analysis' estiver disponível.
+    """
+    emotion = video_metrics.get("dominant_emotion", "neutral")
+    dist = video_metrics.get("emotion_distribution", {})
+    alerts = video_metrics.get("clinical_alerts", [])
+    
+    report = f"Emoção predominante detectada: {emotion.upper()}."
+    
+    if "happy" in dist and dist["happy"] > 0.15:
+        report += " | ALERTA: Presença de 'Riso Inadequado' ou Afeto Incongruente."
+    
+    if alerts:
+        report += f" | Sugestão: {alerts[0]}"
+        
+    return report

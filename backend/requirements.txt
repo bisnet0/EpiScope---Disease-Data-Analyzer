@@ -32,6 +32,8 @@ tensorflow
 datasets
 peft
 torch
+mediapipe
+deepface
 
 # Utilidades
 Pillow
