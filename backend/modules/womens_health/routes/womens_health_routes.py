@@ -3,7 +3,7 @@ from flask_jwt_extended import jwt_required
 
 from backend.modules.womens_health.controllers.womens_health_controller import (
     analyze_womens_audio,
-    analyze_womens_video
+    analyze_womens_video,
 )
 
 womens_health_bp = Blueprint("womens_health", __name__)

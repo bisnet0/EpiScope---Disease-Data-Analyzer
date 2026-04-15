@@ -32,6 +32,7 @@ tensorflow
 datasets
 peft
 torch
+tf-keras
 mediapipe
 deepface
 
