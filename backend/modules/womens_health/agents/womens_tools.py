@@ -1,5 +1,8 @@
 from langchain.tools import tool
 from typing import Dict, Any
+from backend.modules.womens_health.services.womens_orchestrator_service import (
+    get_integrated_health_report,
+)
 
 
 @tool
@@ -120,3 +123,30 @@ def analyze_multimodal_womens_health(
         )
 
     return " | ".join(analysis_parts)
+
+
+@tool
+def fetch_womens_health_biomarkers(consultation_type: str = "GENERAL") -> str:
+    """
+    Busca os biomarcadores de áudio e vídeo mais recentes para um tipo de consulta.
+    Útil para identificar incongruências emocionais e estados de saúde mental.
+    """
+    try:
+        report = get_integrated_health_report(consultation_type=consultation_type)
+
+        if report["status"] == "pending":
+            return "Ainda não há dados suficientes de áudio ou vídeo processados para esta consulta."
+
+        video_dominant = report["data"]["video"]["dominant_result"]
+        audio_transcription = (
+            report["data"]["audio"]["transcription"] or "Não transcrito"
+        )
+
+        return (
+            f"RESULTADO MULTIMODAL:\n"
+            f"- Análise de Vídeo: {video_dominant}\n"
+            f"- Transcrição do Áudio: {audio_transcription}\n"
+            f"- Alerta do Sistema: {report['multimodal_analysis']}"
+        )
+    except Exception as e:
+        return f"Erro ao acessar biomarcadores: {str(e)}"

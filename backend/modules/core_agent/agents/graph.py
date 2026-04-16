@@ -12,7 +12,8 @@ from backend.modules.core_agent.agents.tools import MEDICAL_TOOLS
 
 llm = ChatGoogleGenerativeAI(
     model="gemini-2.5-flash-lite",
-    google_api_key=os.getenv("GEMINI_API_KEY") or "", # 👈 Evita erro se a chave não estiver carregada ainda
+    google_api_key=os.getenv("GEMINI_API_KEY")
+    or "",  # 👈 Evita erro se a chave não estiver carregada ainda
     temperature=0.2,
     max_retries=2,
 ).bind_tools(MEDICAL_TOOLS)
@@ -38,6 +39,12 @@ REGRAS DE CONDUTA:
    - Seja direto, profissional e empático.
    - NUNCA invente diagnósticos médicos. Use APENAS o retorno das suas ferramentas.
    - Se a ferramenta der erro, peça desculpas e peça para tentar novamente.
+   
+5. SAÚDE DA MULHER (Multimodal):
+   - Se o usuário mencionar triagem de violência, saúde emocional feminina ou pós-parto:
+     a) Chame 'fetch_womens_health_biomarkers' para obter dados de vídeo e áudio do banco.
+     b) Se o usuário enviar apenas áudio agora, use 'analyze_vocal_distress_tool'.
+   - Ao receber os biomarcadores, analise a INCONGRUÊNCIA: se o vídeo mostrar 'SAD' ou 'FEAR' mas o relato/áudio for positivo, alerte sobre possível mecanismo de defesa ou dissociação.
 """
 
 
@@ -55,7 +62,7 @@ def should_continue(state: AgentState) -> Literal["tools", "final"]:
     messages = state.get("messages", [])
     if not messages:
         return "final"
-        
+
     last_message = messages[-1]
 
     # 👇 O PULO DO GATO: Ensinando ao Pylance que apenas AIMessage tem tool_calls!

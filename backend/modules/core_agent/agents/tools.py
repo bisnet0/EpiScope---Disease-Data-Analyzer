@@ -8,6 +8,8 @@ from backend.modules.laboratory.agents.lab_tools import lab_manager_tool
 from backend.modules.integrations.agents.health_tools import health_metrics_tool
 from backend.modules.core_agent.agents.rag_tools import rag_clinical_tool
 from backend.modules.womens_health.agents.womens_tools import analyze_vocal_distress_tool
+from backend.modules.womens_health.agents.womens_tools import fetch_womens_health_biomarkers
+
 
 # O Core Agent empacota todas elas aqui:
 MEDICAL_TOOLS = [
@@ -17,5 +19,6 @@ MEDICAL_TOOLS = [
     lab_manager_tool,
     health_metrics_tool,
     rag_clinical_tool,
-    analyze_vocal_distress_tool
+    analyze_vocal_distress_tool,                                                                                     
+    fetch_womens_health_biomarkers
 ]

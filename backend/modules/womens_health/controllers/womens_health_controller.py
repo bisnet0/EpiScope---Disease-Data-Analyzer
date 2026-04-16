@@ -113,3 +113,30 @@ def analyze_womens_video():
         return jsonify(
             {"error": "Falha no processamento de vídeo", "details": str(e)}
         ), 500
+
+
+def get_integrated_report():
+    """
+    Retorna o laudo consolidado cruzando áudio e vídeo.
+    """
+    from backend.modules.womens_health.services.womens_orchestrator_service import (
+        get_integrated_health_report,
+    )
+    from flask import request
+
+    # Pegamos os parâmetros da URL, ex: /get-report?consultation_type=TRIAGEM_VIOLENCIA
+    consultation_type = request.args.get("consultation_type", "GENERAL")
+    patient_id = request.args.get("patient_id", type=int)
+
+    try:
+        # Chama o serviço orquestrador
+        report = get_integrated_health_report(
+            patient_id=patient_id, consultation_type=consultation_type
+        )
+
+        return jsonify(report), 200
+    except Exception as e:
+        print(f"❌ [REPORT ERROR]: {str(e)}")
+        return jsonify(
+            {"error": "Falha ao gerar relatório integrado", "details": str(e)}
+        ), 500
