@@ -3,8 +3,9 @@ import { FaMosquito, FaRegEye } from "react-icons/fa6";
 import { PiSignatureLight } from "react-icons/pi";
 import { GiLungs } from "react-icons/gi";
 import { BsHeartPulseFill } from "react-icons/bs";
+import { SlUserFemale } from "react-icons/sl";
 
-export type AppMode = "dashboard" | "web2" | "web3" | "image" | "x-ray" | "health-stats-panel";
+export type AppMode = "dashboard" | "web2" | "web3" | "image" | "x-ray" | "health-stats-panel" | "WomensHealth";
 
 export const NAV_ITEMS = [
   { id: "dashboard" as AppMode, label: "Dashboard", icon: Activity },
@@ -13,4 +14,5 @@ export const NAV_ITEMS = [
   { id: "web3" as AppMode, label: "Assinatura", icon: PiSignatureLight },
   { id: "x-ray" as AppMode, label: "Análise Pulmonar", icon: GiLungs },
   { id: "health-stats-panel" as AppMode, label: "Bem-estar", icon: BsHeartPulseFill },
+  { id: "WomensHealth" as AppMode, label: "Saúde da Mulher", icon: SlUserFemale },
 ];

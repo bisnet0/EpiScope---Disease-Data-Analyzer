@@ -24,6 +24,7 @@ import { DiagnosisGlaucomaForm } from "../DiagnosisGlaucoma/DiagnosisGlaucomaPag
 import { DiagnosisDAppForm } from "../DiagnosisDApp/DiagnosisDAppForm";
 import { DiagnosisXRayForm } from "../DiagnosisXRay/components/DiagnosisXRay";
 import HealthStatsPanelPage from "../HealthStatsPanel/HealthStatsPanelPage"
+import { WomensHealthModule } from "../DiagnosisWomensHealth/WomensHealthModule";
 import { LoginForm } from "../Login/LoginForm";
 import AgentChat from "../AgentChat/AgentChat";
 
@@ -159,6 +160,8 @@ export const MainLayout: React.FC = () => {
           {mode === "image" && <DiagnosisGlaucomaForm />}
           {mode === "x-ray" && <DiagnosisXRayForm />}
           {mode === "health-stats-panel" && <HealthStatsPanelPage />}
+          {mode === "WomensHealth" && <WomensHealthModule />}
+
 
 
         </Box>
