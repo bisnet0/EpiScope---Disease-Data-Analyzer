@@ -36,7 +36,16 @@ export const useAgentChat = () => {
       setIsLoading(true);
 
       try {
-        const emergencyContent = `🚨 **ALERTA DE EMERGÊNCIA ATIVADO** 🚨\n\nIdentifiquei um quadro de alta severidade: *"${detail.diagnosis}"*.\n\nJá preparei o protocolo de auditoria. Como posso auxiliar na conduta clínica agora?`;
+        const ctx = detail.consultationType || "SAÚDE DA MULHER";
+
+        const emergencyContent = `[SISTEMA EPISCOPE]: 🚨 ALERTA DE RISCO DETECTADO 🚨
+      
+Contexto: ${ctx}
+Motivo: ${detail.diagnosis}
+
+Doutor, utilize IMEDIATAMENTE a ferramenta 'fetch_womens_health_biomarkers' para o contexto "${ctx}". 
+Analise os dados crus do banco, identifique incongruências entre áudio/vídeo e forneça o protocolo de acolhimento agora. 
+Não peça mais informações, os dados já estão no banco de dados.`;
 
         await sendChatMessageApi({
           message: emergencyContent,

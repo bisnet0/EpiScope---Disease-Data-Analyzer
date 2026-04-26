@@ -2,21 +2,18 @@ from datetime import timezone
 from flask import jsonify
 from flask_jwt_extended import get_jwt_identity
 
-# 👇 Imports temporários apontando para a pasta raiz de models
-from backend.modules.arbovirus.models.arbovirus_model import (
-    ArbovirusDiagnosis,
-)
-from backend.modules.glaucoma.models.glaucoma_model import (
-    GlaucomaDiagnosis,
-)
-from backend.modules.chest_xray.models.xray_model import (
-    XRayDiagnosis,
-)
+
+from backend.modules.arbovirus.models.arbovirus_model import ArbovirusDiagnosis
+from backend.modules.glaucoma.models.glaucoma_model import GlaucomaDiagnosis
+from backend.modules.chest_xray.models.xray_model import XRayDiagnosis
+
+
+from backend.modules.womens_health.models.womens_models import WomensHealthAnalysis
 
 
 def get_user_history():
     """
-    Busca e consolida o histórico de todos os diagnósticos (Arbovírus, Glaucoma, Raio-X)
+    Busca e consolida o histórico de todos os diagnósticos (Arbovírus, Glaucoma, Raio-X e Saúde da Mulher)
     do paciente logado, ordenando do mais recente para o mais antigo.
     """
     current_user_id = get_jwt_identity()
@@ -25,13 +22,16 @@ def get_user_history():
     glaucoma = GlaucomaDiagnosis.query.filter_by(user_id=current_user_id).all()
     xray = XRayDiagnosis.query.filter_by(user_id=current_user_id).all()
 
+    womens_health = WomensHealthAnalysis.query.filter_by(
+        patient_id=current_user_id
+    ).all()
+
     history = []
 
     for item in arbovirus:
         tx_hash = getattr(item, "blockchain_hash", None) or getattr(
             item, "tx_hash", None
         )
-
         history.append(
             {
                 "id": item.id,
@@ -49,7 +49,6 @@ def get_user_history():
         tx_hash = getattr(item, "blockchain_hash", None) or getattr(
             item, "tx_hash", None
         )
-
         history.append(
             {
                 "id": item.id,
@@ -65,7 +64,6 @@ def get_user_history():
         tx_hash = getattr(item, "blockchain_hash", None) or getattr(
             item, "tx_hash", None
         )
-
         history.append(
             {
                 "id": item.id,
@@ -77,7 +75,21 @@ def get_user_history():
             }
         )
 
-    # Ordena a timeline cronologicamente (do mais recente pro mais antigo)
+    for item in womens_health:
+        tx_hash = getattr(item, "blockchain_hash", None) or getattr(
+            item, "tx_hash", None
+        )
+        history.append(
+            {
+                "id": str(item.id),
+                "type": "Saúde da Mulher",
+                "date": item.created_at.replace(tzinfo=timezone.utc).isoformat(),
+                "details": f"Análise Multimodal ({item.exam_type})",
+                "result": item.dominant_result,
+                "signature": tx_hash,
+            }
+        )
+
     history.sort(key=lambda x: x["date"], reverse=True)
 
     return jsonify(history), 200

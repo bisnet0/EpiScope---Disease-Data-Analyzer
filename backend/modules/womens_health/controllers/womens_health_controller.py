@@ -2,18 +2,27 @@ import os
 import uuid
 from flask import request, jsonify
 
+
 VIDEO_TEMP_DIR = "temp_videos"
 os.makedirs(VIDEO_TEMP_DIR, exist_ok=True)
 
 
 def analyze_womens_audio():
     """
-    Recebe um arquivo de áudio e analisa sinais clínicos.
+    Recebe um arquivo de áudio e analisa sinais clínicos,
+    salvando o resultado no banco para auditoria e cruzamento multimodal.
     """
-
     from backend.modules.womens_health.services.audio_analysis_service import (
         process_consultation_audio,
     )
+
+    from backend.modules.womens_health.models.womens_models import WomensHealthAnalysis
+    from backend.modules.auth.models.user_model import db
+    from flask_jwt_extended import (
+        get_jwt_identity,
+    )
+
+    current_user_id = get_jwt_identity()
 
     if "file" not in request.files:
         return jsonify({"error": "Nenhum arquivo de áudio enviado"}), 400
@@ -22,7 +31,6 @@ def analyze_womens_audio():
     filename = audio_file.filename
 
     consultation_type = request.form.get("consultation_type", "GINECOLOGICA")
-
     audio_language = request.form.get("language", "auto")
 
     if not filename:
@@ -34,6 +42,45 @@ def analyze_womens_audio():
         result, status_code = process_consultation_audio(
             audio_bytes, filename, consultation_type, audio_language
         )
+
+        if status_code == 200 and result.get("status") == "success":
+            alerts = result.get("alerts", [])
+            insights = result.get("clinical_insights", [])
+
+            dominant_profile = "ANÁLISE VOCAL ESTÁVEL"
+            if alerts:
+                dominant_profile = (
+                    f"ALERTA VOCAL: {len(alerts)} anomalia(s) detectada(s)"
+                )
+            elif insights:
+                dominant_profile = "INSIGHTS VOCAIS DETECTADOS"
+
+            raw_features = result.get("raw_features", {})
+            if not isinstance(raw_features, dict):
+                raw_features = {}
+
+            transcription_snippet = result.get("transcription_snippet", "")
+            if not isinstance(transcription_snippet, str):
+                transcription_snippet = str(transcription_snippet)
+
+            new_analysis = WomensHealthAnalysis(
+                exam_type="AUDIO",
+                patient_id=current_user_id,
+                consultation_type=consultation_type,
+                dominant_result=dominant_profile,
+                raw_data=raw_features,
+                transcription=transcription_snippet,
+            )
+
+            try:
+                db.session.add(new_analysis)
+                db.session.commit()
+            except Exception as db_error:
+                db.session.rollback()
+                print(f"❌ [DB ERROR]: {str(db_error)}")
+                raise db_error
+
+            result["analysis_id"] = new_analysis.id
 
         return jsonify(result), status_code
 
@@ -57,6 +104,11 @@ def analyze_womens_video():
     )
     from backend.modules.womens_health.models.womens_models import WomensHealthAnalysis
     from backend.modules.auth.models.user_model import db
+    from flask_jwt_extended import (
+        get_jwt_identity,
+    )
+
+    current_user_id = get_jwt_identity()
 
     if "file" not in request.files:
         return jsonify({"error": "Nenhum arquivo de vídeo enviado"}), 400
@@ -86,13 +138,19 @@ def analyze_womens_video():
 
         new_analysis = WomensHealthAnalysis(
             exam_type="VIDEO",
+            patient_id=current_user_id,
             consultation_type=request.form.get("consultation_type", "GENERAL"),
             dominant_result=clinical_profile,
             raw_data=spectrum,
         )
 
-        db.session.add(new_analysis)
-        db.session.commit()
+        try:
+            db.session.add(new_analysis)
+            db.session.commit()
+        except Exception as db_error:
+            db.session.rollback()
+            print(f"❌ [DB ERROR]: {str(db_error)}")
+            raise db_error
 
         if os.path.exists(video_path):
             os.remove(video_path)
@@ -124,12 +182,10 @@ def get_integrated_report():
     )
     from flask import request
 
-    # Pegamos os parâmetros da URL, ex: /get-report?consultation_type=TRIAGEM_VIOLENCIA
     consultation_type = request.args.get("consultation_type", "GENERAL")
     patient_id = request.args.get("patient_id", type=int)
 
     try:
-        # Chama o serviço orquestrador
         report = get_integrated_health_report(
             patient_id=patient_id, consultation_type=consultation_type
         )

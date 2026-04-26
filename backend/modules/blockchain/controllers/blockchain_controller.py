@@ -2,7 +2,6 @@ from flask import request, jsonify
 from flask_jwt_extended import get_jwt_identity
 from sqlalchemy import text
 
-
 from backend.modules.blockchain.services.blockchain_service import (
     process_ledger_registration,
 )
@@ -12,6 +11,9 @@ from backend.modules.auth.models.user_model import db
 from backend.modules.arbovirus.models.arbovirus_model import ArbovirusDiagnosis
 from backend.modules.glaucoma.models.glaucoma_model import GlaucomaDiagnosis
 from backend.modules.chest_xray.models.xray_model import XRayDiagnosis
+
+# 👇 1. Importe o novo Model
+from backend.modules.womens_health.models.womens_models import WomensHealthAnalysis
 
 
 def register_blockchain_ledger():
@@ -32,6 +34,7 @@ def register_blockchain_ledger():
         "ARBOVIROSE": ArbovirusDiagnosis,
         "GLAUCOMA": GlaucomaDiagnosis,
         "RAIO-X (TÓRAX)": XRayDiagnosis,
+        "SAÚDE DA MULHER": WomensHealthAnalysis,
     }
 
     model = model_map.get(diag_type.upper())
@@ -39,7 +42,10 @@ def register_blockchain_ledger():
     if model is None:
         return jsonify({"error": f"Tipo de diagnóstico desconhecido: {diag_type}"}), 400
 
-    item = model.query.filter_by(id=diag_id, user_id=user_id).first()
+    if diag_type.upper() == "SAÚDE DA MULHER":
+        item = model.query.filter_by(id=diag_id, patient_id=user_id).first()
+    else:
+        item = model.query.filter_by(id=diag_id, user_id=user_id).first()
 
     if item:
         item.blockchain_hash = tx_hash
@@ -64,12 +70,13 @@ def register_blockchain_ledger():
     try:
         with engine.begin() as conn:
             conn.execute(query_audit, {"tx": str(tx_hash)})
+
             conn.execute(
-                query_ledger, {"d_id": diag_id, "h": str(tx_hash), "tx": str(tx_hash)}
+                query_ledger,
+                {"d_id": str(diag_id), "h": str(tx_hash), "tx": str(tx_hash)},
             )
 
         print(f"🚀 [SUCESSO]: Tabelas clinical_decisions e ledger atualizadas via SQL!")
-
         return jsonify(
             {
                 "status": "success",
