@@ -1,10 +1,31 @@
 import os
+# Silencia logs em C++ do TensorFlow antes de ele carregar
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+import warnings
+import logging
+# Silencia logs em Python do TensorFlow
+logging.getLogger('tensorflow').setLevel(logging.FATAL)
+
 import gc
 import cv2
 import pandas as pd
 import numpy as np
 import joblib
-from deepface import DeepFace  # type: ignore
+from typing import Any
+
+# 1. Mordaça nível C++
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+os.environ["AUTOGRAPH_VERBOSITY"] = "0"
+
+# 2. Mordaça nível Python (O QUE VAI RESOLVER O SEU ERRO)
+warnings.filterwarnings('ignore') 
+logging.getLogger('tensorflow').setLevel(logging.FATAL)
+
+# 3. Mordaça no Keras (Força o Keras a calar a boca durante o carregamento)
+os.environ["TF_USE_LEGACY_KERAS"] = "1"
+
+# Só depois da blindagem acima nós importamos o DeepFace
+from deepface import DeepFace
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
 from sklearn.preprocessing import StandardScaler
