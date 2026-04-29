@@ -15,6 +15,7 @@ xray_cnn.h5
 backend/modules/arbovirus/datasets/
 backend/modules/chest_xray/datasets/
 backend/modules/glaucoma/datasets/
+backend/modules/womens_health/datasets/
 __pycache__/
 wsl
 .csv
