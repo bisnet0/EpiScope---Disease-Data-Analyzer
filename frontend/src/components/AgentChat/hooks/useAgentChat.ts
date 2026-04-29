@@ -36,32 +36,19 @@ export const useAgentChat = () => {
       setIsLoading(true);
 
       try {
-        const ctx = detail.consultationType || "SAÚDE DA MULHER";
+        const context = detail.consultationType || "TRIAGEM_VIOLENCIA";
 
-        const emergencyContent = `[SISTEMA EPISCOPE]: 🚨 ALERTA DE RISCO DETECTADO 🚨
-      
-Contexto: ${ctx}
-Motivo: ${detail.diagnosis}
-
-Doutor, utilize IMEDIATAMENTE a ferramenta 'fetch_womens_health_biomarkers' para o contexto "${ctx}". 
-Analise os dados crus do banco, identifique incongruências entre áudio/vídeo e forneça o protocolo de acolhimento agora. 
-Não peça mais informações, os dados já estão no banco de dados.`;
+        const emergencyContent = `🚨 **ALERTA DE EMERGÊNCIA ATIVADO** 🚨\n\nIdentifiquei um quadro de atenção severa:\n*"${detail.diagnosis}"*\n\nJá iniciei a auditoria. **Dr. EpiScope**, por favor, acesse os dados cruzados da paciente (utilize a ferramenta 'fetch_womens_health_biomarkers' para o contexto "${context}").\n\nAnalisando o áudio e o vídeo juntos, como devo conduzir o protocolo de acolhimento agora?`;
 
         await sendChatMessageApi({
           message: emergencyContent,
           attachment: null,
         });
+
         const history = await fetchChatHistory();
         setMessages(history);
       } catch (error) {
-        console.error("❌ Erro ao persistir alerta de emergência:", error);
-
-        const fallbackMsg: Message = {
-          id: `temp-${Date.now()}`,
-          role: "agent",
-          content: `🚨 **ALERTA (SESSÃO LOCAL)**: Erro ao salvar no banco, mas a severidade é ALTA para: ${detail.diagnosis}`,
-        };
-        setMessages((prev) => [...prev, fallbackMsg]);
+        console.error("❌ Erro ao persistir alerta:", error);
       } finally {
         setIsLoading(false);
         scrollToBottom();
