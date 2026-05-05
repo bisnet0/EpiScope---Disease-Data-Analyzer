@@ -1,12 +1,13 @@
 from langchain.tools import tool
 from backend.modules.core_agent.services.rag_service import search_knowledge_base
 
+
 @tool("rag_clinical_tool")
 def rag_clinical_tool(query: str):
     """
     Busca na base de conhecimento (PDFs médicos, protocolos do Ministério da Saúde, artigos científicos).
-    USE ESTA FERRAMENTA SEMPRE que o paciente pedir explicações aprofundadas sobre Dengue, Zika, Chikungunya ou Glaucoma,
-    ou quando precisar recomendar procedimentos, laudos estruturados e diretrizes clínicas oficiais.
+    USE ESTA FERRAMENTA SEMPRE que o paciente pedir explicações aprofundadas sobre doenças (Dengue, Zika, Chikungunya, Glaucoma),
+    ou sobre SAÚDE DA MULHER, TRIAGEM DE VIOLÊNCIA, ANOMALIAS VOCAIS, MICROEXPRESSÕES FACIAIS e protocolos de acolhimento.
     """
     print(f"\n[AGENTE] 📚 Consultando a biblioteca médica para: '{query}'...")
 

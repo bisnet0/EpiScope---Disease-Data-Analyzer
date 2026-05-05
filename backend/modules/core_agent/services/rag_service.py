@@ -2,12 +2,13 @@ import os
 from langchain_community.document_loaders import PyPDFDirectoryLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
-from langchain_community.embeddings import HuggingFaceEmbeddings # type: ignore
+from langchain_community.embeddings import HuggingFaceEmbeddings  # type: ignore
 
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-# Os PDFs que alimentam o RAG ficam aqui:
-KB_DIR = os.path.join(SCRIPT_DIR, "datasets")
+
+# 👇 AJUSTE 1: Voltar uma pasta ("..") para achar o 'datasets' que está na raiz do core_agent
+KB_DIR = os.path.join(SCRIPT_DIR, "..", "datasets")
 
 # A pasta destino dos artefatos
 TRAIN_RESULTS_DIR = os.path.join(SCRIPT_DIR, "train_results")
@@ -46,24 +47,26 @@ def build_knowledge_base() -> bool:
     )
     vectorstore = FAISS.from_documents(documents=splits, embedding=embeddings)
 
-    # 👇 O Pulo do Gato: Salva na train_results com o prefixo 'rag'
-    vectorstore.save_local(TRAIN_RESULTS_DIR, index_name="rag")
-    print(f"[RAG] 💾 Cérebro médico salvo com sucesso em {TRAIN_RESULTS_DIR}/rag.faiss\n")
+    # 👇 AJUSTE 2: Salva na train_results com o nome 'rag_results'
+    vectorstore.save_local(TRAIN_RESULTS_DIR, index_name="rag_results")
+    print(
+        f"[RAG] 💾 Cérebro médico salvo com sucesso em {TRAIN_RESULTS_DIR}/rag_results.faiss\n"
+    )
     return True
 
 
 def search_knowledge_base(query: str, k: int = 3) -> str:
     """Busca no banco FAISS os k fragmentos mais relevantes para a pergunta."""
-    # Verifica diretamente se o arquivo rag.faiss foi gerado
-    if not os.path.exists(os.path.join(TRAIN_RESULTS_DIR, "rag.faiss")):
+    # 👇 Verifica diretamente se o arquivo rag_results.faiss foi gerado
+    if not os.path.exists(os.path.join(TRAIN_RESULTS_DIR, "rag_results.faiss")):
         return "Aviso: Banco de conhecimento (FAISS) não encontrado. Inicialize o RAG primeiro."
 
-    # 👇 Carrega apontando para a pasta e pedindo especificamente o index_name="rag"
+    # 👇 Carrega apontando para a pasta e pedindo especificamente o index_name="rag_results"
     vectorstore = FAISS.load_local(
-        folder_path=TRAIN_RESULTS_DIR, 
-        embeddings=embeddings, 
-        index_name="rag",
-        allow_dangerous_deserialization=True
+        folder_path=TRAIN_RESULTS_DIR,
+        embeddings=embeddings,
+        index_name="rag_results",
+        allow_dangerous_deserialization=True,
     )
     retriever = vectorstore.as_retriever(search_kwargs={"k": k})
 
@@ -73,3 +76,7 @@ def search_knowledge_base(query: str, k: int = 3) -> str:
         [f"--- Trecho Científico ---\n{doc.page_content}" for doc in docs]
     )
     return results
+
+
+if __name__ == "__main__":
+    build_knowledge_base()
