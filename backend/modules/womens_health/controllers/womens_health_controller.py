@@ -196,3 +196,94 @@ def get_integrated_report():
         return jsonify(
             {"error": "Falha ao gerar relatório integrado", "details": str(e)}
         ), 500
+
+
+def analyze_laparoscopy_video():
+    """
+    Endpoint dedicado para análise de cirurgias ginecológicas usando YOLOv8.
+    Verifica presença de instrumentos e sangramento anômalo.
+    """
+    import os
+    import uuid
+    from flask import request, jsonify
+    from flask_jwt_extended import get_jwt_identity
+    from werkzeug.utils import secure_filename
+
+    from backend.modules.womens_health.services.laparoscopy_service import (
+        process_laparoscopy_video,
+    )
+    from backend.modules.womens_health.models.womens_models import WomensHealthAnalysis
+    from backend.modules.auth.models.user_model import db
+
+    current_user_id = get_jwt_identity()
+
+    if "file" not in request.files:
+        return jsonify({"error": "Nenhum arquivo de vídeo enviado"}), 400
+
+    video_file = request.files["file"]
+
+    if not video_file.filename:
+        return jsonify({"error": "Nenhum arquivo selecionado"}), 400
+
+    safe_original_name = video_file.filename or "cirurgia_laparo.mp4"
+
+    filename = secure_filename(safe_original_name)
+    temp_filename = f"laparo_{uuid.uuid4()}_{filename}"
+    video_path = os.path.join(VIDEO_TEMP_DIR, temp_filename)
+
+    try:
+        video_file.save(video_path)
+
+        analysis_result = process_laparoscopy_video(video_path)
+
+        if analysis_result.get("status") == "error":
+            if os.path.exists(video_path):
+                os.remove(video_path)
+            return jsonify(analysis_result), 400
+
+        clinical_alerts = analysis_result.get("clinical_alerts", [])
+        dominant_profile = "CIRURGIA DENTRO DA NORMALIDADE"
+
+        if clinical_alerts:
+            dominant_profile = (
+                f"ALERTA CIRÚRGICO: {len(clinical_alerts)} anomalia(s) detectada(s)"
+            )
+
+        raw_data = {
+            "items_detected": analysis_result.get("items_detected", {}),
+            "bleeding_ratio": analysis_result.get("bleeding_ratio", 0.0),
+        }
+
+        new_analysis = WomensHealthAnalysis(
+            exam_type="LAPAROSCOPY_VIDEO",
+            patient_id=current_user_id,
+            consultation_type="CIRURGIA_GINECOLOGICA",
+            dominant_result=dominant_profile,
+            raw_data=raw_data,
+        )
+
+        try:
+            db.session.add(new_analysis)
+            db.session.commit()
+            analysis_result["analysis_id"] = new_analysis.id
+        except Exception as db_error:
+            db.session.rollback()
+            print(f"❌ [DB ERROR]: {str(db_error)}")
+
+            analysis_result["db_error"] = "Aviso: Não foi possível salvar o histórico."
+
+        if os.path.exists(video_path):
+            os.remove(video_path)
+
+        return jsonify(analysis_result), 200
+
+    except Exception as e:
+        if os.path.exists(video_path):
+            os.remove(video_path)
+        print(f"❌ [LAPAROSCOPY ERROR]: {str(e)}")
+        return jsonify(
+            {
+                "error": "Falha no processamento da cirurgia laparoscópica",
+                "details": str(e),
+            }
+        ), 500
