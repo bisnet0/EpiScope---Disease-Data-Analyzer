@@ -1,39 +1,37 @@
 import os
 from ultralytics import YOLO  # type: ignore
 
+# Pega a pasta onde este script está (ml-workflow)
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+# Aponta para o YAML que acabamos de criar
+YAML_PATH = os.path.join(SCRIPT_DIR, "..", "datasets", "laparoscopy_data", "data.yaml")
+
 
 def train_laparoscopy_model():
     print("🚀 Iniciando treinamento do YOLOv8 para Cirurgias Laparoscópicas...")
 
-    # 1. Carrega o modelo base "Nano" (yolov8n.pt).
-    # É o mais leve e rápido, ideal para rodar sem placa de vídeo (CPU) ou para projetos acadêmicos.
+    # Baixa a rede neural convolucional YOLOv8 "Nano" (leve e rápida)
     model = YOLO("yolov8n.pt")
 
-    # Define os caminhos
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    yaml_path = os.path.join(base_dir, "datasets", "laparoscopy_data", "data.yaml")
-
-    if not os.path.exists(yaml_path):
-        print(f"❌ Arquivo data.yaml não encontrado em: {yaml_path}")
+    if not os.path.exists(YAML_PATH):
+        print(f"❌ Erro: Arquivo data.yaml não encontrado em: {YAML_PATH}")
         return
 
-    # 2. Inicia o Treinamento
-    # Para testes iniciais, 5 a 10 épocas são suficientes para gerar o arquivo.
-    # Para a versão final da banca, você pode subir para 50.
+    # Inicia o Treinamento
+    print(f"📄 Lendo configurações do dataset em: {YAML_PATH}")
     results = model.train(
-        data=yaml_path,
-        epochs=10,  # Quantas vezes ele vai estudar o material
-        imgsz=640,  # Tamanho padrão da imagem
-        batch=4,  # Lotes de imagens por vez (mantenha baixo se for treinar na CPU)
-        name="laparo_model",  # Nome da pasta de resultados
-        device="cpu",  # Mude para "0" se tiver placa de vídeo NVIDIA configurada com CUDA
+        data=YAML_PATH,
+        epochs=5,  # 👇 Coloquei apenas 5 épocas para você ver o resultado rápido hoje! Depois para a banca você pode por 30 ou 50.
+        imgsz=640,  # Tamanho padrão que a IA enxerga
+        batch=4,  # Quantas imagens ele estuda de uma vez
+        name="laparo_model",
+        device="cpu",  # Se você tiver uma placa de vídeo da NVIDIA configurada, mude para 0
     )
 
-    print("\n✅ Treinamento Finalizado!")
+    print("\n✅ Treinamento Finalizado com Sucesso!")
     print(
-        "O seu novo cérebro cirúrgico (best.pt) foi salvo na pasta 'runs/detect/laparo_model/weights/'."
+        "O seu modelo treinado (best.pt) foi salvo na pasta 'runs/detect/laparo_model/weights/'."
     )
-    print("Copie ele para a sua pasta 'models' e renomeie para 'yolo_laparoscopy.pt'!")
 
 
 if __name__ == "__main__":

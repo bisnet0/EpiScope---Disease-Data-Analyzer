@@ -35,6 +35,7 @@ torch
 tf-keras
 mediapipe
 deepface
+ultralytics
 
 # Utilidades
 Pillow
