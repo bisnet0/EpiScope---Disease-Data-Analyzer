@@ -1,6 +1,11 @@
 import os
 import uuid
 from flask import request, jsonify
+from flask_jwt_extended import get_jwt_identity
+from backend.modules.womens_health.services.menstrual_service import (
+    update_cycle_data_service,
+    analyze_cycle_with_wearables,
+)
 
 
 VIDEO_TEMP_DIR = "temp_videos"
@@ -287,3 +292,23 @@ def analyze_laparoscopy_video():
                 "details": str(e),
             }
         ), 500
+
+
+def update_cycle_profile():
+    """Atualiza as configurações base do ciclo menstrual da usuária"""
+    current_user_id = get_jwt_identity()
+    data = request.get_json()
+
+    if not data:
+        return jsonify({"error": "Nenhum dado enviado"}), 400
+
+    result, status = update_cycle_data_service(current_user_id, data)
+    return jsonify(result), status
+
+
+def get_cycle_prediction():
+    """Busca a previsão do ciclo cruzando com dados cardíacos de wearables"""
+    current_user_id = get_jwt_identity()
+
+    result, status = analyze_cycle_with_wearables(current_user_id)
+    return jsonify(result), status
