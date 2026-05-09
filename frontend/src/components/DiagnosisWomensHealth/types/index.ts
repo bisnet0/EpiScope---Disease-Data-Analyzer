@@ -46,9 +46,28 @@ export interface LaparoscopyAnalysisResponse {
   bleeding_ratio?: number;
   clinical_alerts?: string[];
   maestro_recommendation?: string;
-  annotated_frames?: string[]; 
+  annotated_frames?: string[];
   error?: string;
   details?: string;
+}
+
+export interface CycleProfilePayload {
+  last_period_start: string; // Formato YYYY-MM-DD
+  average_cycle_length: number;
+  is_perimenopause: boolean;
+}
+
+export interface CyclePredictionResponse {
+  status: string;
+  message?: string;
+  current_day_of_cycle?: number;
+  estimated_phase?: string;
+  next_period_prediction?: string;
+  wearable_telemetry?: {
+    heart_rate: number | null;
+    source: string | null;
+  };
+  clinical_insights?: string[];
 }
 
 export type AnalysisStatus = "idle" | "analyzing" | "success" | "error";

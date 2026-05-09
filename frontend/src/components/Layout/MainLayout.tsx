@@ -29,6 +29,7 @@ import { WomensHealthModule } from "../DiagnosisWomensHealth/WomensHealthModule"
 import { LaparoscopyPage } from "../DiagnosisWomensHealth/LaparoscopyPage";
 import { LoginForm } from "../Login/LoginForm";
 import AgentChat from "../AgentChat/AgentChat";
+import { CyclePredictor } from "../DiagnosisWomensHealth/components/CyclePredictor";
 
 export const MainLayout: React.FC = () => {
   const [mode, setMode] = useState<AppMode>("dashboard");
@@ -167,6 +168,7 @@ export const MainLayout: React.FC = () => {
           {mode === "WomensHealth" && <WomensHealthModule />}
           {mode === "womens-biomarkers" && <WomensHealthModule />}
           {mode === "womens-surgery" && <LaparoscopyPage />}
+          {mode === "womens-predictive" && <CyclePredictor />}
         </Box>
 
         <Footer />

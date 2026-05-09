@@ -1,11 +1,11 @@
-import { Activity, Mask, Record, Record2Fill } from "react-bootstrap-icons";
-import { FaBiohazard, FaCreativeCommonsNcJp, FaMaskFace, FaMosquito, FaRegEye } from "react-icons/fa6";
-import { PiMaskHappy, PiSignatureLight } from "react-icons/pi";
-import { GiLungs } from "react-icons/gi";
-import { BsFillEmojiExpressionlessFill, BsFillRecord2Fill, BsHeartPulseFill } from "react-icons/bs";
+import { Activity, Calendar, Calendar2, Calendar2Date, Calendar2MonthFill } from "react-bootstrap-icons";
+import { FaMosquito, FaRegEye } from "react-icons/fa6";
+import { PiDrop, PiSignatureLight } from "react-icons/pi";
+import { GiBlood, GiLungs } from "react-icons/gi";
+import { BsHeartPulseFill } from "react-icons/bs";
 import { SlUserFemale } from "react-icons/sl";
 import { FiActivity, FiVideo } from "react-icons/fi"; // Ícones para os submenus
-import { FaAudioDescription, FaMask, FaTheaterMasks } from "react-icons/fa";
+import { FaTheaterMasks } from "react-icons/fa";
 
 // 1. Atualizamos o AppMode com os novos IDs dos submenus
 export type AppMode =
@@ -17,7 +17,8 @@ export type AppMode =
   | "health-stats-panel"
   | "WomensHealth" // O menu pai
   | "womens-biomarkers" // Submenu 1: Áudio e Vídeo
-  | "womens-surgery"; // Submenu 2: Cirurgia YOLO
+  | "womens-surgery" // Submenu 2: Cirurgia YOLO
+  | "womens-predictive"; // Submenu 3: Previsão de Ciclo
 
 // 2. Criamos a interface para o TypeScript entender o dropdown
 export interface NavItem {
@@ -49,6 +50,11 @@ export const NAV_ITEMS: NavItem[] = [
         id: "womens-surgery",
         label: "Análise Cirúrgica",
         icon: FiVideo,
+      },
+      {
+        id: "womens-predictive",
+        label: "Previsão de Ciclo",
+        icon: PiDrop,
       },
     ],
   },
