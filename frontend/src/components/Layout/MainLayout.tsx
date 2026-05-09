@@ -23,8 +23,10 @@ import { DiagnosisArbovirusForm } from "../DiagnosisArbovirus/DiagnosisArbovirus
 import { DiagnosisGlaucomaForm } from "../DiagnosisGlaucoma/DiagnosisGlaucomaPage";
 import { DiagnosisDAppForm } from "../DiagnosisDApp/DiagnosisDAppForm";
 import { DiagnosisXRayForm } from "../DiagnosisXRay/components/DiagnosisXRay";
-import HealthStatsPanelPage from "../HealthStatsPanel/HealthStatsPanelPage"
+import HealthStatsPanelPage from "../HealthStatsPanel/HealthStatsPanelPage";
 import { WomensHealthModule } from "../DiagnosisWomensHealth/WomensHealthModule";
+// 👇 IMPORTANDO O NOVO COMPONENTE DO YOLO
+import { LaparoscopyPage } from "../DiagnosisWomensHealth/LaparoscopyPage";
 import { LoginForm } from "../Login/LoginForm";
 import AgentChat from "../AgentChat/AgentChat";
 
@@ -160,10 +162,11 @@ export const MainLayout: React.FC = () => {
           {mode === "image" && <DiagnosisGlaucomaForm />}
           {mode === "x-ray" && <DiagnosisXRayForm />}
           {mode === "health-stats-panel" && <HealthStatsPanelPage />}
+
+          {/* 👇 MAPEAMENTO DOS NOVOS MODOS DA SAÚDE DA MULHER */}
           {mode === "WomensHealth" && <WomensHealthModule />}
-
-
-
+          {mode === "womens-biomarkers" && <WomensHealthModule />}
+          {mode === "womens-surgery" && <LaparoscopyPage />}
         </Box>
 
         <Footer />

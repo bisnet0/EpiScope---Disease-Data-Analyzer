@@ -4,15 +4,51 @@ import { PiSignatureLight } from "react-icons/pi";
 import { GiLungs } from "react-icons/gi";
 import { BsHeartPulseFill } from "react-icons/bs";
 import { SlUserFemale } from "react-icons/sl";
+import { FiActivity, FiVideo } from "react-icons/fi"; // Ícones para os submenus
 
-export type AppMode = "dashboard" | "web2" | "web3" | "image" | "x-ray" | "health-stats-panel" | "WomensHealth";
+// 1. Atualizamos o AppMode com os novos IDs dos submenus
+export type AppMode =
+  | "dashboard"
+  | "web2"
+  | "web3"
+  | "image"
+  | "x-ray"
+  | "health-stats-panel"
+  | "WomensHealth" // O menu pai
+  | "womens-biomarkers" // Submenu 1: Áudio e Vídeo
+  | "womens-surgery"; // Submenu 2: Cirurgia YOLO
 
-export const NAV_ITEMS = [
-  { id: "dashboard" as AppMode, label: "Dashboard", icon: Activity },
-  { id: "web2" as AppMode, label: "Arboviroses", icon: FaMosquito },
-  { id: "image" as AppMode, label: "Glaucoma", icon: FaRegEye },
-  { id: "web3" as AppMode, label: "Assinatura", icon: PiSignatureLight },
-  { id: "x-ray" as AppMode, label: "Análise Pulmonar", icon: GiLungs },
-  { id: "health-stats-panel" as AppMode, label: "Bem-estar", icon: BsHeartPulseFill },
-  { id: "WomensHealth" as AppMode, label: "Saúde da Mulher", icon: SlUserFemale },
+// 2. Criamos a interface para o TypeScript entender o dropdown
+export interface NavItem {
+  id: AppMode;
+  label: string;
+  icon: any;
+  children?: NavItem[]; // A mágica do dropdown acontece aqui
+}
+
+// 3. Montamos o array final
+export const NAV_ITEMS: NavItem[] = [
+  { id: "dashboard", label: "Dashboard", icon: Activity },
+  { id: "web2", label: "Arboviroses", icon: FaMosquito },
+  { id: "image", label: "Glaucoma", icon: FaRegEye },
+  { id: "web3", label: "Assinatura", icon: PiSignatureLight },
+  { id: "x-ray", label: "Análise Pulmonar", icon: GiLungs },
+  { id: "health-stats-panel", label: "Bem-estar", icon: BsHeartPulseFill },
+  {
+    id: "WomensHealth",
+    label: "Saúde da Mulher",
+    icon: SlUserFemale,
+    children: [
+      {
+        id: "womens-biomarkers",
+        label: "Biomarcadores",
+        icon: FiActivity,
+      },
+      {
+        id: "womens-surgery",
+        label: "Análise Cirúrgica",
+        icon: FiVideo,
+      },
+    ],
+  },
 ];

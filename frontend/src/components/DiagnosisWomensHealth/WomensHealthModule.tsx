@@ -74,10 +74,11 @@ export const WomensHealthModule: React.FC = () => {
         >
           <Box>
             <Heading size="md" letterSpacing="tight" color={themeFx.textColor}>
-              Saúde da Mulher
+              Biomarcadores
             </Heading>
             <Text fontSize="sm" color={themeFx.mutedText}>
-              Triagem Multimodal com Análise de Microexpressões (EpiScope AI)
+              Triagem Multimodal com Análise de Microexpressões e Biomarcadores
+              Vocais
             </Text>
           </Box>
 
