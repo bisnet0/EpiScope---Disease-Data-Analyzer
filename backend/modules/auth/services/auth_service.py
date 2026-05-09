@@ -7,6 +7,7 @@ from flask_jwt_extended import (
 # 👇 O IMPORT CORRIGIDO APONTANDO PARA A NOVA CASA
 from backend.modules.auth.models.user_model import db, User
 
+
 def register_user_service(username, email, password):
     if (
         User.query.filter_by(email=email).first()
@@ -64,3 +65,23 @@ def refresh_token_service(current_user_id):
 
     new_access_token = create_access_token(identity=current_user_id)
     return {"access_token": new_access_token}, 200
+
+
+def update_user_preferences_service(user_id, preferences_data):
+    user = User.query.get(user_id)
+    if not user:
+        return {"error": "Usuário não encontrado"}, 404
+
+    try:
+        if "hide_surgery_warning" in preferences_data:
+            user.hide_surgery_warning = bool(preferences_data["hide_surgery_warning"])
+
+        db.session.commit()
+        return {
+            "message": "Preferências atualizadas com sucesso",
+            "user": user.to_dict(),
+        }, 200
+
+    except Exception as e:
+        db.session.rollback()
+        return {"error": f"Erro ao salvar preferências: {str(e)}"}, 500

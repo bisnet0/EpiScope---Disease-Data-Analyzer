@@ -7,7 +7,8 @@ from backend.modules.auth.controllers.auth_controller import (
     login_user,
     logout_user,
     refresh_access_token,
-    get_current_user_info
+    get_current_user_info,
+    update_user_preferences,
 )
 
 # Criamos o Blueprint com o prefixo
@@ -21,7 +22,13 @@ auth_bp.route("/login", methods=["POST"])(login_user)
 auth_bp.route("/logout", methods=["POST"])(logout_user)
 
 # Importante: refresh=True exige o Refresh Token Cookie
-auth_bp.route("/refresh", methods=["POST"])(jwt_required(refresh=True)(refresh_access_token))
+auth_bp.route("/refresh", methods=["POST"])(
+    jwt_required(refresh=True)(refresh_access_token)
+)
 
 # Rota de Perfil
 auth_bp.route("/me", methods=["GET"])(jwt_required()(get_current_user_info))
+
+auth_bp.route("/preferences", methods=["PATCH"])(
+    jwt_required()(update_user_preferences)
+)

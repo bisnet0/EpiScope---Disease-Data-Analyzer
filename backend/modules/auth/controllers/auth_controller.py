@@ -12,7 +12,18 @@ from backend.modules.auth.services.auth_service import (
     login_user_service,
     get_user_by_id,
     refresh_token_service,
+    update_user_preferences_service,
 )
+
+def update_user_preferences():
+    current_user_id = get_jwt_identity()
+    data = request.get_json()
+    
+    if not data:
+        return jsonify({"error": "Nenhum dado enviado"}), 400
+
+    result, status = update_user_preferences_service(current_user_id, data)
+    return jsonify(result), status
 
 
 def register_user():

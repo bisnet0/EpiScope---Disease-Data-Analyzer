@@ -6,20 +6,25 @@ from typing import Any, Dict
 
 db: SQLAlchemy = SQLAlchemy()
 
-class User(db.Model):  # type: ignore
-    __tablename__ = 'users'
 
-    id: Any = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+class User(db.Model):  # type: ignore
+    __tablename__ = "users"
+
+    id: Any = db.Column(
+        db.String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
     username: Any = db.Column(db.String(80), unique=True, nullable=False)
     email: Any = db.Column(db.String(120), unique=True, nullable=False)
     password_hash: Any = db.Column(db.String(256), nullable=False)
     created_at: Any = db.Column(db.DateTime, default=datetime.utcnow)
+    hide_surgery_warning: Any = db.Column(db.Boolean, default=False)
 
-    # 👇 ADICIONE ISTO AQUI! O construtor explícito que o Pylance exige.
     def __init__(self, username: str, email: str, **kwargs: Any):
         self.username = username
         self.email = email
-        super().__init__(**kwargs) # Garante que o SQLAlchemy faça a mágica dele com o resto
+        super().__init__(
+            **kwargs
+        )  # Garante que o SQLAlchemy faça a mágica dele com o resto
 
     def set_password(self, password: str) -> None:
         """Cria o hash da senha para não salvar texto puro"""
@@ -34,5 +39,5 @@ class User(db.Model):  # type: ignore
             "id": str(self.id),
             "username": str(self.username),
             "email": str(self.email),
-            "created_at": self.created_at.isoformat() if self.created_at else None
+            "created_at": self.created_at.isoformat() if self.created_at else None,
         }
