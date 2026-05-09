@@ -3,6 +3,10 @@ from typing import Dict, Any
 from backend.modules.womens_health.services.womens_orchestrator_service import (
     get_integrated_health_report,
 )
+from backend.modules.womens_health.services.menstrual_service import (
+    analyze_cycle_with_wearables,
+)
+from flask_jwt_extended import get_jwt_identity
 
 
 @tool
@@ -150,3 +154,59 @@ def fetch_womens_health_biomarkers(consultation_type: str = "GENERAL") -> str:
         )
     except Exception as e:
         return f"Erro ao acessar biomarcadores: {str(e)}"
+
+
+@tool
+def fetch_menstrual_cycle_biomarkers() -> str:
+    """
+    Busca os dados preditivos do ciclo menstrual da paciente, cruzados com
+    telemetria de wearables (Google Fit / Strava), incluindo a Frequência Cardíaca de Repouso (RHR)
+    e alertas de atraso ou perimenopausa.
+    """
+    try:
+        current_user_id = get_jwt_identity()
+
+        if not current_user_id:
+            return (
+                "Erro: Token de acesso necessário para buscar dados sensíveis de ciclo."
+            )
+
+        # Desempacotando e tipando explicitamente para o Pylance
+        response_tuple = analyze_cycle_with_wearables(current_user_id)
+        result: dict = response_tuple[0]
+        status: int = response_tuple[1]
+
+        if status != 200 or result.get("status") == "pending":
+            return "Os dados de ciclo menstrual ainda não foram calibrados ou estão indisponíveis."
+
+        # 👇 A MÁGICA PRA CALAR O PYLANCE: Verificação estrita de tipo
+        telemetry = result.get("wearable_telemetry")
+        if not isinstance(telemetry, dict):
+            telemetry = {}
+
+        hr = telemetry.get("heart_rate") or "N/A"
+        source = telemetry.get("source") or "N/A"
+
+        report = (
+            f"🩺 RELATÓRIO PREDITIVO DE CICLO E WEARABLES:\n"
+            f"- Dia do Ciclo Atual: {result.get('current_day_of_cycle')}\n"
+            f"- Fase Estimada: {result.get('estimated_phase')}\n"
+            f"- Frequência Cardíaca de Repouso (RHR): {hr} BPM (Fonte: {source})\n"
+            f"- Previsão da Próxima Menstruação: {result.get('next_period_prediction')}\n\n"
+            f"💡 INSIGHTS CLÍNICOS:\n"
+        )
+
+        # Garantindo que é uma lista pro Pylance não chiar
+        insights = result.get("clinical_insights")
+        if isinstance(insights, list):
+            for insight in insights:
+                report += f"  * {insight}\n"
+
+        maestro_alert = result.get("maestro_recommendation")
+        if isinstance(maestro_alert, str) and maestro_alert:
+            report += f"\n🚨 ALERTA ATIVO DO SISTEMA:\n  * {maestro_alert}"
+
+        return report
+
+    except Exception as e:
+        return f"Erro ao acessar biomarcadores de ciclo: {str(e)}"

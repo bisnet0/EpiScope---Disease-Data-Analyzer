@@ -13,6 +13,7 @@ import {
   DrawerContent,
   DrawerCloseButton,
   Collapse,
+  Image,
 } from "@chakra-ui/react";
 import { FiChevronDown, FiChevronRight } from "react-icons/fi";
 import { NAV_ITEMS, type AppMode } from "./nav-config";
@@ -181,7 +182,10 @@ export const Sidebar: React.FC<Props> = ({
             borderColor={themeFx.headerBorder}
             color={themeFx.textColor}
           >
-            Menu de Navegação
+            <Flex align="center">
+              <Image src="/EpiScope.png" alt="Logo" w="36px" mr={3} />
+              <Text fontWeight={"light"}>EpiScope AI</Text>
+            </Flex>
           </DrawerHeader>
           <DrawerBody pt={6} px={0}>
             <SidebarContent />

@@ -38,6 +38,25 @@ export const useCyclePredictor = () => {
     fetchPrediction();
   }, [fetchPrediction]);
 
+  useEffect(() => {
+    if (prediction?.maestro_recommendation && prediction.maestro_recommendation.includes("ALERTA")) {
+      
+      showToast({
+        title: "Alerta de Severidade Ginecológica",
+        message: "O Maestro identificou necessidade de conduta clínica urgente.",
+        type: "info",
+      });
+
+      const event = new CustomEvent("openMaestroChat", {
+        detail: {
+          diagnosis: prediction.maestro_recommendation,
+          consultationType: "PREDICAO_CICLO" // Contexto para a tool do backend
+        },
+      });
+      window.dispatchEvent(event);
+    }
+  }, [prediction, showToast]);
+
   // Função para salvar as configurações e recalcular a previsão
   const updateProfile = async (payload: CycleProfilePayload) => {
     setIsUpdating(true);

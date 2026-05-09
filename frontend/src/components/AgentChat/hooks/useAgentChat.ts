@@ -36,19 +36,25 @@ export const useAgentChat = () => {
       setIsLoading(true);
 
       try {
-        const context = detail.consultationType || "TRIAGEM_VIOLENCIA";
+        let dynamicContent = "";
 
-        const emergencyContent = `🚨 **ALERTA DE EMERGÊNCIA ATIVADO** 🚨\n\nIdentifiquei um quadro de atenção severa:\n*"${detail.diagnosis}"*\n\nJá iniciei a auditoria. **Dr. EpiScope**, por favor, acesse os dados cruzados da paciente (utilize a ferramenta 'fetch_womens_health_biomarkers' para o contexto "${context}").\n\nAnalisando o áudio e o vídeo juntos, como devo conduzir o protocolo de acolhimento agora?`;
+        // Roteamento inteligente para o Maestro não alucinar contextos
+        if (detail.consultationType === "PREDICAO_CICLO") {
+          dynamicContent = `🚨 **ALERTA GINECOLÓGICO / ENDÓCRINO** 🚨\n\nIdentifiquei o seguinte quadro de atenção:\n*"${detail.diagnosis}"*\n\n**Dr. EpiScope**, por favor, utilize a ferramenta 'fetch_menstrual_cycle_biomarkers' para analisar a biometria e telemetria cardíaca da paciente.\n\nCom base no atraso e no RHR (Frequência Cardíaca de Repouso), qual a conduta clínica e exames sugeridos?`;
+        } else {
+          const context = detail.consultationType || "TRIAGEM_VIOLENCIA";
+          dynamicContent = `🚨 **ALERTA DE EMERGÊNCIA ATIVADO** 🚨\n\nQuadro de atenção severa:\n*"${detail.diagnosis}"*\n\n**Dr. EpiScope**, acesse os biomarcadores via 'fetch_womens_health_biomarkers' (contexto: "${context}"). Analise a correlação voz/vídeo e sugira o protocolo de acolhimento.`;
+        }
 
         await sendChatMessageApi({
-          message: emergencyContent,
+          message: dynamicContent,
           attachment: null,
         });
 
         const history = await fetchChatHistory();
         setMessages(history);
       } catch (error) {
-        console.error("❌ Erro ao persistir alerta:", error);
+        console.error("❌ Erro ao disparar Maestro:", error);
       } finally {
         setIsLoading(false);
         scrollToBottom();

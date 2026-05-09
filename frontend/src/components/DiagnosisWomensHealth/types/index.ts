@@ -68,6 +68,7 @@ export interface CyclePredictionResponse {
     source: string | null;
   };
   clinical_insights?: string[];
+  maestro_recommendation?: string;
 }
 
 export type AnalysisStatus = "idle" | "analyzing" | "success" | "error";
