@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Box, Flex, Heading, Text, Grid } from "@chakra-ui/react";
+import React, { Activity, useState } from "react";
+import { Box, Flex, Heading, Text, Grid, Icon } from "@chakra-ui/react";
 import { VideoAnalyzer } from "./components/VideoAnalyzer";
 import { AudioAnalyzer } from "./components/AudioAnalyzer";
 import { EmotionalSpectrum } from "./components/EmotionalSpectrum";
@@ -9,6 +9,9 @@ import { useAudioAnalyzer } from "./hooks/useAudioAnalyzer";
 import { useEmotionalSpectrum } from "./hooks/useEmotionalSpectrum";
 
 import { useWomensHealthThemeFx } from "./styles/theme-fx";
+import { EmojiAstonished, EmojiExpressionless, EmojiGrimace, Heart } from "react-bootstrap-icons";
+import { GiHappySkull } from "react-icons/gi";
+import { PiMaskHappy } from "react-icons/pi";
 
 export const WomensHealthModule: React.FC = () => {
   // 1. Invoca os micro-hooks
@@ -73,9 +76,18 @@ export const WomensHealthModule: React.FC = () => {
           pb={4}
         >
           <Box>
-            <Heading size="md" letterSpacing="tight" color={themeFx.textColor}>
-              Biomarcadores
-            </Heading>
+           <Heading
+        size="md"
+        mb={2}
+        color={themeFx.textColor}
+        display="flex"
+        alignItems="center"
+        gap={3}
+      >
+        <Icon as={PiMaskHappy} color={themeFx.accentColor} />
+       Biomarcadores
+       
+      </Heading>
             <Text fontSize="sm" color={themeFx.mutedText}>
               Triagem Multimodal com Análise de Microexpressões e Biomarcadores
               Vocais

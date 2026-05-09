@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import {
   Box,
   Flex,
@@ -30,11 +30,16 @@ import {
   FaEye,
 } from "react-icons/fa";
 
+import { useDisclosure } from "@chakra-ui/react";
+import { WarningAdvice } from "./components/WarningAdvice";
+
 import { useWomensHealthThemeFx } from "./styles/theme-fx";
 import { useLaparoscopyAnalyzer } from "./hooks/useLaparoscopyAnalyzer";
+import { userService } from "../Login/services/auth-service";
+import { CameraVideo, CameraVideoFill } from "react-bootstrap-icons";
 
 export const LaparoscopyPage: React.FC = () => {
-  // 1. Invoca o nosso hook do YOLO
+  const { isOpen, onOpen, onClose } = useDisclosure();
   const { selectedFile, isAnalyzing, result, handleFileChange, handleAnalyze } =
     useLaparoscopyAnalyzer();
 
@@ -50,6 +55,43 @@ export const LaparoscopyPage: React.FC = () => {
     ? (result.bleeding_ratio * 100).toFixed(1)
     : "0.0";
 
+  useEffect(() => {
+    const checkUserPreference = async () => {
+      try {
+        // Busca a preferência real no banco
+        const response = await userService.getMe();
+        const hideWarning = response?.hide_surgery_warning === true;
+
+        // Se o banco diz pra esconder, ou se ele já marcou e salvou no cache da sessão, não abre.
+        const cachedHide =
+          sessionStorage.getItem("@EpiScope:hideSurgeryWarning") === "true";
+
+        if (!hideWarning && !cachedHide) {
+          onOpen();
+        }
+      } catch (error) {
+        // Em caso de erro na API, por segurança, mostra o aviso.
+        onOpen();
+      }
+    };
+
+    checkUserPreference();
+  }, [onOpen]);
+
+  const handleWarningConfirm = async (dontShowAgain: boolean) => {
+    if (dontShowAgain) {
+      try {
+        // Salva no cache da sessão para a UI ficar rápida se o cara recarregar a tela
+        sessionStorage.setItem("@EpiScope:hideSurgeryWarning", "true");
+
+        // Envia o PATCH real pro banco
+        await userService.updatePreferences({ hide_surgery_warning: true });
+      } catch (error) {
+        console.error("Erro ao salvar preferência de aviso cirúrgico:", error);
+      }
+    }
+  };
+
   return (
     <Box
       p={6}
@@ -60,6 +102,11 @@ export const LaparoscopyPage: React.FC = () => {
       backdropFilter="blur(12px)"
       boxShadow="2xl"
     >
+      <WarningAdvice
+        isOpen={isOpen}
+        onClose={onClose}
+        onConfirm={handleWarningConfirm}
+      />
       <Flex direction="column" h="full" gap={6} color="white">
         {/* HEADER */}
         <Flex
@@ -71,7 +118,18 @@ export const LaparoscopyPage: React.FC = () => {
           pb={4}
         >
           <Box>
-            <Heading size="md" letterSpacing="tight" color={themeFx.textColor}>
+            <Heading
+              size="md"
+              display="flex"
+              alignItems="center"
+              color={themeFx.textColor}
+            >
+              <Icon
+                as={CameraVideoFill}
+                color={themeFx.cameraBg}
+                mr={2}
+                boxSize={5}
+              />
               Análise Cirúrgica
             </Heading>
             <Text fontSize="sm" color={themeFx.mutedText}>

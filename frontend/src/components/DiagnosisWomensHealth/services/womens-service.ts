@@ -19,6 +19,7 @@ export const womensService = {
   getIntegratedReport: async (type: string) => {
     return api.get(`/womens-health/get-report?consultation_type=${type}`);
   },
+  
 
   analyzeLaparoscopyVideo: async (
     file: File
@@ -31,6 +32,12 @@ export const womensService = {
     const response = await api.post("/womens-health/analyze-surgery", formData);
     return response.data;
   },
+};
+
+export const updateWarningPreference = async (dontShowAgain: boolean) => {
+  return api.patch("/users/preferences", {
+    hide_surgery_warning: dontShowAgain
+  });
 };
 
 const pingAndRefreshToken = async () => {

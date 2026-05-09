@@ -1,10 +1,11 @@
-import { Activity } from "react-bootstrap-icons";
-import { FaMosquito, FaRegEye } from "react-icons/fa6";
-import { PiSignatureLight } from "react-icons/pi";
+import { Activity, Mask, Record, Record2Fill } from "react-bootstrap-icons";
+import { FaBiohazard, FaCreativeCommonsNcJp, FaMaskFace, FaMosquito, FaRegEye } from "react-icons/fa6";
+import { PiMaskHappy, PiSignatureLight } from "react-icons/pi";
 import { GiLungs } from "react-icons/gi";
-import { BsHeartPulseFill } from "react-icons/bs";
+import { BsFillEmojiExpressionlessFill, BsFillRecord2Fill, BsHeartPulseFill } from "react-icons/bs";
 import { SlUserFemale } from "react-icons/sl";
 import { FiActivity, FiVideo } from "react-icons/fi"; // Ícones para os submenus
+import { FaAudioDescription, FaMask, FaTheaterMasks } from "react-icons/fa";
 
 // 1. Atualizamos o AppMode com os novos IDs dos submenus
 export type AppMode =
@@ -42,7 +43,7 @@ export const NAV_ITEMS: NavItem[] = [
       {
         id: "womens-biomarkers",
         label: "Biomarcadores",
-        icon: FiActivity,
+        icon: FaTheaterMasks,
       },
       {
         id: "womens-surgery",

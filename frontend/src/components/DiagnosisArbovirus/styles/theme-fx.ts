@@ -4,6 +4,7 @@ export const useDiagnosisThemeFx = () => {
   // Efeito Liquid Glass para os cards principais
   const cardBg = useColorModeValue('rgba(255, 255, 255, 0.85)', 'rgba(30, 34, 45, 0.85)');
   const cardBorder = useColorModeValue('rgba(255, 255, 255, 0.4)', 'rgba(255, 255, 255, 0.08)');
+  const mosquitoBg = useColorModeValue('#099d13', '#0d832c'); // Roxo translúcido para o ícone do mosquito
   
   // Fundos para inputs e áreas de destaque (como os gráficos)
   const inputBg = useColorModeValue('white', 'whiteAlpha.100');
@@ -29,6 +30,7 @@ export const useDiagnosisThemeFx = () => {
     brandColor,
     chartGridColor,
     chartTextColor,
-    tooltipBg
+    tooltipBg,
+    mosquitoBg
   };
 };

@@ -7,6 +7,7 @@ export const useWomensHealthThemeFx = () => {
   
   const innerBg = useColorModeValue('gray.50', 'rgba(0, 0, 0, 0.2)');
   const inputBg = useColorModeValue('white', 'whiteAlpha.100');
+  const cameraBg = useColorModeValue('#4399df', '#4399df');
   
   const textColor = useColorModeValue('gray.800', 'white');
   const mutedText = useColorModeValue('gray.600', 'gray.400');
@@ -23,6 +24,7 @@ export const useWomensHealthThemeFx = () => {
     textColor,
     mutedText,
     accentColor,
-    badgeBg
+    badgeBg,
+    cameraBg
   };
 };

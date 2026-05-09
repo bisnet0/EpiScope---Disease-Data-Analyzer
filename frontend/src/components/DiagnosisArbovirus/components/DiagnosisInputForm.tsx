@@ -10,10 +10,12 @@ import {
   VStack,
   keyframes,
   Heading,
-  Text
+  Text,
+  Icon
 } from '@chakra-ui/react';
 import { useDiagnosisThemeFx } from '../styles/theme-fx';
 import { type FormProps } from '../types';
+import { FaMosquito } from 'react-icons/fa6';
 
 export const DiagnosisInputForm: React.FC<FormProps> = ({
   textDescription, setTextDescription, age, setAge, sex, setSex, loading, onSubmit
@@ -40,9 +42,20 @@ export const DiagnosisInputForm: React.FC<FormProps> = ({
     >
       <VStack spacing={5} align="stretch">
         
-        <Heading size="md" color={themeFx.textColor}>
-          1. Análise Clínica (Arboviroses)
-        </Heading>
+        <Heading
+              size="md"
+              display="flex"
+              alignItems="center"
+              color={themeFx.textColor}
+            >
+              <Icon
+                as={FaMosquito}
+                color={themeFx.mosquitoBg}
+                mr={2}
+                boxSize={5}
+              />
+              Análise Clínica
+            </Heading>
 
         <FormControl isRequired>
           <FormLabel color={themeFx.textColor}>Descreva seus sintomas:</FormLabel>
@@ -83,7 +96,7 @@ export const DiagnosisInputForm: React.FC<FormProps> = ({
 
         <Button 
           type="submit" 
-          colorScheme="blue" 
+          colorScheme="green" 
           size="lg" 
           isLoading={loading} 
           loadingText="Consultando Maestro e Auditoria..."
