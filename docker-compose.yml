@@ -1,4 +1,17 @@
 services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: episcope_front
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      - backend
+    networks:
+      - episcope-net
+
   backend:
     build:
       context: ./backend
@@ -58,7 +71,6 @@ volumes:
   postgres_data:
   pgadmin_data:
   backend_model_artifacts:
-
 
 networks:
   episcope-net:
