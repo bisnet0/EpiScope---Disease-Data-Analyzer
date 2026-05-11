@@ -6,11 +6,14 @@ services:
     container_name: episcope_front
     restart: always
     ports:
-      - "8080:8080"
+      - "80:80"
+      - "443:443"
     depends_on:
       - backend
     networks:
       - episcope-net
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt:ro
 
   backend:
     build:
@@ -46,7 +49,7 @@ services:
     networks:
       - episcope-net
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 5
