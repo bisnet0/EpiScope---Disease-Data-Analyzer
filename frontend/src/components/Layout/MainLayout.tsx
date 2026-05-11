@@ -120,7 +120,7 @@ export const MainLayout: React.FC = () => {
         >
           <Image
             // ⚠️ COLOQUE O CAMINHO DA SUA IMAGEM DE DESKTOP AQUI ⚠️
-            src="/public/Dr.EpiScope.png"
+            src="/Dr.EpiScope.png"
             alt="Login Hero"
             objectFit="cover" // Garante que a imagem cubra toda a área sem distorcer
             w="full"
