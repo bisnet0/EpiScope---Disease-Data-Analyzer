@@ -39,7 +39,7 @@ export const LoginForm: React.FC = () => {
         <Toast
           type="error"
           title={state.isLogin ? "Erro ao fazer login" : "Erro ao criar conta"}
-          message="Usuário ou senha incorretos"
+          message={state.error}
           duration={4000}
           onClose={() => {
             setters.setError(null);

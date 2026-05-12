@@ -9,11 +9,6 @@ export const useToastThemeFx = () => {
     '0 20px 40px -4px rgba(0, 0, 0, 0.1)', 
     '0 20px 40px -4px rgba(0, 0, 0, 0.4)'
   );
-  const labelColor = useColorModeValue('gray.600', 'gray.400');
-  const inputBorder = useColorModeValue('gray.300', 'gray.600');
-  const textColor = useColorModeValue('gray.800', 'white');
-  const inputBg = useColorModeValue('white', 'gray.700');
-  const inputFocusBorder = useColorModeValue('blue.500', 'blue.300');
 
   // Cores de texto
   const titleColor = useColorModeValue('gray.800', '#FFFFFF');
@@ -32,11 +27,6 @@ export const useToastThemeFx = () => {
     messageColor,
     closeIconColor,
     closeIconHoverBg,
-    closeIconHoverColor,
-    labelColor,
-    inputBorder,
-    textColor,
-    inputBg,
-    inputFocusBorder,
+    closeIconHoverColor
   };
 };

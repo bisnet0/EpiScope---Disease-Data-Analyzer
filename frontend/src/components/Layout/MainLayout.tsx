@@ -30,6 +30,7 @@ import { LaparoscopyPage } from "../DiagnosisWomensHealth/LaparoscopyPage";
 import { LoginForm } from "../Login/LoginForm";
 import AgentChat from "../AgentChat/AgentChat";
 import { CyclePredictor } from "../DiagnosisWomensHealth/components/CyclePredictor";
+import { ProfilePage } from "../Profile/ProfilePage";
 
 export const MainLayout: React.FC = () => {
   const [mode, setMode] = useState<AppMode>("dashboard");
@@ -134,7 +135,7 @@ export const MainLayout: React.FC = () => {
   // --- APLICAÇÃO PRINCIPAL (Autenticado) ---
   return (
     <Flex minH="100vh" bg={themeFx.appBg} transition="background 0.2s">
-      <Navbar onOpenSidebar={onOpen} />
+      <Navbar onOpenSidebar={onOpen} setMode={setMode} />
       <Sidebar
         mode={mode}
         setMode={setMode}
@@ -169,6 +170,7 @@ export const MainLayout: React.FC = () => {
           {mode === "womens-biomarkers" && <WomensHealthModule />}
           {mode === "womens-surgery" && <LaparoscopyPage />}
           {mode === "womens-predictive" && <CyclePredictor />}
+          {mode === "profile" && <ProfilePage />}
         </Box>
 
         <Footer />

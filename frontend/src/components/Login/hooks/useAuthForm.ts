@@ -10,6 +10,7 @@ export const useAuthForm = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
+  const [inviteCode, setInviteCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -25,7 +26,7 @@ export const useAuthForm = () => {
 
     const payload: AuthPayload = isLogin 
       ? { email, password } 
-      : { username, email, password };
+      : { username, email, password, invite_code: inviteCode };
 
     try {
       const data = isLogin ? await loginApi(payload) : await registerApi(payload);
@@ -42,8 +43,8 @@ export const useAuthForm = () => {
   };
 
   return {
-    state: { isLogin, email, password, username, error, loading },
-    setters: { setEmail, setPassword, setUsername, setError, setLoading },
+    state: { isLogin, email, password, username, inviteCode, error, loading },
+    setters: { setEmail, setPassword, setUsername, setInviteCode, setError, setLoading },
     actions: { handleSubmit, toggleMode }
   };
 };

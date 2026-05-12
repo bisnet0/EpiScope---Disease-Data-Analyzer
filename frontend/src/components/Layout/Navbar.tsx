@@ -15,14 +15,17 @@ import { FiMenu } from "react-icons/fi";
 import ThemeToggle from "../Theme/ThemeToggle";
 import { useAppThemeFx } from "../../styles/app-theme-fx";
 import { useAuth } from "../../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 interface Props {
   onOpenSidebar: () => void;
+  setMode: (mode: any) => void;
 }
 
-export const Navbar: React.FC<Props> = ({ onOpenSidebar }) => {
+export const Navbar: React.FC<Props> = ({ onOpenSidebar, setMode }) => {
   const themeFx = useAppThemeFx();
   const { user, walletAddress, connectWallet, signOut } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <Flex
@@ -67,7 +70,6 @@ export const Navbar: React.FC<Props> = ({ onOpenSidebar }) => {
       </HStack>
 
       <HStack spacing={{ base: 2, md: 4 }}>
-        
         <ThemeToggle />
 
         {walletAddress ? (
@@ -112,6 +114,11 @@ export const Navbar: React.FC<Props> = ({ onOpenSidebar }) => {
           px={3}
           py={1.5}
           borderRadius="full"
+          cursor="pointer" // 👈 Mostra a mãozinha de clique
+          transition="all 0.2s"
+          _hover={{ bg: "whiteAlpha.300" }} // 👈 Efeito visual ao passar o mouse
+          onClick={() => setMode("profile")}
+          title="Meu Perfil"
         >
           <Icon as={PersonCircle} boxSize={4} />
           <Text fontSize="sm" fontWeight="medium">

@@ -18,7 +18,8 @@ export type AppMode =
   | "WomensHealth" // O menu pai
   | "womens-biomarkers" // Submenu 1: Áudio e Vídeo
   | "womens-surgery" // Submenu 2: Cirurgia YOLO
-  | "womens-predictive"; // Submenu 3: Previsão de Ciclo
+  | "womens-predictive"
+  | "profile";
 
 // 2. Criamos a interface para o TypeScript entender o dropdown
 export interface NavItem {

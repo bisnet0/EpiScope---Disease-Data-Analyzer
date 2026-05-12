@@ -8,7 +8,6 @@ import React, {
 import { ethers } from "ethers";
 import api from "../middleware/api";
 import { useNavigate } from "react-router-dom";
-import Toast from "../components/Toast/Toast";
 import type { ToastState } from "../components/DiagnosisDApp/types";
 
 declare global {
@@ -21,6 +20,7 @@ interface User {
   id: string;
   username: string;
   email: string;
+  role: string;
 }
 
 interface AuthContextData {
