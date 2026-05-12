@@ -47,7 +47,7 @@ export const ProfilePage: React.FC = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const { data } = await axios.get("/api/profile", {
+        const { data } = await axios.get("/api/profile/", {
           withCredentials: true,
         });
         if (data.profile) {
@@ -70,7 +70,7 @@ export const ProfilePage: React.FC = () => {
     e.preventDefault();
     setSaving(true);
     try {
-      await axios.put("/api/profile", profile, { withCredentials: true });
+      await axios.put("/api/profile/", profile, { withCredentials: true });
       showToast({
         title: "Perfil Atualizado!",
         message: "Suas alterações foram salvas com sucesso no banco de dados.",
