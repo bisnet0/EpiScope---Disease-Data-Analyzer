@@ -9,6 +9,7 @@ from backend.modules.auth.controllers.auth_controller import (
     refresh_access_token,
     get_current_user_info,
     update_user_preferences,
+    generate_invite,
 )
 
 # Criamos o Blueprint com o prefixo
@@ -32,3 +33,5 @@ auth_bp.route("/me", methods=["GET"])(jwt_required()(get_current_user_info))
 auth_bp.route("/preferences", methods=["PATCH"])(
     jwt_required()(update_user_preferences)
 )
+
+auth_bp.route("/generate-invite", methods=["POST"])(jwt_required()(generate_invite))

@@ -7,6 +7,9 @@ from flask_jwt_extended import (
 )
 import os
 
+from backend.modules.auth.services.invite_service import validate_and_use_invite, create_invite_service
+
+
 # 👇 Imports mantidos (apontando para o auth_service)
 from backend.modules.auth.services.auth_service import (
     register_user_service,
@@ -16,10 +19,11 @@ from backend.modules.auth.services.auth_service import (
     update_user_preferences_service,
 )
 
+
 def update_user_preferences():
     current_user_id = get_jwt_identity()
     data = request.get_json()
-    
+
     if not data:
         return jsonify({"error": "Nenhum dado enviado"}), 400
 
@@ -32,13 +36,14 @@ def register_user():
     username = data.get("username")
     email = data.get("email")
     password = data.get("password")
-    
+
     # 👇 A barreira da Master Key
-    master_key = data.get("master_key")
-    expected_key = os.environ.get("MASTER_REGISTER_KEY")
-    
-    if not master_key or master_key != expected_key:
-        return jsonify({"error": "Acesso negado: Chave Mestra inválida ou ausente."}), 403
+    invite_code = data.get("invite_code")
+
+    if not invite_code or not validate_and_use_invite(invite_code):
+        return jsonify(
+            {"error": "Código de convite inválido, expirado ou já utilizado."}
+        ), 403
 
     if not all([username, email, password]):
         return jsonify({"error": "Faltando dados"}), 400
@@ -96,4 +101,9 @@ def refresh_access_token():
 def get_current_user_info():
     current_user_id = get_jwt_identity()
     result, status = get_user_by_id(current_user_id)
+    return jsonify(result), status
+
+def generate_invite():
+    current_user_id = get_jwt_identity()
+    result, status = create_invite_service(current_user_id)
     return jsonify(result), status
