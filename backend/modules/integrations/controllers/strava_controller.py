@@ -14,6 +14,7 @@ from backend.modules.integrations.models.strava_model import (
 CLIENT_ID = os.environ.get("STRAVA_CLIENT_ID", "")
 CLIENT_SECRET = os.environ.get("STRAVA_CLIENT_SECRET", "")
 REDIRECT_URI = os.environ.get("STRAVA_REDIRECT_URI", "")
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:5173")
 
 
 def sync_strava():
@@ -55,7 +56,6 @@ def strava_callback():
     user_id = request.args.get("state")
     error = request.args.get("error")
 
-    FRONTEND_URL = "http://localhost:5173/health-stats-panel"
 
     if error or not code or not user_id:
         print(f"[STRAVA] Erro na autorização ou dados ausentes: {error}")

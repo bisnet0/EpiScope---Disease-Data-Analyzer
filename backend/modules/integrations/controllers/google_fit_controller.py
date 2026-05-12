@@ -19,6 +19,7 @@ from backend.modules.integrations.models.google_fit_model import (
 CLIENT_ID = os.environ.get("GOOGLE_FIT_CLIENT_ID", "")
 CLIENT_SECRET = os.environ.get("GOOGLE_FIT_CLIENT_SECRET", "")
 REDIRECT_URI = os.environ.get("GOOGLE_FIT_REDIRECT_URI", "")
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:5173")
 
 
 def google_fit_login():
@@ -45,7 +46,7 @@ def google_fit_callback():
     user_id = request.args.get("state")
 
     if not code or not user_id:
-        return redirect("http://localhost:5173/health-stats-panel?google_error=true")
+        return redirect(f"{FRONTEND_URL}/health-stats-panel?google_error=true")
             
     token_url = "https://oauth2.googleapis.com/token"
     data = {
@@ -85,17 +86,17 @@ def google_fit_callback():
             db.session.commit()
             print(f"✅ Google Fit token salvo com sucesso para o usuário {user_id}")
             return redirect(
-               "http://localhost:5173/health-stats-panel?google_success=true"
+               f"{FRONTEND_URL}/health-stats-panel?google_success=true"
             )
         except Exception as e:
             db.session.rollback()
             print(f"❌ Erro ao salvar tokens do Google Fit: {e}")
             return redirect(
-                "http://localhost:5173/health-stats-panel?google_error=db_save"
+                f"{FRONTEND_URL}/health-stats-panel?google_error=db_save"
             )
 
     return redirect(
-        "http://localhost:5173/health-stats-panel?google_error=token_exchange_fail"
+        f"{FRONTEND_URL}/health-stats-panel?google_error=token_exchange_fail"
     )
 
 
