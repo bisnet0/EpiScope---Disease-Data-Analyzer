@@ -5,6 +5,7 @@ from flask_jwt_extended import (
     set_refresh_cookies,
     unset_jwt_cookies,
 )
+import os
 
 # 👇 Imports mantidos (apontando para o auth_service)
 from backend.modules.auth.services.auth_service import (
@@ -31,10 +32,18 @@ def register_user():
     username = data.get("username")
     email = data.get("email")
     password = data.get("password")
+    
+    # 👇 A barreira da Master Key
+    master_key = data.get("master_key")
+    expected_key = os.environ.get("MASTER_REGISTER_KEY")
+    
+    if not master_key or master_key != expected_key:
+        return jsonify({"error": "Acesso negado: Chave Mestra inválida ou ausente."}), 403
 
     if not all([username, email, password]):
         return jsonify({"error": "Faltando dados"}), 400
 
+    # Dica: Lá no seu auth_service.py, você pode passar a role baseada na master_key se quiser ter uma MASTER_KEY_ADMIN separada depois.
     result, status = register_user_service(username, email, password)
 
     if status == 201:

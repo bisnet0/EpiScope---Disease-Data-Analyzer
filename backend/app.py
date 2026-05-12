@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 
 
 from backend.modules.auth.models.user_model import db
+from backend.modules.profile.models.profile_model import UserProfile
 from backend.modules.arbovirus.models.arbovirus_model import ArbovirusDiagnosis
 from backend.modules.glaucoma.models.glaucoma_model import GlaucomaDiagnosis
 from backend.modules.laboratory.models.ml_log_model import ModelTrainingLog
@@ -34,6 +35,7 @@ from backend.modules.chest_xray.routes.xray_routes import xray_bp
 from backend.modules.blockchain.routes.blockchain_routes import blockchain_bp
 from backend.modules.patients.routes.history_routes import history_bp
 from backend.modules.womens_health.routes.womens_health_routes import womens_health_bp
+from backend.modules.profile.routes.profile_routes import profile_bp
 
 
 load_dotenv()
@@ -79,6 +81,7 @@ app.register_blueprint(xray_bp, url_prefix="/api/chest-xray")
 app.register_blueprint(blockchain_bp, url_prefix="/api/blockchain")
 app.register_blueprint(history_bp, url_prefix="/api/patients")
 app.register_blueprint(womens_health_bp, url_prefix="/api/womens-health")
+app.register_blueprint(profile_bp, url_prefix="/api/profile")
 
 
 with app.app_context():
