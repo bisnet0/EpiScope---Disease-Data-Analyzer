@@ -36,6 +36,7 @@ tf-keras
 mediapipe
 deepface
 ultralytics
+gunicorn
 
 # Utilidades
 Pillow
