@@ -68,7 +68,29 @@ services:
     networks:
       - episcope-net
     volumes:
-      - pgadmin_data:/var/lib/pgadmin
+      - pgadmin_data:/var/lib/pgadmin 
+
+  ganache:
+    image: trufflesuite/ganache:latest
+    container_name: episcope_blockchain
+    ports:
+      - "8545:8545"
+    command:
+      [
+        "--wallet.seed",
+        "episcope_dapp",
+        "--chain.chainId",
+        "31337",
+        "--wallet.totalAccounts",
+        "1",
+        "--wallet.defaultBalance",
+        "10000",
+        "--host",
+        "0.0.0.0",
+      ]
+    restart: unless-stopped
+    networks:
+      - episcope-net
 
 volumes:
   postgres_data:

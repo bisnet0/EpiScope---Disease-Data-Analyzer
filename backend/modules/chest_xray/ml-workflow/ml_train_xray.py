@@ -129,7 +129,7 @@ def build_and_train_model():
             "feature_importance": json.dumps({"type": "CNN_Activation_Maps"}),
             "metrics": json.dumps(
                 {
-                    "final_val_accuracy": float(final_accuracy),
+                "final_val_accuracy": float(final_accuracy),
                     "history": {
                         k: [float(x) for x in v] for k, v in history.history.items()
                     },
