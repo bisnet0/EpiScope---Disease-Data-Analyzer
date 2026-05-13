@@ -21,7 +21,7 @@ import { useDAppThemeFx } from "../styles/theme-fx";
 interface Props {
   history: HistoryItem[];
   walletAddress: string | null;
-  sendingId: number | null;
+  sendingId: number | string | null;
   onRegisterOnChain: (item: HistoryItem) => void;
 }
 
