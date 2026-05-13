@@ -67,16 +67,18 @@ def run_arbovirus_pipeline(text_description, age, sex, user_id, model_choice="al
     if not ARBO_MODELS or not model_gemini:
         return {"error": "Serviços de IA indisponíveis"}, 503
 
+    # 1. Estruturação de Sintomas com Gemini
     symptoms_list = get_symptom_list_from_cols(arbo_model_columns)
-    prompt = f'Analise: "{text_description}". Extraia sintomas JSON true/false. Possíveis: {symptoms_list}.'
+    prompt_struct = f'Analise: "{text_description}". Extraia sintomas JSON true/false. Possíveis: {symptoms_list}.'
     try:
-        gemini_resp = model_gemini.generate_content(prompt)
+        gemini_resp = model_gemini.generate_content(prompt_struct)
         structured = parse_json_from_gemini_response(gemini_resp.text)
         if not structured:
             raise ValueError("Falha ao estruturar JSON")
     except Exception as e:
-        return {"error": f"Erro na IA Generativa: {str(e)}"}, 500
+        return {"error": f"Erro na IA Generativa (Estruturação): {str(e)}"}, 500
 
+    # 2. Pré-processamento do DataFrame
     try:
         df = pd.DataFrame(columns=arbo_model_columns, index=[0]).fillna(0)
         for s, v in structured.items():
@@ -85,11 +87,11 @@ def run_arbovirus_pipeline(text_description, age, sex, user_id, model_choice="al
         df.loc[0, "idade"] = age
         df.loc[0, "sexo_encoded"] = 1 if sex.upper() == "F" else 0
         df = df.apply(pd.to_numeric, errors="coerce").fillna(0)
-
         input_features_log = convert_numpy_floats(df.to_dict(orient="records")[0])
     except Exception as e:
         return {"error": f"Erro no pré-processamento de dados: {e}"}, 500
 
+    # 3. Inferência (Competição de Modelos)
     comparative_results = {}
     best_model_name = "none"
     highest_confidence = -1.0
@@ -108,7 +110,6 @@ def run_arbovirus_pipeline(text_description, age, sex, user_id, model_choice="al
 
             probs = model.predict_proba(df[arbo_model_columns])[0]
             model_result = {arbo_target_map[i]: float(p) for i, p in enumerate(probs)}
-
             top_disease = max(model_result.keys(), key=lambda k: model_result[k])
             confidence = model_result[top_disease]
 
@@ -122,7 +123,6 @@ def run_arbovirus_pipeline(text_description, age, sex, user_id, model_choice="al
                 highest_confidence = confidence
                 best_model_name = name
                 final_probs = model_result
-
     except Exception as e:
         return {"error": f"Erro durante inferência dos modelos: {e}"}, 500
 
@@ -131,6 +131,7 @@ def run_arbovirus_pipeline(text_description, age, sex, user_id, model_choice="al
 
     top_diagnosis_winner = max(final_probs.keys(), key=lambda k: final_probs[k])
 
+    # 4. Persistência no Banco de Dados
     try:
         user = User.query.get(user_id)
         if not user:
@@ -151,17 +152,28 @@ def run_arbovirus_pipeline(text_description, age, sex, user_id, model_choice="al
         )
         db.session.add(new_diag)
         db.session.commit()
-        print(f"Diagnóstico Arbo salvo ID: {new_diag.id} (Vencedor: {best_model_name})")
-
     except Exception as e:
         db.session.rollback()
         return {"error": f"Erro na Persistência: {str(e)}"}, 500
 
+    # 5. Geração da Resposta Amigável (REATIVADO 🚀)
     try:
-        res_txt = "\n".join([f"{k}: {v:.1%}" for k, v in final_probs.items()])
-        friendly = "Explicação desativada para economia de cota."
-    except Exception:
-        friendly = "Erro ao gerar explicação amigável."
+        prob_str = ", ".join([f"{k} ({v:.1%})" for k, v in final_probs.items()])
+
+        prompt_friendly = (
+            f"Você é um assistente médico inteligente. Explique o resultado para um paciente de {age} anos. "
+            f"Relato do paciente: '{text_description}'. "
+            f"O algoritmo de ML ({best_model_name}) calculou as probabilidades: {prob_str}. "
+            f"O diagnóstico mais provável é {top_diagnosis_winner}. "
+            f"Traduza os termos técnicos, seja acolhedor, mas mantenha o tom profissional. "
+            f"OBRIGATÓRIO: Inclua um disclaimer de que isso é uma análise computacional e não substitui uma consulta médica."
+        )
+
+        friendly_resp = model_gemini.generate_content(prompt_friendly)
+        friendly = friendly_resp.text
+    except Exception as e:
+        print(f"Erro ao gerar friendly_response: {e}")
+        friendly = "A análise foi concluída com sucesso, mas houve um erro ao gerar o resumo amigável. Verifique os detalhes técnicos abaixo."
 
     return (
         {
@@ -176,6 +188,7 @@ def run_arbovirus_pipeline(text_description, age, sex, user_id, model_choice="al
         },
         200,
     )
+
 
 def run_symptom_structure(text_description: str):
     if not model_gemini:
