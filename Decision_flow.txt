@@ -1,0 +1,26 @@
+Usuário -> Frontend (Input Multimodal) -> API REST
+                                             |
+                                             v
+                              Hospital Workflow (Agent Maestro)
+                                             |
+     +-----------------+-----------------+---+-------------+-----------------+
+     |                 |                 |                 |                 |
+     v                 v                 v                 v                 v
+   Video             Audio         Doenças Base       Health IoT          RAG DB
+   Tool              Tool             Tools              Tool              Tool
+(YOLOv8)          (Voz/NLP)    (Arbo/Glaucoma/XRay) (Google/Strava)    (Guidelines)
+     |                 |                 |                 |                 |
+     +-----------------+-----------------+---+-------------+-----------------+
+                                             |
+                                             v
+                               Agregação & Fusão Multimodal
+                                             |
+                                             v
+                                Auditoria Web3 (Blockchain)
+                                             |
+                                             v
+                               Resultado & Alertas Clínicos
+
+
+
+                               

@@ -1,0 +1,47 @@
+User
+├── id (PK)
+├── email
+├── password_hash
+├── wallet_address (Integração Web3)
+├── created_at
+└── relationships:
+    ├── ClinicalDecision (1:N)
+    ├── WomensHealthAnalysis (1:N)
+    ├── HealthIoTData (1:N)
+    └── BlockchainLedger (1:N)
+
+WomensHealthAnalysis (Novo Módulo Fase 4)
+├── id (PK)
+├── patient_id (FK -> User)
+├── analysis_category (Ex: Vídeo Cirúrgico, Áudio Psicológico)
+├── media_reference (URL do arquivo processado em Nuvem)
+├── detected_anomalies (JSON - Ex: "sangramento_anomalo", "hesitacao_vocal")
+├── risk_alert_level (Score de urgência)
+├── ai_clinical_summary (Parecer gerado pelo Agent)
+├── blockchain_hash (Ref Ledger)
+└── created_at
+
+BlockchainLedger (Nova Camada de Auditoria Web3)
+├── id (PK)
+├── diagnosis_id (Referência cruzada para qualquer diagnóstico)
+├── payload_hash (Hash dos dados clínicos)
+├── transaction_hash (ID da transação no Ganache/Cartesi)
+├── status (Ex: pending, confirmed)
+└── timestamp
+
+ClinicalDecision (Tabela Central do Maestro)
+├── id (PK)
+├── user_id (FK -> User)
+├── diagnosis_type (Arbovirose, Glaucoma, Saúde da Mulher, etc.)
+├── multimodal_context (JSON - Combinação de Sintomas + Wearables)
+├── agent_reasoning (Raciocínio clínico gerado com RAG)
+├── blockchain_ref (Status da assinatura)
+└── created_at
+
+HealthIoTData (Integração Google Fit & Strava)
+├── id (PK)
+├── user_id (FK -> User)
+├── integration_source (Strava, GoogleFit)
+├── cardio_metrics (bpm_avg, bpm_min_repouso)
+├── recovery_metrics (sleep_minutes, steps)
+└── sync_date
