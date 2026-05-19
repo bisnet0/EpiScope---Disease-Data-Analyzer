@@ -36,23 +36,25 @@ export const useAgentChat = () => {
       setIsLoading(true);
 
       try {
-        const emergencyContent = `🚨 **ALERTA DE EMERGÊNCIA ATIVADO** 🚨\n\nIdentifiquei um quadro de alta severidade: *"${detail.diagnosis}"*.\n\nJá preparei o protocolo de auditoria. Como posso auxiliar na conduta clínica agora?`;
+        let dynamicContent = "";
+
+        // Roteamento inteligente para o Maestro não alucinar contextos
+        if (detail.consultationType === "PREDICAO_CICLO") {
+          dynamicContent = `🚨 **ALERTA GINECOLÓGICO / ENDÓCRINO** 🚨\n\nIdentifiquei o seguinte quadro de atenção:\n*"${detail.diagnosis}"*\n\n**Dr. EpiScope**, por favor, utilize a ferramenta 'fetch_menstrual_cycle_biomarkers' para analisar a biometria e telemetria cardíaca da paciente.\n\nCom base no atraso e no RHR (Frequência Cardíaca de Repouso), qual a conduta clínica e exames sugeridos?`;
+        } else {
+          const context = detail.consultationType || "TRIAGEM_VIOLENCIA";
+          dynamicContent = `🚨 **ALERTA DE EMERGÊNCIA ATIVADO** 🚨\n\nQuadro de atenção severa:\n*"${detail.diagnosis}"*\n\n**Dr. EpiScope**, acesse os biomarcadores via 'fetch_womens_health_biomarkers' (contexto: "${context}"). Analise a correlação voz/vídeo e sugira o protocolo de acolhimento.`;
+        }
 
         await sendChatMessageApi({
-          message: emergencyContent,
+          message: dynamicContent,
           attachment: null,
         });
+
         const history = await fetchChatHistory();
         setMessages(history);
       } catch (error) {
-        console.error("❌ Erro ao persistir alerta de emergência:", error);
-
-        const fallbackMsg: Message = {
-          id: `temp-${Date.now()}`,
-          role: "agent",
-          content: `🚨 **ALERTA (SESSÃO LOCAL)**: Erro ao salvar no banco, mas a severidade é ALTA para: ${detail.diagnosis}`,
-        };
-        setMessages((prev) => [...prev, fallbackMsg]);
+        console.error("❌ Erro ao disparar Maestro:", error);
       } finally {
         setIsLoading(false);
         scrollToBottom();

@@ -14,7 +14,7 @@ import {
   Divider,
   keyframes,
 } from "@chakra-ui/react";
-import { CloudUpload, Activity } from "react-bootstrap-icons";
+import { CloudUpload, Activity, Lungs } from "react-bootstrap-icons";
 import { useXRay } from "../hooks/useXRay";
 import { useXRayThemeFx } from "../styles/theme-fx";
 
@@ -54,9 +54,9 @@ export const DiagnosisXRayForm: React.FC = () => {
         alignItems="center"
         gap={3}
       >
-        <Icon as={Activity} color={themeFx.accentColor} />
+        <Icon as={Lungs} color={themeFx.accentColor} />
         Análise de Raio-X Pulmonar
-        <Badge
+        {/* <Badge
           colorScheme="cyan"
           variant="solid"
           borderRadius="md"
@@ -64,7 +64,7 @@ export const DiagnosisXRayForm: React.FC = () => {
           py={0.5}
         >
           BETA
-        </Badge>
+        </Badge> */}
       </Heading>
 
       <Text color={themeFx.mutedText} mb={8}>

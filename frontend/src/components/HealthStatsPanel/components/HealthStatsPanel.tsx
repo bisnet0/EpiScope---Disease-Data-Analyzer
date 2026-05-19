@@ -38,7 +38,6 @@ import { useHealthStats } from "../hooks/useHealthStats";
 import { useHealthStatsThemeFx } from "../styles/theme-fx";
 
 const HealthStatsPanel: React.FC = () => {
-  // Adicione isConnectedGoogle e handleConnectGoogle no seu useHealthStats hook depois
   const {
     isConnected,
     loading,
@@ -48,6 +47,8 @@ const HealthStatsPanel: React.FC = () => {
     isSyncing,
     isConnectedGoogle,
     handleConnectGoogle,
+    handleDisconnectStrava,
+    handleDisconnectGoogleFit,
     googleMetrics,
   } = useHealthStats();
 
@@ -128,12 +129,19 @@ const HealthStatsPanel: React.FC = () => {
               Conectar Strava
             </Button>
           ) : (
-            <Badge colorScheme="green" variant="subtle" p={2} borderRadius="lg">
-              STRAVA ON
-            </Badge>
+            <Button
+              leftIcon={<FaStrava />}
+              colorScheme="red"
+              variant="ghost"
+              onClick={handleDisconnectStrava}
+              size="md"
+              _hover={{ bg: "red.900", color: "white" }}
+            >
+              Desconectar Strava
+            </Button>
           )}
 
-          {/* Botão Google Fit (Novo!) */}
+          {/* Botão Google Fit Dinâmico */}
           {!isConnectedGoogle ? (
             <Button
               leftIcon={<FaGoogle />}
@@ -147,16 +155,16 @@ const HealthStatsPanel: React.FC = () => {
               Conectar Google Fit
             </Button>
           ) : (
-            <Badge
-              colorScheme="blue"
-              variant="subtle"
-              p={2}
-              borderRadius="lg"
-              display="flex"
-              alignItems="center"
+            <Button
+              leftIcon={<FaGoogle />}
+              colorScheme="red"
+              variant="ghost"
+              onClick={handleDisconnectGoogleFit}
+              size="md"
+              _hover={{ bg: "red.900", color: "white" }}
             >
-              <Icon as={FaGoogle} mr={1} /> GOOGLE ON
-            </Badge>
+              Desconectar Google Fit
+            </Button>
           )}
         </HStack>
       </Flex>

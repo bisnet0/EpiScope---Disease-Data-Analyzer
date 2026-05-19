@@ -1,0 +1,42 @@
++-----------------------------------------------------------------------+
+|                     FRONTEND (React + TypeScript)                     |
+|                                                                       |
+|  - Dashboard de Gestão Clínica Multimodal (Texto, Áudio e Vídeo)      |
+|  - Integração Web3 (MetaMask / Assinatura de Diagnósticos DApp)       |
+|  - Central de Saúde (IoT Sync: Strava / Google Fit)                   |
++-----------------------------------------------------------------------+
+                                    | API REST / WebSockets / Web3 RPC
+                                    v
++-----------------------------------------------------------------------+
+|             BACKEND (Flask + Python / Dockerizado no GCP)             |
+|                                                                       |
+|  Controllers (Routes):                                                |
+|  - womens_health_controller (processamento de vídeo e áudio)          |
+|  - blockchain_controller (registro imutável no ledger)                |
+|  - agent_controller (orquestração de decisões e workflows)            |
+|  - diagnose_controller (arboviroses, glaucoma, raio-x)                |
+|                                                                       |
+|  Modelos ML Específicos (Fusão Multimodal):                           |
+|  - Visão: YOLOv8 Customizado (Anomalias em cirurgias/Linguagem corp.) |
+|  - Áudio: Modelos Acústicos/NLP (Sinais de trauma, depressão, pânico) |
+|  - Imagem/Estruturado: CNNs e XGBoost (Legado suportado)              |
+|                                                                       |
+|  Serviços Core:                                                       |
+|  - Agent Maestro: LangGraph/LangChain (Análise unificada de dados)    |
+|  - RAG Service: Base de conhecimento médica (Guidelines e Papers)     |
+|  - Ledger Service: Transações Cartesi/Ganache via Ethers              |
++-----------------------------------------------------------------------+
+                                    | SQLAlchemy / FAISS / RPC Local
+                                    v
++-----------------------------------------------------------------------+
+|                   CAMADA DE DADOS E INFRAESTRUTURA                    |
+|                                                                       |
+|  - PostgreSQL: Gestão de pacientes, auditoria clínica e histórico     |
+|  - FAISS / Vector Store: Embeddings de documentos e casos clínicos    |
+|  - Blockchain Node: Container Ganache isolado (Imutabilidade Web3)    |
+|  - Infra Cloud: Google Cloud Platform (Processamento e Storage)       |
++-----------------------------------------------------------------------+
+
+
+
+

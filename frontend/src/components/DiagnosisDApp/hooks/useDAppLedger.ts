@@ -11,7 +11,7 @@ export const useDAppLedger = () => {
   const { walletAddress, connectWallet, signer } = useAuth();
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [sendingId, setSendingId] = useState<number | null>(null);
+  const [sendingId, setSendingId] = useState<number | string | null>(null);
   const [toast, setToast] = useState<ToastState | null>(null);
 
   const loadHistory = useCallback(async () => {

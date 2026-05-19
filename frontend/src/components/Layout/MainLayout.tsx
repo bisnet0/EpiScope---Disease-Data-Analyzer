@@ -23,9 +23,14 @@ import { DiagnosisArbovirusForm } from "../DiagnosisArbovirus/DiagnosisArbovirus
 import { DiagnosisGlaucomaForm } from "../DiagnosisGlaucoma/DiagnosisGlaucomaPage";
 import { DiagnosisDAppForm } from "../DiagnosisDApp/DiagnosisDAppForm";
 import { DiagnosisXRayForm } from "../DiagnosisXRay/components/DiagnosisXRay";
-import HealthStatsPanelPage from "../HealthStatsPanel/HealthStatsPanelPage"
+import HealthStatsPanelPage from "../HealthStatsPanel/HealthStatsPanelPage";
+import { WomensHealthModule } from "../DiagnosisWomensHealth/WomensHealthModule";
+// 👇 IMPORTANDO O NOVO COMPONENTE DO YOLO
+import { LaparoscopyPage } from "../DiagnosisWomensHealth/LaparoscopyPage";
 import { LoginForm } from "../Login/LoginForm";
 import AgentChat from "../AgentChat/AgentChat";
+import { CyclePredictor } from "../DiagnosisWomensHealth/components/CyclePredictor";
+import { ProfilePage } from "../Profile/ProfilePage";
 
 export const MainLayout: React.FC = () => {
   const [mode, setMode] = useState<AppMode>("dashboard");
@@ -116,7 +121,7 @@ export const MainLayout: React.FC = () => {
         >
           <Image
             // ⚠️ COLOQUE O CAMINHO DA SUA IMAGEM DE DESKTOP AQUI ⚠️
-            src="/public/Dr.EpiScope.png"
+            src="/Dr.EpiScope.png"
             alt="Login Hero"
             objectFit="cover" // Garante que a imagem cubra toda a área sem distorcer
             w="full"
@@ -130,7 +135,7 @@ export const MainLayout: React.FC = () => {
   // --- APLICAÇÃO PRINCIPAL (Autenticado) ---
   return (
     <Flex minH="100vh" bg={themeFx.appBg} transition="background 0.2s">
-      <Navbar onOpenSidebar={onOpen} />
+      <Navbar onOpenSidebar={onOpen} setMode={setMode} />
       <Sidebar
         mode={mode}
         setMode={setMode}
@@ -160,7 +165,12 @@ export const MainLayout: React.FC = () => {
           {mode === "x-ray" && <DiagnosisXRayForm />}
           {mode === "health-stats-panel" && <HealthStatsPanelPage />}
 
-
+          {/* 👇 MAPEAMENTO DOS NOVOS MODOS DA SAÚDE DA MULHER */}
+          {mode === "WomensHealth" && <WomensHealthModule />}
+          {mode === "womens-biomarkers" && <WomensHealthModule />}
+          {mode === "womens-surgery" && <LaparoscopyPage />}
+          {mode === "womens-predictive" && <CyclePredictor />}
+          {mode === "profile" && <ProfilePage />}
         </Box>
 
         <Footer />

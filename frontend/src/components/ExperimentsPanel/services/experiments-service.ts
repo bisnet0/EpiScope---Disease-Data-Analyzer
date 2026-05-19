@@ -2,7 +2,7 @@ import api from "../../../middleware/api";
 import { type GARunParams } from "../types";
 
 export const runManualExperimentApi = async (modelType: string, params: any) => {
-  const response = await api.post('/diagnose/experiment', {
+  const response = await api.post('laboratory/diagnose/experiment', {
     model_type: modelType,
     params
   });
@@ -10,11 +10,11 @@ export const runManualExperimentApi = async (modelType: string, params: any) => 
 };
 
 export const getAdvisorSuggestionApi = async () => {
-  const response = await api.get('/diagnose/advisor');
+  const response = await api.get('laboratory/diagnose/advisor');
   return response.data;
 };
 
 export const runGeneticOptimizationApi = async (payload: GARunParams) => {
-  const response = await api.post('/diagnose/optimize-ga', payload);
+  const response = await api.post('arbovirus/diagnose/optimize-ga', payload);
   return response.data;
 };

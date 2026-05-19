@@ -9,11 +9,13 @@ venv/
 docker-backups/
 xray_cnn.h5
 
+
 # lixo
 *.psd
-new_data/
-**/chest_xray_dataset
+backend/modules/arbovirus/datasets/
+backend/modules/chest_xray/datasets/
+backend/modules/glaucoma/datasets/
+backend/modules/womens_health/datasets/
 __pycache__/
 wsl
 .csv
-model_artifacts/

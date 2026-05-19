@@ -11,9 +11,12 @@ import {
   Center,
   Text,
   keyframes,
+  Icon,
 } from "@chakra-ui/react";
 import { useGlaucomaThemeFx } from "../styles/theme-fx";
 import { type GlaucomaInputFormProps } from "../types";
+import { EyeFill, EyeSlash } from "react-bootstrap-icons";
+import { BsEye } from "react-icons/bs";
 
 export const GlaucomaInputForm: React.FC<GlaucomaInputFormProps> = ({
   previewUrl,
@@ -42,9 +45,10 @@ export const GlaucomaInputForm: React.FC<GlaucomaInputFormProps> = ({
       w="full"
     >
       <VStack spacing={5} align="stretch">
-        <Heading size="md" color={themeFx.textColor}>
-          2. Análise de Imagem (Glaucoma CNN)
-        </Heading>
+        <Heading size="md" display="flex" alignItems="center" color={themeFx.textColor}>
+        <Icon as={BsEye} color={themeFx.eyeColor} mr={3} w={6} h={6} />
+        Análise de Imagem para Glaucoma
+      </Heading>
 
         <FormControl isRequired>
           <FormLabel color={themeFx.textColor}>

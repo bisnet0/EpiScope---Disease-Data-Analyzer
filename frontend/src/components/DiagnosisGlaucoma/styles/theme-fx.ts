@@ -4,6 +4,7 @@ export const useGlaucomaThemeFx = () => {
   // Efeito Liquid Glass para os cards
   const cardBg = useColorModeValue('rgba(255, 255, 255, 0.85)', 'rgba(30, 34, 45, 0.85)');
   const cardBorder = useColorModeValue('rgba(255, 255, 255, 0.4)', 'rgba(255, 255, 255, 0.08)');
+  const eyeColor = useColorModeValue('rgba(156, 14, 161, 0.4)', 'rgba(156, 14, 161, 0.8)'); // Roxo translúcido para o ícone do olho
   
   // Elementos internos
   const inputBg = useColorModeValue('white', 'whiteAlpha.100');
@@ -27,6 +28,7 @@ export const useGlaucomaThemeFx = () => {
     mutedText,
     chartGridColor,
     chartTextColor,
-    tooltipBg
+    tooltipBg,
+    eyeColor
   };
 };

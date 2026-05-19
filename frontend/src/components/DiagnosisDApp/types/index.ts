@@ -1,6 +1,8 @@
 export interface HistoryItem {
-  id: number;
-  type: "Arbovirose" | "Glaucoma";
+  id: number | string;
+
+  type: "Arbovirose" | "Glaucoma" | "Saúde da Mulher" | "Raio-X (Tórax)";
+
   date: string;
   details: string;
   result: any;
@@ -21,6 +23,6 @@ export interface DAppHeaderProps {
 export interface HistoryTableProps {
   history: HistoryItem[];
   walletAddress: string | null;
-  sendingId: number | null;
+  sendingId: number | string | null;
   onRegisterOnChain: (item: HistoryItem) => void;
 }

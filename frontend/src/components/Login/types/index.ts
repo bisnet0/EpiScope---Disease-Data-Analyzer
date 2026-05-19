@@ -2,6 +2,7 @@ export interface AuthPayload {
   email: string;
   password: string;
   username?: string;
+  invite_code?: string;
 }
 
 export interface AuthResponse {

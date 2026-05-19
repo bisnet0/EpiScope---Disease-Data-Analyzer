@@ -13,6 +13,9 @@ langchain-google-genai>=1.0.0
 faiss-cpu
 pypdf
 sentence-transformers
+pydub
+librosa
+soundfile
 
 # Infra
 python-dotenv
@@ -26,6 +29,14 @@ cryptography
 scikit-learn
 xgboost
 tensorflow
+datasets
+peft
+torch
+tf-keras
+mediapipe
+deepface
+ultralytics
+gunicorn
 
 # Utilidades
 Pillow
