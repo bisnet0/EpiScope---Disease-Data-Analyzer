@@ -1,3 +1,5 @@
+<img src="frontend/public/EpiScope-banner.png" alt="EpiScope's banner">
+
 # 🧬 EpiScope - Disease Analyzer with AI and Blockchain
 
 **EpiScope** is a complete solution that combines **Data Science**, **Artificial Intelligence**, and **Blockchain** to create a diagnostic support system for arboviruses (**Dengue, Zika, and Chikungunya**) and ocular diseases (**Glaucoma**).
